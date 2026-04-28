@@ -68,7 +68,6 @@ class UsulanPlanPayment(models.Model):
     def action_view_payment_schedules(self):
         """ Membuka pop-up kalender untuk mengisi rencana bayar """
         self.ensure_one()
-        # Cari ID dari view pop-up yang baru kita buat
         view_id = self.env.ref('custom_usulandana.view_plan_payment_quick_date_form').id
 
         return {

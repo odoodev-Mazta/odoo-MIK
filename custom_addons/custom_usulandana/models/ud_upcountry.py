@@ -25,8 +25,8 @@ class UsulanUpCountry(models.Model):
         ('cash', 'Tunai'),
         ('cheque', 'Cek/Giro')
     ], string='Metode Payment')
-    rekening_vendor_id = fields.Char(string="Data Rekening", placeholder="BCA - 06393480493")
-    alamat_vendor_id = fields.Char(string="Alamat", placeholder="Jl Daan Mogot")
+    rekening_vendor_id = fields.Char(string="Data Rekening")
+    alamat_vendor_id = fields.Char(string="Alamat")
     amount = fields.Monetary(string='Nilai Usulan', currency_field='currency_id', tracking=True)
     currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id)
     state = fields.Selection([
