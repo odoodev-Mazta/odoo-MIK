@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <!--  ROOT MENU  -->
+    <menuitem id="menu_ud_root" name="Usulan Dana"/>
+    <!--  MENU  -->
+    <menuitem id="menu_main_approval_ud" name="Approval" parent="menu_ud_root" action="action_approval_usulan_dana" sequence="1"/>
+    <menuitem id="menu_main_plan_payment_ud" name="Plan Payment" parent="menu_ud_root" sequence="2"/>
+    <menuitem id="menu_main_setup_ud" name="Setup" parent="menu_ud_root" sequence="3"/>
+    <menuitem id="menu_main_usulan" name="Usulan" parent="menu_ud_root" sequence="4"/>
+    <!--  SUBMENU(s) USULAN-->
+    <menuitem id="menu_usulan_usulan_dana"
+              name="Usulan Dana"
+              parent="menu_main_usulan"
+              action="action_usulan_usulan_dana"
+              sequence="1"/>
+
+    <menuitem id="menu_usulan_up_country"
+              name="Usulan Up Country"
+              parent="menu_main_usulan"
+              action="action_usulan_up_country"
+              sequence="2"/>
+
+    <menuitem id="menu_monitoring_payment_term"
+              name="Monitoring Pembayaran"
+              parent="menu_main_usulan"
+              action="action_payment_schedule_monitoring"
+              sequence="3"/>
+
+    <!--  SUBMENU(s) PLAN PAYMENT-->
+    <menuitem id="menu_plan_payment_report"
+          name="Departemen"
+          parent="menu_main_plan_payment_ud"
+          action="action_usulan_plan_payment"
+          sequence="1"/>
+
+
+    <!--  SUBMENU(s) SETUP  -->
+    <menuitem id="menu_setup_item"
+              name="Item"
+              parent="menu_main_setup_ud"
+              action="action_usulan_dana_setup"
+              sequence="1"/>
+
+    <menuitem id="menu_approval_matrix_setup"
+              name="Approval Matrix"
+              parent="menu_main_setup_ud"
+              action="action_usulan_approval_setup"
+              sequence="10"/>
+
+</odoo>

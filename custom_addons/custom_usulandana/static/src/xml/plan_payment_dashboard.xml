@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+    <t t-name="UsulanDana.PlanPaymentListView" t-inherit="web.ListView" t-inherit-mode="primary" owl="1">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <PlanPaymentDashboard />
+        </xpath>
+    </t>
+
+    <t t-name="UsulanDana.PlanPaymentDashboard" owl="1">
+        <div class="o_plan_dashboard p-3 bg-view border-bottom">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <select class="form-select" t-on-change="onDepartmentChange">
+                        <option value="all">Semua Departemen</option>
+                        <t t-foreach="state.departments" t-as="dept" t-key="dept.id">
+                            <option t-att-value="dept.id"><t t-esc="dept.name"/></option>
+                        </t>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 row-cols-1 row-cols-xl-5">
+                <t t-foreach="[
+                    {id: 'menggantung', name: 'Menggantung', badge: 'bg-warning text-dark'},
+                    {id: 'plan_payment', name: 'Plan Payment', badge: 'bg-info'},
+                    {id: 'reschedule', name: 'Rescheduled', badge: 'bg-danger'},
+                    {id: 'cancel', name: 'Cancel', badge: 'bg-dark'},
+                    {id: 'rilis', name: 'Rilis', badge: 'bg-success'}
+                ]" t-as="box" t-key="box.id">
+
+                    <div class="col">
+                        <div class="p-2 border rounded bg-white shadow-sm h-100"
+                             style="cursor: pointer;"
+                             t-on-click="() => this.setFilter(box.id, box.name)">
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold"><t t-esc="box.name"/></span>
+
+                                <span class="badge rounded-pill text-white" t-attf-class="{{ box.badge }}">
+                                    <t t-esc="state.counts[box.id] || 0"/>
+                                </span>
+                            </div>
+
+                            <div class="mb-2" style="font-size: 0.85em;">
+                                <t t-if="box.id == 'rilis'">
+                                    <span class="fw-bold text-success">Rp
+                                        <t t-esc="state.amounts[box.id] || 0"/>
+                                    </span>
+                                    <span class="text-muted"> dari Rp <t t-esc="state.total_amount_all || 0"/></span>
+                                </t>
+                                <t t-else="">
+                                    <span class="fw-bold text-dark">Rp
+                                        <t t-esc="state.amounts[box.id] || 0"/>
+                                    </span>
+                                </t>
+                            </div>
+
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div t-attf-class="progress-bar {{ getBarColor(box.id) }}"
+                                     t-attf-style="width: {{ getPercentage(box.id) }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_usulan_approval_setup_list" model="ir.ui.view">
+        <field name="name">usulan.approval.setup.list</field>
+        <field name="model">usulan.approval.setup</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="min_amount"/>
+                <field name="max_amount"/>
+                <field name="need_head_dept"/>
+                <field name="need_coo"/>
+                <field name="need_ceo"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_usulan_approval_setup" model="ir.actions.act_window">
+        <field name="name">Matrix Approval</field>
+        <field name="res_model">usulan.approval.setup</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>
