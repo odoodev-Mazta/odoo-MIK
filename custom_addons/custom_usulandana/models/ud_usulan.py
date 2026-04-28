@@ -325,7 +325,11 @@ class UsulanUsulanDanaLine(models.Model):
     _name = 'usulan.usulan.dana.line'
     _description = 'Line Usulan Dana'
 
-    usulan_id = fields.Many2one('usulan.usulan.dana', string='Parent')
+    usulan_id = fields.Many2one(
+        'usulan.usulan.dana',
+        string='Parent',
+        ondelete='cascade'
+    )
     item_name = fields.Char(string='Nama Item', required=True)
     setup_item_id = fields.Many2one(
         'usulan.dana.setup',
