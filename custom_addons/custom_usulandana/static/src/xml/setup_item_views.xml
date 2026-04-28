@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="UsulanDana.SetupProgressBar" owl="1">
+        <div class="o_setup_progress_container p-3 mb-3 bg-white border rounded">
+            <div class="d-flex justify-content-between mb-1">
+                <span class="fw-bold">Menunggu Setup</span>
+                <span><t t-esc="state.waitingCount"/></span>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-warning"
+                     role="progressbar"
+                     t-attf-style="width: {{ percentage }}%;"
+                     t-att-aria-valuenow="percentage"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-inherit="web.ListView" t-inherit-mode="primary" owl="1" t-name="UsulanDana.SetupListView">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <SetupProgressBar list="model.root"/>
+        </xpath>
+    </t>
+
+</templates>

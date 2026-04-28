@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="UsulanDana.ApprovalDanaDashboard" owl="1">
+        <div class="o_approval_dashboard p-3 bg-view border-bottom">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="dept_filter" class="fw-bold mb-1">Filter Departemen:</label>
+                    <select id="dept_filter" class="form-select" t-on-change="onDepartmentChange">
+                        <option value="all">Semua Departemen</option>
+                        <t t-foreach="state.departments" t-as="dept" t-key="dept.id">
+                            <option t-att-value="dept.id"><t t-esc="dept.name"/></option>
+                        </t>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <t t-foreach="[
+                    {id: 'to_approve', name: 'Menunggu Approval', badge: 'bg-warning text-dark'},
+                    {id: 'approve', name: 'Approved', badge: 'bg-primary'},
+                    {id: 'reject', name: 'Ditolak', badge: 'bg-danger'},
+                    {id: 'cancel', name: 'Cancelled', badge: 'bg-dark'}
+                ]" t-as="box" t-key="box.id">
+
+                    <div class="col-md-3">
+                        <div class="p-2 border rounded bg-white shadow-sm"
+                             style="cursor: pointer;"
+                             t-on-click="() => this.setFilter(box.id, box.name)">
+
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-capitalize fw-bold"><t t-esc="box.name"/></span>
+
+                                <span class="badge rounded-pill text-white" t-attf-class="{{ box.badge }}">
+                                    <t t-esc="state.counts[box.id] || 0"/>
+                                </span>
+                            </div>
+
+                            <div class="progress" style="height: 6px;">
+                                <div t-attf-class="progress-bar {{ getBarColor(box.id) }}"
+                                     t-attf-style="width: {{ getPercentage(box.id) }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <t t-inherit="web.ListView" t-inherit-mode="primary" owl="1" t-name="UsulanDana.ApprovalListView">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <ApprovalDanaDashboard list="model.root" />
+        </xpath>
+    </t>
+</templates>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="action_usulan_plan_payment" model="ir.actions.act_window">
+        <field name="name">Plan Payment</field>
+        <field name="res_model">usulan.plan.payment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_plan_payment_list" model="ir.ui.view">
+        <field name="name">usulan.plan.payment.list</field>
+        <field name="model">usulan.plan.payment</field>
+        <field name="arch" type="xml">
+            <list js_class="plan_payment_dashboard_list" create="0" delete="0">
+                <field name="name" string="No. Plan"/>
+                <field name="usulan_dana_id" string="Sumber Usulan"/>
+                <field name="department_id"/>
+
+                <field name="amount_total" widget="monetary" sum="Total Keseluruhan"/>
+
+                <field name="payment_progress" string="Progres Bayar"/>
+
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'menggantung'"
+                       decoration-info="state == 'plan_payment'"
+                       decoration-warning="state == 'reschedule'"
+                       decoration-success="state == 'rilis'"
+                       decoration-danger="state == 'cancel'"/>
+
+                <button name="action_view_payment_schedules" type="object"
+                    string="Jadwal" icon="fa-calendar" class="btn-secondary"
+                    invisible="state in ('cancel', 'rilis')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_plan_payment_form" model="ir.ui.view">
+        <field name="name">usulan.plan.payment.form</field>
+        <field name="model">usulan.plan.payment</field>
+        <field name="arch" type="xml">
+            <form string="Plan Payment">
+                <header>
+                    <button name="action_confirm_plan" string="Set Plan" type="object" class="oe_highlight" invisible="state != 'menggantung'"/>
+                    <button name="action_reschedule" string="Reschedule" type="object" invisible="state not in ('plan_payment', 'menggantung')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="menggantung,plan_payment,reschedule,rilis,cancel"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="usulan_dana_id"/>
+                            <field name="department_id"/>
+                        </group>
+                        <group>
+                            <field name="description"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Jadwal Pembayaran" name="payment_lines">
+                            <field name="payment_line_ids">
+                                <list editable="bottom" create="0">
+                                    <field name="date_payment" string="Tanggal Termin (Deadline)"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="plan_payment_date" string="Rencana Bayar"/>
+                                    <field name="actual_payment_date" string="Tgl Pembayaran (Aktual)" readonly="1"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'paid'"/>
+                                    <button name="action_pay_termin" type="object" string="Lihat Tagihan"
+                                            icon="fa-file-text-o" class="btn-info" invisible="not vendor_bill_id"/>
+
+                                    <field name="vendor_bill_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_plan_payment_quick_date_form" model="ir.ui.view">
+        <field name="name">usulan.plan.payment.quick.date.form</field>
+        <field name="model">usulan.plan.payment</field>
+        <field name="arch" type="xml">
+            <form string="Set Tanggal Rencana Bayar">
+                <sheet>
+                    <field name="state" invisible="1"/>
+                    <div class="alert alert-info" role="alert">
+                        Silakan klik kolom <b>Rencana Bayar</b> untuk memilih tanggal dari kalender.
+                        Vendor Bill akan otomatis terbuat saat Anda mengklik Simpan.
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="state in ('menggantung', 'reschedule')">
+                        Dokumen ini sudah terjadwal atau dibatalkan. Anda tidak bisa mengubah tanggal kecuali melakukan <b>Reschedule</b> terlebih dahulu.
+                    </div>
+                    <field name="payment_line_ids" readonly="state not in ('menggantung', 'reschedule')">
+                        <list editable="bottom" create="0" delete="0">
+                            <field name="date_payment" readonly="1" string="Termin/Deadline"/>
+                            <field name="amount" readonly="1" sum="Total"/>
+
+                            <field name="plan_payment_date" string="Rencana Bayar" widget="date"/>
+
+                            <field name="vendor_bill_id" readonly="1" string="Tagihan Terbuat"/>
+                            <field name="state" readonly="1" widget="badge" decoration-success="state == 'paid'"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button string="Simpan &amp; Tutup" type="object" name="action_close_dialog" class="btn-primary"/>
+                    <button string="Batal" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

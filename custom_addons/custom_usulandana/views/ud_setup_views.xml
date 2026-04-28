@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_usulan_dana_setup" model="ir.actions.act_window">
+        <field name="name">Setup Item</field>
+        <field name="res_model">usulan.dana.setup</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_usulan_dana_setup_list" model="ir.ui.view">
+        <field name="name">usulan.dana.setup.list</field>
+        <field name="model">usulan.dana.setup</field>
+        <field name="arch" type="xml">
+            <list js_class="setup_item_list">
+                <field name="date_created"/>
+                <field name="user_id"/>
+                <field name="name"/>
+                <field name="account_id"/>
+                <field name="asset_type"/>
+
+                <field name="state"
+                       widget="badge"
+                       decoration-warning="state == 'waiting'"
+                       decoration-success="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+</odoo>

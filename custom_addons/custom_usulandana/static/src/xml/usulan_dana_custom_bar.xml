@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <t t-name="UsulanUsulanDana.Dashboard" owl="1">
+        <div class="row g-2 p-3 bg-view border-bottom">
+            <t t-foreach="[
+                {id: 'to_approve', name: 'Menunggu', color: 'bg-warning'},
+                {id: 'approve', name: 'Approved', color: 'bg-primary'},
+                {id: 'reject', name: 'Ditolak', color: 'bg-danger'},
+                {id: 'cancel', name: 'Cancelled', color: 'bg-dark'},
+                {id: 'draft', name: 'Draft', color: 'bg-info'},
+                {id: 'rilis', name: 'Rilis', color: 'bg-success'}
+            ]" t-as="box" t-key="box.id">
+                <div class="col-lg-2 col-md-4 col-6">
+                    <div class="p-2 border rounded bg-white shadow-sm h-100"
+                         style="cursor: pointer;"
+                         t-on-click="() => this.setFilter(box.id, box.name)">
+                        <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 0.8rem;">
+                            <span class="fw-bold"><t t-esc="box.name"/></span>
+
+                            <span class="badge rounded-pill bg-primary text-white">
+                                <t t-esc="state.counts[box.id] || 0"/>
+                            </span>
+
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div t-attf-class="progress-bar {{ box.color }}" t-attf-style="width: {{ getPercentage(box.id) }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-inherit="web.ListView" t-inherit-mode="primary" owl="1" t-name="UsulanUsulanDana.ListViewTemplate">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <UsulanUsulanDanaDashboard list="model.root" />
+        </xpath>
+    </t>
+</templates>

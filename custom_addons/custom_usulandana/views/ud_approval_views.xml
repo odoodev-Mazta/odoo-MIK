@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="action_approval_usulan_dana" model="ir.actions.act_window">
+        <field name="name">Approval</field>
+        <field name="res_model">usulan.dana.approval</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_to_approve': 1}</field>
+    </record>
+
+<!--    <record id="view_approval_form" model="ir.ui.view">-->
+<!--        <field name="name">usulan.dana.approval.form</field>-->
+<!--        <field name="model">usulan.dana.approval</field>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <form string="Usulan Dana">-->
+<!--                <header>-->
+<!--                    <button name="action_submit" string="Ajukan" type="object" class="oe_highlight" invisible="state != 'draft'"/>-->
+<!--                    <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'to_approve'"/>-->
+<!--                    <field name="state" widget="statusbar" statusbar_visible="draft,to_approve,approve"/>-->
+<!--                </header>-->
+<!--                <sheet>-->
+<!--                    <div class="oe_title">-->
+<!--                        <label for="name"/>-->
+<!--                        <h1><field name="name" readonly="1"/></h1>-->
+<!--                    </div>-->
+<!--                    <group>-->
+<!--                        <group>-->
+<!--                            <field name="department_id" readonly="state != 'draft'"/>-->
+<!--                            <field name="date_requested" readonly="state != 'draft'"/>-->
+<!--                            <field name="currency_id" invisible="1"/>-->
+<!--                        </group>-->
+<!--                        <group>-->
+<!--                            <field name="vendor_name" readonly="state != 'draft'"/>-->
+<!--                            <field name="payment_method" widget="radio" options="{'horizontal': true}" readonly="state != 'draft'"/>-->
+<!--                        </group>-->
+<!--                    </group>-->
+
+<!--                    <notebook>-->
+<!--                        <page string="Detail Produk" name="produk_lines">-->
+<!--                            <field name="line_ids" readonly="state != 'draft'">-->
+<!--                                <list editable="bottom">-->
+<!--                                    <field name="currency_id" column_invisible="1"/>-->
+<!--                                    <field name="product_id"/>-->
+<!--                                    <field name="quantity"/>-->
+<!--                                    <field name="price_unit"/>-->
+<!--                                    <field name="price_subtotal" sum="Total"/>-->
+<!--                                </list>-->
+<!--                            </field>-->
+<!--                            <group class="oe_subtotal_footer oe_right">-->
+<!--                                <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>-->
+<!--                            </group>-->
+<!--                            <div class="clearfix"/>-->
+<!--                        </page>-->
+<!--                    </notebook>-->
+<!--                </sheet>-->
+<!--                <div class="oe_chatter">-->
+<!--                    <chatter />-->
+<!--                </div>-->
+<!--            </form>-->
+<!--        </field>-->
+<!--    </record>-->
+
+    <record id="view_approval_ud_list" model="ir.ui.view">
+        <field name="name">usulan.dana.approval.list</field>
+        <field name="model">usulan.dana.approval</field>
+        <field name="arch" type="xml">
+            <list js_class="approval_dashboard_list" create="0" edit="0" delete="0">
+                <field name="date_requested"/>
+                <field name="source_model" string="Tipe" widget="badge" decoration-info="source_model == 'usulan.dana'" decoration-warning="source_model == 'usulan.up.country'"/>
+                <field name="name"/>
+                <field name="department_id"/>
+                <field name="description"/>
+                <field name="amount" widget="monetary"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'to_approve'"
+                       decoration-success="state == 'approve'"
+                       decoration-danger="state == 'reject'"/>
+
+                <button name="action_buka_dokumen" type="object" string="Buka Detail" class="btn btn-sm btn-primary"/>
+            </list>
+        </field>
+    </record>
+
+</odoo>
