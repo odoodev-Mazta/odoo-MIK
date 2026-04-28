@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="action_payment_schedule_monitoring" model="ir.actions.act_window">
+        <field name="name">Monitoring Pembayaran</field>
+        <field name="res_model">usulan.payment.schedule</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="context">{'search_default_unpaid': 1}</field>
+    </record>
+
+    <record id="view_payment_schedule_list" model="ir.ui.view">
+        <field name="name">payment.schedule.list</field>
+        <field name="model">usulan.payment.schedule</field>
+        <field name="arch" type="xml">
+            <list string="Monitoring Pembayaran"
+                  decoration-danger="date_payment &lt; current_date and state == 'unpaid'"
+                  decoration-warning="date_payment == current_date and state == 'unpaid'"
+                  decoration-muted="state == 'paid'"
+                  create="0" edit="0">
+
+                <field name="date_payment" widget="remaining_days"/> <field name="line_id" string="Item Usulan"/>
+                <field name="department_id" optional="show"/>
+                <field name="amount" sum="Total Tagihan" widget="monetary"/>
+
+                <field name="state" widget="badge"
+                       decoration-info="state == 'unpaid'"
+                       decoration-success="state == 'paid'"/>
+
+            </list>
+        </field>
+    </record>
+
+    <record id="view_payment_schedule_search" model="ir.ui.view">
+        <field name="name">payment.schedule.search</field>
+        <field name="model">usulan.payment.schedule</field>
+        <field name="arch" type="xml">
+            <search>
+
+                <field name="line_id"/>
+                <field name="department_id"/>
+
+                <filter string="Belum Dibayar" name="unpaid" domain="[('state', '=', 'unpaid')]"/>
+                <filter string="Sudah Dibayar" name="paid" domain="[('state', '=', 'paid')]"/>
+
+                <separator/>
+
+<!--                <group string="Group By">-->
+<!--                    <filter string="Departemen" name="group_dept" context="{'group_by': 'department_id'}"/>-->
+<!--                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>-->
+<!--                </group>-->
+
+            </search>
+        </field>
+    </record>
+
+</odoo>
