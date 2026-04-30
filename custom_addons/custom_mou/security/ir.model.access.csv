@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dashboard_mou,dashboard.mou,model_dashboard_mou,base.group_user,1,1,1,1
+access_dashboard_progress_mou,dashboard.progress.mou,model_dashboard_progress_mou,base.group_user,1,1,1,1
+access_dashboard_timeline_mou,dashboard.timeline.mou,model_dashboard_timeline_mou,base.group_user,1,1,1,1
+access_mou_setup,mou.setup,model_mou_setup,base.group_system,1,1,1,1
+access_mou_container,mou.container,model_mou_container,base.group_user,1,1,1,1
