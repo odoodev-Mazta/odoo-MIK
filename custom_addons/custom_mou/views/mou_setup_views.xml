@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_mou_setup_form" model="ir.ui.view">
+        <field name="name">mou.setup.form</field>
+        <field name="model">mou.setup</field>
+        <field name="arch" type="xml">
+            <form string="Setup Transaksi">
+                <header>
+                    <button name="action_set_dp" string="Lanjut ke DP" type="object" class="oe_highlight" invisible="state != 'biaya_registrasi'"/>
+                    <button name="action_set_nie" string="Lanjut ke NIE" type="object" class="oe_highlight" invisible="state != 'dp'"/>
+                    <button name="action_set_pengadaan" string="Lanjut ke Pengadaan" type="object" class="oe_highlight" invisible="state != 'nie'"/>
+
+                    <button name="action_set_registrasi" string="Kembali ke Registrasi" type="object" invisible="state != 'dp'"/>
+                    <button name="action_set_dp" string="Kembali ke DP" type="object" invisible="state != 'nie'"/>
+                    <button name="action_set_nie" string="Kembali ke NIE" type="object" invisible="state != 'pengadaan'"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="biaya_registrasi,dp,nie,pengadaan" options="{'clickable': '1'}"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="No. Transaksi Setup" class="oe_edit_only"/>
+                        <h1>
+                            <field name="name" placeholder="Misal: SETUP-DP-001"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Identitas">
+                            <field name="mou_id" options="{'no_create': True}"/>
+                            <field name="pelanggan"/>
+                            <field name="date"/>
+                        </group>
+
+                        <group string="Data Per Tahapan">
+                            <field name="reg_due_date" string="Due Date" invisible="state != 'biaya_registrasi'"/>
+                            <field name="reg_payment_date" string="Tgl Payment" invisible="state != 'biaya_registrasi'"/>
+                            <field name="reg_nilai" string="Nilai Bayar" invisible="state != 'biaya_registrasi'"/>
+
+                            <field name="dp_due_date" string="Due Date" invisible="state != 'dp'"/>
+                            <field name="dp_payment_date" string="Tgl Payment" invisible="state != 'dp'"/>
+                            <field name="dp_nilai" string="Nilai Bayar" invisible="state != 'dp'"/>
+
+                            <field name="nie_due_date" string="Due Date" invisible="state != 'nie'"/>
+                            <field name="nie_payment_date" string="Tgl Payment" invisible="state != 'nie'"/>
+                            <field name="nie_nilai" string="Nilai Bayar" invisible="state != 'nie'"/>
+
+                            <field name="peng_due_date" string="Due Date" invisible="state != 'pengadaan'"/>
+                            <field name="peng_payment_date" string="Tgl Payment" invisible="state != 'pengadaan'"/>
+                            <field name="peng_nilai" string="Nilai Bayar" invisible="state != 'pengadaan'"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_mou_setup_list" model="ir.ui.view">
+        <field name="name">mou.setup.list</field>
+        <field name="model">mou.setup</field>
+        <field name="arch" type="xml">
+            <list string="Setup Transaksi">
+                <field name="date" string="Tgl Input"/>
+                <field name="name"/>
+                <field name="mou_id"/>
+                <field name="pelanggan"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'biaya_registrasi'"
+                       decoration-warning="state == 'dp'"
+                       decoration-primary="state == 'nie'"
+                       decoration-success="state == 'pengadaan'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_mou_setup_transaction" model="ir.actions.act_window">
+        <field name="name">Setup</field>
+        <field name="res_model">mou.setup</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
