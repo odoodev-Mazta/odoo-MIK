@@ -1,0 +1,236 @@
+.ecatalogue-carousel {
+//    PENGATURAN UKURAN CAROUSEL
+    --card-width: 75vw;
+    --img-height: 50vh;
+
+    // IPAD
+    @media (min-width: 768px) {
+        --card-width: 60vw;
+        --img-height: 60vh;
+    }
+
+    // DESKTOP / MONITOR BESAR
+    @media (min-width: 1024px) {
+        --card-width: 380px;
+        --img-height: 550px;
+    }
+
+    cursor: grab;
+    user-select: none;
+
+    img {
+        pointer-events: none;
+    }
+
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    scroll-snap-type: x mandatory;
+    padding-left: calc(50% - (var(--card-width) / 2));
+    padding-right: calc(50% - (var(--card-width) / 2));
+
+    .carousel-slide {
+        scroll-snap-align: center;
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        width: var(--card-width);
+        transform: scale(0.85);
+        opacity: 0.5;
+
+        img.card-img-top {
+            height: var(--img-height);
+            object-fit: cover;
+        }
+
+        &.scale-up {
+            transform: scale(1.05);
+            opacity: 1;
+            z-index: 10;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25) !important;
+        }
+    }
+}
+
+
+//   DESAIN UTAMA POP-UP (DESKTOP)
+.ecatalogue-modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+
+    .ecatalogue-modal-content {
+        width: 90vw;
+        max-width: 1280px;
+        height: 85vh;
+        max-height: 900px;
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        border: none !important;
+        animation: popIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+        .modal-image-section {
+            width: 40%;
+            height: 100%;
+            background-color: #f8f9fa;
+            border-right: 1px solid #eee;
+            flex-shrink: 0;
+        }
+
+        .modal-text-section {
+            width: 60%;
+            height: 100%;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+
+            .overflow-auto {
+                scrollbar-width: thin;
+                &::-webkit-scrollbar { width: 6px; }
+                &::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+            }
+        }
+    }
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+//   RESPONSIVE TABLET / IPAD (768px - 1024px)
+@media (min-width: 768px) and (max-width: 1024px) {
+    .ecatalogue-modal-overlay .ecatalogue-modal-content {
+        flex-direction: column !important;
+        width: 85vw !important;
+        height: 85vh !important;
+        max-height: 1000px !important;
+
+        .modal-image-section {
+            width: 100% !important;
+            height: 50% !important;
+            min-height: 300px !important;
+            border-right: none;
+            border-bottom: 1px solid #eee;
+            padding: 3rem !important;
+
+            /* KUNCI AGAR GAMBAR IPAD TIDAK TERPOTONG */
+            img {
+                max-height: 100% !important;
+                width: auto !important;
+                object-fit: contain;
+            }
+        }
+
+        .modal-text-section {
+            width: 100% !important;
+            height: 50% !important;
+            overflow-y: auto !important;
+            padding: 2.5rem !important;
+
+            .d-flex.flex-row {
+                flex-direction: row !important;
+                gap: 2rem !important;
+            }
+
+            .detail-info-left { width: 55%; }
+            .detail-info-right {
+                width: 45%;
+                position: static !important;
+            }
+
+            .mobile-floating-actions {
+                position: static !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin-top: 1.5rem !important;
+                border-top: none !important;
+                flex-direction: column !important;
+
+                button {
+                    margin: 0 !important;
+                    width: 100%;
+                }
+            }
+        }
+    }
+}
+
+/* =========================================
+   4. RESPONSIVE MOBILE / HP (Maksimal 767px)
+   ========================================= */
+@media (max-width: 767px) {
+    .ecatalogue-modal-overlay .ecatalogue-modal-content {
+        flex-direction: column !important;
+        width: 95vw !important;
+        height: 90vh !important;
+        max-height: 90vh !important;
+        overflow: hidden !important;
+        position: relative;
+
+        .modal-image-section {
+            width: 100% !important;
+            height: 40% !important;
+            min-height: 250px !important;
+            flex-shrink: 0 !important;
+            border-right: none;
+            border-bottom: 1px solid #eee;
+            padding: 1.5rem !important;
+        }
+
+        .modal-text-section {
+            width: 100% !important;
+            height: 60% !important;
+            flex-grow: 1;
+            overflow-y: auto !important;
+            padding: 1.5rem 1.5rem 90px 1.5rem !important;
+
+            .d-flex.flex-row {
+                flex-direction: column !important;
+                gap: 1.5rem !important;
+            }
+
+            .detail-info-right {
+                order: -1;
+                width: 100%;
+                position: static !important;
+            }
+
+            .detail-info-left { width: 100%; }
+        }
+
+        /* FLOATING BUTTON KHUSUS MOBILE */
+        .mobile-floating-actions {
+            position: absolute !important;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #ffffff;
+            margin: 0 !important;
+            padding: 1rem 1.5rem !important;
+            border-top: 1px solid #e0e0e0;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
+            z-index: 1050;
+            flex-direction: row !important;
+            gap: 1rem !important;
+
+            button {
+                flex: 1;
+                margin: 0 !important;
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+    }
+}
