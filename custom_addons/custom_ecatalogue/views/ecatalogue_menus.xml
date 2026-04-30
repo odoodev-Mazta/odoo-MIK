@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!--  ROOT MENU  -->
+    <menuitem id="menu_ecatalogue_root" name="E-Catalogue"/>
+    <!--  MENU  -->
+    <menuitem id="menu_main_ecatalogue" name="E-Catalogue" parent="menu_ecatalogue_root" sequence="1"/>
+    <menuitem id="menu_promo_ecatalogue" name="Promo" parent="menu_ecatalogue_root" action="action_draft_mou" sequence="2"/>
+    <menuitem id="menu_draft_mou_ecatalogue" name="Draft MOU" parent="menu_ecatalogue_root" sequence="3"/>
+    <!--  SUBMENU(s) ecatalogue -->
+    <menuitem id="menu_ecatalogue_carousel"
+              name="Product View"
+              parent="menu_main_ecatalogue"
+              action="action_ecatalogue_carousel"
+              sequence="1"/>
+
+    <menuitem id="menu_ecatalogue_master_data"
+              name="Master Data Products"
+              parent="menu_main_ecatalogue"
+              action="action_ecatalogue_master_data"
+              groups="custom_ecatalogue.group_ecatalogue_manager"
+              sequence="2"/>
+
+    <!--  SUBMENU(s) Draft MOU -->
+    <menuitem id="menu_draft_mou"
+              name="Draft"
+              parent="menu_draft_mou_ecatalogue"
+              action="action_draft_mou"
+              sequence="1"/>
+
+    <menuitem id="menu_mou_from_draft"
+              name="MOU"
+              parent="menu_draft_mou_ecatalogue"
+              action="action_confirmed_mou_view"
+              sequence="2"/>
+</odoo>

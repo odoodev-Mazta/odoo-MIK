@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--  ROOT MENU  -->
+    <menuitem id="menu_mou_root" name="MOU" web_icon="custom_mou,static/src/img/MOU logo.png"/>
+
+    <!--  MENU(s)  -->
+    <menuitem id="menu_tasks_mou" name="Tasks" parent="menu_mou_root" sequence="1"/>
+    <menuitem id="menu_reporting_mou" name="Reporting" parent="menu_mou_root" sequence="2"/>
+    <menuitem id="menu_progress_mou" name="Progress MOU" parent="menu_mou_root" sequence="3"/>
+    <menuitem id="menu_setup_mou" name="Setup" parent="menu_mou_root" sequence="4"/>
+
+    <!--  SUBMENU(s) REPORTING-->
+    <menuitem id="submenu_sales" parent="menu_reporting_mou" sequence="1"/>
+    <menuitem id="submenu_mou" parent="menu_reporting_mou" action="action_mou" sequence="2"/>
+
+    <!--  SUBMENU(s) PROGRESS MOU -->
+    <menuitem id="submenu_tracking_timeline" parent="menu_progress_mou" action="action_timeline_mou_dashboard" sequence="1"/>
+    <menuitem id="submenu_progress_per_pelanggan" parent="menu_progress_mou" action="action_progress_mou_dashboard" sequence="2"/>
+
+    <!--  SUBMENU(s) SETUP DATA LAMA -->
+    <menuitem id="submenu_setup_data_lama"
+          name="Setup Data Lama"
+          action="action_mou_setup_transaction"
+          parent="menu_setup_mou"
+          sequence="1"/>
+
+    <menuitem id="submenu_mou_container"
+          name="MOU Container"
+          action="action_mou_progress_container"
+          parent="menu_setup_mou"
+          sequence="2"/>
+</odoo>
