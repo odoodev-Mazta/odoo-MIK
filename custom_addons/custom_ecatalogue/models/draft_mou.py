@@ -19,8 +19,16 @@ class DraftMaklon(models.Model):
     jabatan_cust = fields.Char(string="Jabatan", readonly=False, store=True)
     brand = fields.Char(string="Nama Brand", readonly=False)
     product = fields.Many2one('product.product', string="Product", readonly=False)
+    jenis_product = fields.Selection([
+        ('lokal','Lokal'),
+        ('import','Import'),
+    ], string="Jenis Produk", readonly=False)
     product_desc = fields.Text(string="Description", readonly=False)
     product_qty = fields.Float(string="Quantity", readonly=False)
+    product_hna = fields.Float(string="HNA(Rp)", readonly=False)
+    currency_id = fields.Many2one("res.currency", string="Currency",
+                                  default=lambda self: self.env.company.currency_id.id)
+    total_value = fields.Monetary(string="Total Value", readonly=False, currency_field='currency_id')
     ukuran = fields.Char(string="Ukuran Kemasan", readonly=False)
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -33,14 +41,18 @@ class DraftMaklon(models.Model):
     kemasan = fields.Selection([
         ('jar', 'Jar'),
         ('tube', 'Tube'),
-        ('sachet', 'Sachet')
+        ('sachet', 'Sachet'),
+        ('botol', 'Botol'),
+        ('pump', 'Tube Pump'),
     ], string="Jenis Kemasan", readonly=False)
     stiker = fields.Selection([
         ('standard', 'Standard'),
         ('printing', 'Printing')
     ], string="Label/Stiker", readonly=False)
     draft_name = fields.Char(string="Kode MOU", readonly=False, copy=False, default="New")
-    tgl_draft = fields.Datetime(string="Tgl Draft", readonly=True, default=fields.Datetime.now)
+    tgl_draft = fields.Date(string="Tgl Draft", readonly=False, default=fields.Datetime.now)
+    tgl_start = fields.Date(string="Tgl Start", readonly=False)
+    tgl_end = fields.Date(string="Tgl End", readonly=False)
     origin_draft_id = fields.Many2one('draft.maklon', string='Berasal dari Draft', readonly=True)
     # kode draft mou : MIK-tahun/bulan/DM - 0001 - Draft
     # kode E-mou : MIK-tahun/bulan/MOU - 0001
