@@ -14,7 +14,7 @@
                     <div class="oe_title">
                         <separator string="Draft MOU"/>
                         <h1>
-                            <field name="draft_name" readonly="1"/>
+                            <field name="draft_name"/>
                         </h1>
                     </div>
                     <group>
@@ -22,6 +22,8 @@
                             <separator string="Data Pelanggan"/>
                             <field name="nama_cust"/>
                             <field name="tgl_draft"/>
+                            <field name="tgl_start"/>
+                            <field name="tgl_end"/>
                             <field name="jabatan_cust"/>
                             <field name="alamat_cust"/>
                             <label for="ktp_cust"/>
@@ -55,13 +57,18 @@
                             <separator string="Spesifikasi Produk"/>
                             <field name="brand"/>
                             <field name="product"/>
+                            <field name="jenis_product"/>
                             <field name="product_qty"/>
+                            <field name="product_hna"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="total_value"/>
                             <field name="product_desc"/>
                             <field name="kemasan"/>
                             <label for="ukuran" string="Ukuran Kemasan"/>
                                 <div class="o_row g-0 d-flex">
                                     <field name="ukuran" class="oe_inline" style="width:auto!important"/>
                                     <field name="uom_id"
+                                       placeholder="Pilih UOM..."
                                        options="{'no_open': True, 'no_create': True}"
                                        class="oe_inline"
                                        style="width:auto!important"

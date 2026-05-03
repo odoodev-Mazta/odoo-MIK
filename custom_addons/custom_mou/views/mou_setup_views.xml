@@ -33,19 +33,21 @@
                         <group string="Data Per Tahapan">
                             <field name="reg_due_date" string="Due Date" invisible="state != 'biaya_registrasi'"/>
                             <field name="reg_payment_date" string="Tgl Payment" invisible="state != 'biaya_registrasi'"/>
-                            <field name="reg_nilai" string="Nilai Bayar" invisible="state != 'biaya_registrasi'"/>
+                            <field name="reg_nilai" string="Nilai Bayar" invisible="state != 'biaya_registrasi'" readonly="is_free"/>
 
                             <field name="dp_due_date" string="Due Date" invisible="state != 'dp'"/>
                             <field name="dp_payment_date" string="Tgl Payment" invisible="state != 'dp'"/>
-                            <field name="dp_nilai" string="Nilai Bayar" invisible="state != 'dp'"/>
+                            <field name="dp_nilai" string="Nilai Bayar" invisible="state != 'dp'" readonly="is_free"/>
 
                             <field name="nie_due_date" string="Due Date" invisible="state != 'nie'"/>
                             <field name="nie_payment_date" string="Tgl Payment" invisible="state != 'nie'"/>
-                            <field name="nie_nilai" string="Nilai Bayar" invisible="state != 'nie'"/>
+                            <field name="nie_nilai" string="Nilai Bayar" invisible="state != 'nie'" readonly="is_free"/>
 
                             <field name="peng_due_date" string="Due Date" invisible="state != 'pengadaan'"/>
                             <field name="peng_payment_date" string="Tgl Payment" invisible="state != 'pengadaan'"/>
-                            <field name="peng_nilai" string="Nilai Bayar" invisible="state != 'pengadaan'"/>
+                            <field name="peng_nilai" string="Nilai Bayar" invisible="state != 'pengadaan'" readonly="is_free"/>
+
+                            <field name="is_free" string="Free"/>
                         </group>
                     </group>
                 </sheet>

@@ -45,6 +45,16 @@ class MouSetupTransaction(models.Model):
     peng_due_date = fields.Date(string='Due Date Pengadaan')
     peng_payment_date = fields.Date(string='Tanggal Payment Pengadaan')
     peng_nilai = fields.Monetary(string='Nilai Bayar Pengadaan', currency_field='currency_id')
+    is_free = fields.Boolean(string="Free", readonly=False)
+
+    @api.onchange('is_free')
+    def _onchange_is_free(self):
+        for rec in self:
+            if rec.is_free:
+                rec.reg_nilai = 0.0
+                rec.dp_nilai = 0.0
+                rec.nie_nilai = 0.0
+                rec.peng_nilai = 0.0
 
 
     def action_set_registrasi(self):
