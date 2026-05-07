@@ -5,7 +5,7 @@
     'summary': 'E-Catalogue Module for MOU Needs',
     'description': 'Modul ini digunakan untuk E-Catalogue.',
     'author': 'William Purba',
-    'depends': ['base', 'web_enterprise', 'contacts', 'mail', 'product', 'uom'],
+    'depends': ['base', 'web_enterprise', 'contacts', 'mail', 'product', 'uom', 'account'],
     'data':[
         'security/ecatalogue_security.xml',
         'security/ir.model.access.csv',
