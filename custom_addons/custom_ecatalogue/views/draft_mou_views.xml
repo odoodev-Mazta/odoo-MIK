@@ -57,6 +57,10 @@
                         </group>
                     </group>
 
+                    <group>
+                        <field name="is_ppn" widget="boolean_toggle"/>
+                    </group>
+
                     <notebook>
                         <page string="Detail Produk">
                             <field name="maklon_line_ids">
@@ -68,7 +72,7 @@
                                     <field name="uom_id"/>
                                     <field name="product_qty"/>
                                     <field name="product_hna"/>
-                                    <field name="ppn"/>
+                                    <field name="tax_ids" widget="many2many_tags"/>
                                     <field name="diskon"/>
                                     <field name="total_value"/>
                                     <field name="currency_id" column_invisible="1"/>
