@@ -53,11 +53,11 @@
                             groups="custom_usulandana.group_head_dept"
                             confirm="Apakah Anda yakin ingin membatalkan Usulan Dana ini? Tindakan ini akan membatalkan Plan Payment yang terkait."/>
 
-                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_head,waiting_finance,approve"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_head,waiting_finance,approve,rilis"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                        <h1><field name="name"/></h1>
                     </div>
                     <group>
                         <group string="Data Departemen">
@@ -88,6 +88,7 @@
                                 <list editable="bottom">
                                     <field name="item_name"/>
                                     <field name="setup_item_id" string="COA" options="{'no_create': True}"/>
+                                    <field name="mou_id"/>
                                     <field name="quantity"/>
                                     <field name="currency_id"/>
                                     <field name="today_rate"/>

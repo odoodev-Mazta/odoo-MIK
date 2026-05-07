@@ -8,7 +8,9 @@ class UsulanDanaSetup(models.Model):
     date_created = fields.Datetime(string='Tgl Dibuat', default=fields.Datetime.now, readonly=True)
     user_id = fields.Many2one('res.users', string='Akun Pembuat', default=lambda self: self.env.user, readonly=True)
     name = fields.Char(string='Nama Item', required=True)
-    account_id = fields.Many2one('account.account', string='COA')
+    account_id = fields.Many2one('account.account',
+                                 string='COA',
+                                 domain="[('is_header', '=', False)]")
     asset_type = fields.Selection([
         ('fixed', 'Fixed Asset'),
         ('current', 'Current Asset')

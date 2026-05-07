@@ -12,20 +12,17 @@
                 </header>
                 <sheet>
                     <div class="oe_title">
-                        <separator string="Draft MOU"/>
                         <h1>
-                            <field name="draft_name"/>
+                            <field name="draft_name" readonly="1"/>
                         </h1>
                     </div>
                     <group>
-                        <group>
-                            <separator string="Data Pelanggan"/>
+                        <group string="Data Pelanggan">
                             <field name="nama_cust"/>
-                            <field name="tgl_draft"/>
-                            <field name="tgl_start"/>
-                            <field name="tgl_end"/>
                             <field name="jabatan_cust"/>
                             <field name="alamat_cust"/>
+                            <field name="telp_cust"/>
+                            <field name="email_cust"/>
                             <label for="ktp_cust"/>
                                 <div class="o_row g-0 d-flex">
                                     <field name="ktp_cust"
@@ -38,7 +35,7 @@
                                            nolabel="1"/>
                                 </div>
 
-                                <label for="npwp_cust"/>
+                            <label for="npwp_cust"/>
                                 <div class="o_row g-0 d-flex mt-3">
                                     <field name="npwp_cust"
                                            placeholder="e.g 12.345.678.9-003.000"
@@ -50,33 +47,37 @@
                                            style="width: 40% !important;"
                                            nolabel="1"/>
                                 </div>
-                            <field name="email_cust"/>
-                            <field name="telp_cust"/>
                         </group>
-                        <group>
-                            <separator string="Spesifikasi Produk"/>
+                        <group string="Informasi Lainnya">
                             <field name="brand"/>
-                            <field name="product"/>
-                            <field name="jenis_product"/>
-                            <field name="product_qty"/>
-                            <field name="product_hna"/>
+                            <field name="tgl_draft"/>
+                            <field name="tgl_start"/>
+                            <field name="tgl_end"/>
                             <field name="currency_id" invisible="1"/>
-                            <field name="total_value"/>
-                            <field name="product_desc"/>
-                            <field name="kemasan"/>
-                            <label for="ukuran" string="Ukuran Kemasan"/>
-                                <div class="o_row g-0 d-flex">
-                                    <field name="ukuran" class="oe_inline" style="width:auto!important"/>
-                                    <field name="uom_id"
-                                       placeholder="Pilih UOM..."
-                                       options="{'no_open': True, 'no_create': True}"
-                                       class="oe_inline"
-                                       style="width:auto!important"
-                                       nolabel="1"/>
-                                </div>
-                            <field name="stiker"/>
                         </group>
                     </group>
+
+                    <notebook>
+                        <page string="Detail Produk">
+                            <field name="maklon_line_ids">
+                                <list editable="bottom">
+                                    <field name="product"/>
+                                    <field name="jenis_product"/>
+                                    <field name="kemasan"/>
+                                    <field name="ukuran"/>
+                                    <field name="uom_id"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_hna"/>
+                                    <field name="ppn"/>
+                                    <field name="diskon"/>
+                                    <field name="total_value"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="tahap"/>
+                                    <field name="date_estimasi"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
                 <div class="oe_chatter">
                     <chatter/>
@@ -90,11 +91,11 @@
         <field name="model">draft.maklon</field>
         <field name="arch" type="xml">
             <list>
+                <field name="draft_name"/>
                 <field name="nama_cust" string="Pelanggan"/>
                 <field name="brand"/>
-                <field name="product"/>
-<!--                <field name="status"/>-->
-                <field name="draft_name"/>
+                <field name="tgl_draft"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'mou'"/>
             </list>
         </field>
     </record>
