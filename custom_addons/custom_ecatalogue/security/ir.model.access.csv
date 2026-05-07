@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_draft_maklon,draft.maklon,model_draft_maklon,base.group_user,1,1,1,1
+access_draft_maklon_line,draft.maklon.line,model_draft_maklon_line,base.group_user,1,1,1,1
 access_ecatalogue_viewer,ecatalogue.viewer,model_ecatalogue_product,custom_ecatalogue.group_ecatalogue_viewer,1,0,0,0
 access_ecatalogue_manager,ecatalogue.manager,model_ecatalogue_product,custom_ecatalogue.group_ecatalogue_manager,1,1,1,1
