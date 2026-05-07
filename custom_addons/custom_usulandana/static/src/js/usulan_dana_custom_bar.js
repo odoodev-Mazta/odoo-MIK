@@ -17,7 +17,9 @@ export class UsulanUsulanDanaDashboard extends Component {
         let counts = { draft: 0, to_approve: 0, approve: 0, reject: 0, cancel: 0, rilis: 0 };
         let total = 0;
         data.forEach(g => {
-            if (counts[g.state] !== undefined) counts[g.state] = g.state_count;
+            if (counts[g.state] !== undefined) {
+                counts[g.state] = g.state_count;
+            }
             total += g.state_count;
         });
         this.state.counts = counts;
