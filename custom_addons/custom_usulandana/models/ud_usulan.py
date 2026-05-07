@@ -7,7 +7,7 @@ class UsulanUsulanDana(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'date_created desc'
 
-    name = fields.Char(string='No Usulan', readonly=True, default='New')
+    name = fields.Char(string='No Usulan', readonly=False, default='New')
     department_id = fields.Many2one('hr.department', string='Departemen', default=lambda self: self.env.user.employee_id.department_id.id, required=True)
     pic_id = fields.Many2one('hr.employee', string='PIC (Karyawan)')
     pic_phone = fields.Char(string='No WA PIC')
@@ -49,8 +49,6 @@ class UsulanUsulanDana(models.Model):
         help="Unggah semua dokumen pendukung di sini"
     )
 
-    # Field Termin Pembayaran (Pindah ke Notebook)
-    # payment_term_id = fields.Many2one('account.payment.term', string='Termin Pembayaran')
     state = fields.Selection([
         ('draft', 'Draft'),
         ('waiting_head', 'Waiting Head Dept'),
@@ -75,15 +73,17 @@ class UsulanUsulanDana(models.Model):
         ('rejected', 'Ditolak')
     ], string='Status Approval', compute='_compute_list_status', store=True)
 
+    plan_payment_ids = fields.One2many('usulan.plan.payment', 'usulan_dana_id', string='Plan Payments')
+
     status_plan_payment = fields.Selection([
         ('waiting', 'Waiting Plan'),
         ('planned', 'Planned')
-    ], string='Status Plan Payment', default='waiting')
+    ], string='Status Plan Payment', compute='_compute_status_plan', default='waiting')
 
     status_payment = fields.Selection([
         ('unpaid', 'Belum Rilis'),
-        ('paid', 'Sudah Rilis')
-    ], string='Status Payment', compute='_compute_list_status', store=True)
+        ('paid', 'Rilis')
+    ], string='Status Payment', compute='_compute_status_payment', store=True)
 
     purchase_order_id = fields.Many2one(
         'purchase.order',
@@ -98,7 +98,7 @@ class UsulanUsulanDana(models.Model):
     is_my_approval = fields.Boolean(
         string='Butuh Approval Saya',
         compute='_compute_is_my_approval',
-        search='_search_is_my_approval'  # [BARU] Tambahkan ini agar bisa difilter di XML
+        search='_search_is_my_approval'
     )
 
     @api.onchange('purchase_order_id')
@@ -117,8 +117,6 @@ class UsulanUsulanDana(models.Model):
                 'quantity': line.product_qty,
                 'price_unit': line.price_unit,
                 'tax_ids': [(6, 0, line.tax_ids.ids)],
-                # Jika kamu punya field UoM atau Account, masukkan juga di sini
-                # 'uom_id': line.product_uom.id,
             }
             new_lines.append((0, 0, line_values))
 
@@ -163,6 +161,31 @@ class UsulanUsulanDana(models.Model):
                 record.is_my_approval = True
             elif record.state == 'waiting_finance' and is_finance:
                 record.is_my_approval = True
+
+    @api.depends('plan_payment_ids')
+    def _compute_status_plan(self):
+        for record in self:
+            if record.plan_payment_ids:
+                record.status_plan_payment = 'planned'
+            else:
+                record.status_plan_payment = 'waiting'
+
+    @api.depends('plan_payment_ids.state')
+    def _compute_status_payment(self):
+        for rec in self:
+            if not rec.plan_payment_ids:
+                rec.status_payment = 'unpaid'
+                continue
+
+            plan_states = rec.plan_payment_ids.mapped('state')
+
+            if plan_states and all(state == 'rilis' for state in plan_states):
+                rec.status_payment = 'paid'
+
+                if rec.state == 'approve':
+                    rec.state = 'rilis'
+            else:
+                rec.status_payment = 'unpaid'
 
     def _search_is_my_approval(self, operator, value):
         """ Fungsi ini dipanggil Odoo saat user mengklik filter 'Menunggu Persetujuan Saya' """
@@ -211,8 +234,6 @@ class UsulanUsulanDana(models.Model):
                 record.status_approval = 'rejected'
             else:
                 record.status_approval = False
-
-            record.status_payment = 'paid' if record.state == 'rilis' else 'unpaid'
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -278,12 +299,20 @@ class UsulanUsulanDana(models.Model):
         for record in self:
             record.state = 'approve'
 
+            # [BARU] Cari mou_id dari baris usulan dana
+            mou_reference_id = False
+            for line in record.line_ids:
+                if hasattr(line, 'mou_id') and line.mou_id:
+                    mou_reference_id = line.mou_id.id
+                    break
+
             plan = self.env['usulan.plan.payment'].create({
                 'name': f"PP/{record.name}",
                 'usulan_dana_id': record.id,
                 'department_id': record.department_id.id,
                 'description': record.description,
                 'state': 'menggantung',
+                'mou_id': mou_reference_id,
             })
 
             all_schedules = record.line_ids.mapped('payment_schedule_ids')
@@ -377,6 +406,8 @@ class UsulanUsulanDanaLine(models.Model):
                                 currency_field='currency_id')
     discount_amount = fields.Monetary(string='Nominal Diskon', compute='_compute_subtotal', store=True,
                                       currency_field='currency_id')
+
+    mou_id = fields.Many2one('draft.maklon', string='No. MOU', domain=[('state', '=', 'mou')])
 
     @api.depends('payment_schedule_ids', 'payment_schedule_ids.date_payment')
     def _compute_payment_summary(self):
