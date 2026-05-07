@@ -12,8 +12,10 @@
         <field name="model">usulan.usulan.dana</field>
         <field name="arch" type="xml">
             <list js_class="usulan_usulan_dana_list">
+                <field name="name"/>
                 <field name="department_id"/>
-                <field name="date_created"/>
+                <field name="tgl_usulan"/>
+<!--                <field name="date_created"/>-->
                 <field name="jenis" widget="badge" decoration-info="jenis == 'draft'"/>
                 <field name="description" string="Ket"/>
                 <field name="amount_total" sum="Total"/>
@@ -65,6 +67,7 @@
                             <field name="pic_id"/>
                             <field name="pic_phone" widget="phone"/>
                             <field name="pic_bank_account"/>
+                            <field name="tgl_usulan"/>
                         </group>
 
                         <group string="Data Vendor">
