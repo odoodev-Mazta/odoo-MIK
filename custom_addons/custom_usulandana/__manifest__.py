@@ -5,7 +5,7 @@
     'summary': 'Usulan Dana Module',
     'description': 'Modul ini digunakan untuk Usulan Dana.',
     'author': 'William Purba',
-    'depends': ['base', 'web_enterprise', 'account', 'hr', 'mail', 'contacts', 'purchase', 'custom_ecatalogue'],
+    'depends': ['base', 'web_enterprise', 'account', 'hr', 'mail', 'contacts', 'purchase', 'custom_ecatalogue', 'custom_coa'],
     'data':[
         'security/approval_security.xml',
         'security/ir.model.access.csv',
