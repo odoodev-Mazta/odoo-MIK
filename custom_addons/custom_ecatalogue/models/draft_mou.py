@@ -1,4 +1,4 @@
-from odoo import models,fields,api
+from odoo import models, fields, api, exceptions
 
 
 class DraftMaklon(models.Model):
@@ -31,6 +31,7 @@ class DraftMaklon(models.Model):
     origin_draft_id = fields.Many2one('draft.maklon', string='Berasal dari Draft', readonly=True)
 
     maklon_line_ids = fields.One2many('draft.maklon.line', 'draft_id', string="Detail Produk & Tahapan")
+    is_ppn = fields.Boolean(string='PPN 11%', default=False, tracking=True)
     # kode draft mou : MIK-tahun/bulan/DM - 0001 - Draft
     # kode E-mou : MIK-tahun/bulan/MOU - 0001
     # kode PR : MIK-tahun/bulan/PO - 0001
@@ -53,7 +54,6 @@ class DraftMaklon(models.Model):
             if rec.draft_name and 'MOU' in rec.draft_name:
                 rec.draft_name = rec.draft_name.replace('MOU', 'DM')
             rec.state = 'draft'
-
 
 class DraftMaklonLine(models.Model):
     _name = 'draft.maklon.line'
@@ -85,16 +85,56 @@ class DraftMaklonLine(models.Model):
     product_qty = fields.Float(string="Quantity", default=1.0)
     product_hna = fields.Float(string="HNA(Rp)")
     diskon = fields.Float(string="Diskon (%)", default=0.0)
-    ppn = fields.Float(string="PPN (%)", default=11.0)
 
-    total_value = fields.Monetary(string="Total Value", compute='_compute_total_value', store=True)
+    tax_ids = fields.Many2many(
+        'account.tax',
+        string='Pajak',
+        domain="[('type_tax_use', '=', 'purchase')]",
+        compute='_compute_tax_ids',
+        store=True,
+        readonly=False
+    )
 
-    @api.depends('product_qty', 'product_hna', 'diskon', 'ppn')
+    total_value = fields.Monetary(
+        string="Total Value",
+        compute='_compute_total_value',
+        store=True,
+        readonly=False
+    )
+
+    @api.depends('draft_id.is_ppn')
+    def _compute_tax_ids(self):
+        tax_11 = self.env['account.tax'].search([
+            ('type_tax_use', '=', 'purchase'),
+            ('name', 'ilike', '11%'),
+            ('company_id', '=', self.env.company.id)
+        ], limit=1)
+
+        for line in self:
+            if line.draft_id.is_ppn:
+                if tax_11:
+                    line.tax_ids = [(6, 0, tax_11.ids)]
+                else:
+                    from odoo import exceptions
+                    raise exceptions.UserError(
+                        "Pajak dengan nama mengandung '11%' untuk Penjualan tidak ditemukan di master data Accounting!"
+                    )
+            else:
+                line.tax_ids = [(5, 0, 0)]
+
+    @api.depends('product_qty', 'product_hna', 'diskon', 'tax_ids')
     def _compute_total_value(self):
         for rec in self:
             subtotal = rec.product_qty * rec.product_hna
             potongan_diskon = subtotal * (rec.diskon / 100.0)
-            harga_setelah_diskon = subtotal - potongan_diskon
-            nilai_ppn = harga_setelah_diskon * (rec.ppn / 100.0)
+            dpp = subtotal - potongan_diskon
 
-            rec.total_value = harga_setelah_diskon + nilai_ppn
+            if rec.tax_ids:
+                taxes = rec.tax_ids.compute_all(
+                    dpp, rec.currency_id, 1.0,
+                    product=rec.product,
+                    partner=rec.draft_id.nama_cust
+                )
+                rec.total_value = taxes['total_included']
+            else:
+                rec.total_value = dpp
