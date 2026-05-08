@@ -102,11 +102,6 @@ class UsulanUsulanDana(models.Model):
         search='_search_is_my_approval'
     )
 
-    tipe_pencairan = fields.Selection([
-        ('vendor_bill', 'Vendor Bill'),
-        ('journal_entry', 'Journal Entry')
-    ], string='Tipe Pencairan', default='vendor_bill', required=True)
-
     @api.onchange('purchase_order_id')
     def _onchange_purchase_order_id(self):
         if not self.purchase_order_id:

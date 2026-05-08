@@ -21,6 +21,7 @@
         'views/ud_menus.xml',
         'wizard/payment_schedule_wizard_views.xml',
         'wizard/mass_payment_wizard_views.xml',
+        'wizard/usulan_payment_choice_wizard_views.xml',
     ],
     'assets':{
         'web.assets_backend': [

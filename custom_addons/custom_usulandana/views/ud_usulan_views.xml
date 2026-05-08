@@ -68,7 +68,6 @@
                             <field name="pic_phone" widget="phone"/>
                             <field name="pic_bank_account"/>
                             <field name="tgl_usulan"/>
-                            <field name="tipe_pencairan"/>
                         </group>
 
                         <group string="Data Vendor">

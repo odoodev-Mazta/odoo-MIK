@@ -1,4 +1,4 @@
-from odoo import models, api, fields
+from odoo import models, api, fields, exceptions
 
 
 class AccountMove(models.Model):
@@ -13,24 +13,54 @@ class AccountMove(models.Model):
             if move.move_type == 'entry' and move.usulan_dana_id:
                 usulan = move.usulan_dana_id
 
-                if usulan.tipe_pencairan == 'journal_entry':
-                    unpaid_schedule = self.env['usulan.payment.schedule'].search([
-                        ('line_id.usulan_id', '=', usulan.id),
-                        ('state', '!=', 'paid')
-                    ], order='date_payment asc', limit=1)
+                unpaid_bills = usulan.line_ids.mapped('payment_schedule_ids.vendor_bill_id').filtered(
+                    lambda b: b.state == 'posted' and b.payment_state in ('not_paid', 'partial')
+                )
 
-                    if unpaid_schedule:
-                        unpaid_schedule.write({
+                for bill in unpaid_bills:
+                    bill_payable_lines = bill.line_ids.filtered(
+                        lambda l: l.account_id.account_type in (
+                        'liability_payable', 'asset_receivable') and not l.reconciled
+                    )
+
+                    je_payable_lines = move.line_ids.filtered(
+                        lambda l: l.account_id in bill_payable_lines.mapped('account_id') and not l.reconciled
+                    )
+
+                    if not je_payable_lines:
+                        account_names = ", ".join(bill_payable_lines.mapped('account_id.name'))
+                        raise exceptions.UserError(
+                            f"GAGAL!\n"
+                            f"Sistem tidak bisa melunasi Vendor Bill otomatis karena akun tidak cocok.\n"
+                            f"Pastikan baris (Debit) di Journal Entry ini menggunakan akun: {account_names}"
+                        )
+
+                    for je_line in je_payable_lines:
+                        if not je_line.partner_id:
+                            je_line.partner_id = bill.partner_id.id
+
+                    if bill_payable_lines and je_payable_lines:
+                        (bill_payable_lines + je_payable_lines).reconcile()
+
+                    schedules_to_update = usulan.line_ids.mapped('payment_schedule_ids').filtered(
+                        lambda s: s.state != 'paid' and s.vendor_bill_id.payment_state in ('paid', 'in_payment')
+                    )
+
+                    if schedules_to_update:
+                        schedules_to_update.write({
                             'state': 'paid',
                             'actual_payment_date': fields.Date.context_today(self)
                         })
 
-                        plan = unpaid_schedule.plan_payment_id
-                        if plan and not plan.payment_line_ids.filtered(lambda l: l.state != 'paid'):
-                            plan.write({'state': 'rilis'})
+                        for schedule in schedules_to_update:
+                            plan = schedule.plan_payment_id
+                            if plan and not plan.payment_line_ids.filtered(lambda l: l.state != 'paid'):
+                                plan.write({'state': 'rilis'})
 
-                            if usulan.state == 'approve':
-                                usulan.write({'state': 'rilis'})
+                        # Cek jika semua Plan Payment sudah rilis, jadikan Usulan Dana rilis
+                        all_plans = usulan.line_ids.mapped('payment_schedule_ids.plan_payment_id')
+                        if usulan.state == 'approve' and all_plans and all(p.state == 'rilis' for p in all_plans):
+                            usulan.write({'state': 'rilis'})
         return res
 
     def _compute_payment_state(self):
