@@ -16,6 +16,7 @@
         'views/ud_usulan_views.xml',
         'views/payment_monitoring_views.xml',
         'views/ud_plan_payment_views.xml',
+        'views/account_move_views.xml',
         'views/setup_approval_views.xml',
         'views/ud_menus.xml',
         'wizard/payment_schedule_wizard_views.xml',
