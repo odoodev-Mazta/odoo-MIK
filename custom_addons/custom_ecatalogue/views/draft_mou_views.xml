@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_draft_mou_form" model="ir.ui.view">
+        <field name="name">view.draft.maklon.form</field>
+        <field name="model">draft.maklon</field>
+        <field name="arch" type="xml">
+            <form string="Data Pelanggan">
+                <header>
+                    <button name="action_confirm_mou" string="MOU" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Reset to Draft" type="object" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,mou"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="draft_name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Data Pelanggan">
+                            <field name="nama_cust"/>
+                            <field name="jabatan_cust"/>
+                            <field name="alamat_cust"/>
+                            <field name="telp_cust"/>
+                            <field name="email_cust"/>
+                            <label for="ktp_cust"/>
+                                <div class="o_row g-0 d-flex">
+                                    <field name="ktp_cust"
+                                           class="oe_inline"
+                                           style="width: 60% !important; margin-right: 5px;"/>
+
+                                    <field name="foto_ktp_cust"
+                                           class="oe_inline"
+                                           style="width: 40% !important;"
+                                           nolabel="1"/>
+                                </div>
+
+                            <label for="npwp_cust"/>
+                                <div class="o_row g-0 d-flex mt-3">
+                                    <field name="npwp_cust"
+                                           placeholder="e.g 12.345.678.9-003.000"
+                                           class="oe_inline"
+                                           style="width: 60% !important; margin-right: 5px;"/>
+
+                                    <field name="foto_npwp_cust"
+                                           class="oe_inline"
+                                           style="width: 40% !important;"
+                                           nolabel="1"/>
+                                </div>
+                        </group>
+                        <group string="Informasi Lainnya">
+                            <field name="brand"/>
+                            <field name="tgl_draft"/>
+                            <field name="tgl_start"/>
+                            <field name="tgl_end"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <field name="is_ppn" widget="boolean_toggle"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Detail Produk">
+                            <field name="maklon_line_ids">
+                                <list editable="bottom">
+                                    <field name="product"/>
+                                    <field name="jenis_product"/>
+                                    <field name="kemasan"/>
+                                    <field name="ukuran"/>
+                                    <field name="uom_id"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_hna"/>
+                                    <field name="tax_ids" widget="many2many_tags"/>
+                                    <field name="diskon"/>
+                                    <field name="total_value"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="tahap"/>
+                                    <field name="date_estimasi"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <chatter/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_draft_mou_list" model="ir.ui.view">
+        <field name="name">view.draft.maklon.list</field>
+        <field name="model">draft.maklon</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="draft_name"/>
+                <field name="nama_cust" string="Pelanggan"/>
+                <field name="brand"/>
+                <field name="tgl_draft"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'mou'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_draft_mou" model="ir.actions.act_window">
+        <field name="name">Draft MOU</field>
+        <field name="res_model">draft.maklon</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first draft MOU</p>
+        </field>
+    </record>
+
+    <record id="action_confirmed_mou_view" model="ir.actions.act_window">
+        <field name="name">Data MOU</field>
+        <field name="res_model">draft.maklon</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'mou')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada MOU yang dikonfirmasi</p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_ecatalogue" model="ir.module.category">
+        <field name="name">E-Catalogue</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="privilege_ecatalogue_access" model="res.groups.privilege">
+        <field name="name">E-Catalogue Access</field>
+        <field name="category_id" ref="module_category_ecatalogue"/>
+    </record>
+
+    <record id="group_ecatalogue_viewer" model="res.groups">
+        <field name="name">Sales</field>
+        <field name="privilege_id" ref="privilege_ecatalogue_access"/>
+    </record>
+
+    <record id="group_ecatalogue_manager" model="res.groups">
+        <field name="name">Marketing</field>
+        <field name="privilege_id" ref="privilege_ecatalogue_access"/>
+        <field name="implied_ids" eval="[(4, ref('group_ecatalogue_viewer'))]"/>
+    </record>
+</odoo>
