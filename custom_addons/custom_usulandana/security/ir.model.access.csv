@@ -12,3 +12,4 @@ access_usulan_plan_payment,usulan.plan.payment,model_usulan_plan_payment,base.gr
 access_usulan_approval_setup_user,usulan.approval.setup.user,model_usulan_approval_setup,base.group_user,1,0,0,0
 access_usulan_approval_setup_finance,usulan.approval.setup.finance,model_usulan_approval_setup,custom_usulandana.group_finance,1,1,1,1
 access_usulan_mass_payment_wizard,usulan.mass.payment.wizard,model_usulan_mass_payment_wizard,base.group_user,1,1,1,1
+access_usulan_payment_choice_wizard,usulan.payment.choice.wizard,model_usulan_payment_choice_wizard,base.group_user,1,1,1,1

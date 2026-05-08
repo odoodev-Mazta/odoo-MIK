@@ -27,6 +27,7 @@ class UsulanPaymentSchedule(models.Model):
 
         if 'plan_payment_date' in vals and vals.get('plan_payment_date') and not self.env.context.get('skip_auto_bill'):
             for record in self:
+
                 if not record.vendor_bill_id:
                     record._create_automated_vendor_bill()
 
@@ -119,15 +120,19 @@ class UsulanPaymentSchedule(models.Model):
 
     def action_pay_termin(self):
         self.ensure_one()
+
         if not self.vendor_bill_id:
+            from odoo import exceptions
             raise exceptions.UserError(
                 "Tagihan (Vendor Bill) belum terbuat. Silakan isi Tanggal Termin terlebih dahulu untuk membuatnya otomatis.")
 
         return {
-            'name': 'Tagihan Terkait',
+            'name': 'Pilih Metode Pembayaran',
             'type': 'ir.actions.act_window',
-            'res_model': 'account.move',
+            'res_model': 'usulan.payment.choice.wizard',
             'view_mode': 'form',
-            'res_id': self.vendor_bill_id.id,
-            'target': 'current',
+            'target': 'new',
+            'context': {
+                'default_schedule_id': self.id,
+            }
         }
