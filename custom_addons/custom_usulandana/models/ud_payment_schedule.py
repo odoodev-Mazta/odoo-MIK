@@ -27,32 +27,23 @@ class UsulanPaymentSchedule(models.Model):
 
         if 'plan_payment_date' in vals and vals.get('plan_payment_date') and not self.env.context.get('skip_auto_bill'):
             for record in self:
-                usulan = record.plan_payment_id.usulan_dana_id or record.line_id.usulan_id
 
-                if usulan.tipe_pencairan == 'vendor_bill':
-                    if not record.vendor_bill_id:
-                        record._create_automated_vendor_bill()
+                if not record.vendor_bill_id:
+                    record._create_automated_vendor_bill()
 
-                        if record.plan_payment_id.state in ['menggantung', 'reschedule']:
-                            record.plan_payment_id.state = 'plan_payment'
-                    else:
-                        if record.vendor_bill_id.state == 'draft':
-                            record.vendor_bill_id.write({'invoice_date': record.plan_payment_date})
-
-                        if record.plan_payment_id.state == 'reschedule':
-                            record.plan_payment_id.state = 'plan_payment'
-
-                elif usulan.tipe_pencairan == 'journal_entry':
                     if record.plan_payment_id.state in ['menggantung', 'reschedule']:
+                        record.plan_payment_id.state = 'plan_payment'
+                else:
+                    if record.vendor_bill_id.state == 'draft':
+                        record.vendor_bill_id.write({'invoice_date': record.plan_payment_date})
+
+                    if record.plan_payment_id.state == 'reschedule':
                         record.plan_payment_id.state = 'plan_payment'
         return res
 
     def _create_automated_vendor_bill(self):
         self.ensure_one()
         usulan = self.plan_payment_id.usulan_dana_id
-
-        if usulan.tipe_pencairan != 'vendor_bill':
-            return False
 
         invoice_line_values = []
         correct_accounts = []
@@ -129,13 +120,6 @@ class UsulanPaymentSchedule(models.Model):
 
     def action_pay_termin(self):
         self.ensure_one()
-        usulan = self.plan_payment_id.usulan_dana_id or self.line_id.usulan_id
-
-        if usulan.tipe_pencairan == 'journal_entry':
-            from odoo import exceptions
-            raise exceptions.UserError(
-                "Termin ini menggunakan pencairan via Journal Entry. "
-            )
 
         if not self.vendor_bill_id:
             from odoo import exceptions
@@ -143,10 +127,12 @@ class UsulanPaymentSchedule(models.Model):
                 "Tagihan (Vendor Bill) belum terbuat. Silakan isi Tanggal Termin terlebih dahulu untuk membuatnya otomatis.")
 
         return {
-            'name': 'Tagihan Terkait',
+            'name': 'Pilih Metode Pembayaran',
             'type': 'ir.actions.act_window',
-            'res_model': 'account.move',
+            'res_model': 'usulan.payment.choice.wizard',
             'view_mode': 'form',
-            'res_id': self.vendor_bill_id.id,
-            'target': 'current',
+            'target': 'new',
+            'context': {
+                'default_schedule_id': self.id,
+            }
         }
