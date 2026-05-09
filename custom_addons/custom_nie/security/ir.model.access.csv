@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_nie_registrasi,nie.registrasi,model_nie_registrasi,base.group_user,1,1,1,1

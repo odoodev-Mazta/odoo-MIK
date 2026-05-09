@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="action_nie_reporting" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">nie_module.action_nie_dashboard_reporting</field>
+    </record>
+
+</odoo>
