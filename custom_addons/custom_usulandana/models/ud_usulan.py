@@ -14,7 +14,7 @@ class UsulanUsulanDana(models.Model):
     pic_bank_account = fields.Char(string='Data Rekening PIC')
     tgl_usulan = fields.Date(string="Tanggal Usulan", readonly=False)
 
-    vendor_id = fields.Many2one('res.partner', string='Vendor', domain="[('supplier_rank', '>', 0)]")
+    vendor_id = fields.Many2one('res.partner', string='Vendor', domain="[('category_id', '=', 'Vendor')]")
     # Alamat & WA otomatis ditarik dari master data res.partner, tapi masih bisa diedit manual (readonly=False)
     vendor_address = fields.Char(string='Alamat Vendor', related='vendor_id.street', readonly=False)
     vendor_phone = fields.Char(string='No WA Vendor', related='vendor_id.phone', readonly=False)
