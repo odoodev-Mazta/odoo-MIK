@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <!--  ROOT MENU  -->
+    <menuitem id="menu_design_root" name="Design"/>
+    <!--  MENU  -->
+    <menuitem id="menu_main_design" name="Design" parent="menu_design_root" sequence="1"/>
+    <!--  SUBMENU(s) -->
+    <menuitem id="menu_dashboard_usulan_design"
+              name="Dashboard"
+              parent="menu_main_design"
+              action="action_design_dashboard"
+              sequence="1"/>
+
+</odoo>
