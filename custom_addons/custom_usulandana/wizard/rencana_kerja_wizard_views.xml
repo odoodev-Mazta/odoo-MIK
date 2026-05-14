@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="view_rencana_kerja_wizard_form" model="ir.ui.view">
+        <field name="name">rencana.kerja.wizard.form</field>
+        <field name="model">rencana.kerja.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rencana Kerja">
+                <sheet>
+
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="tanggal"/>
+                            <field name="jenis_id"/>
+                            <field name="tipe_visit_id"/>
+                            <field name="tujuan_id"/>
+                            <field name="deskripsi"/>
+                        </list>
+                    </field>
+
+                    <footer>
+                        <button string="Simpan"
+                                type="object"
+                                name="action_confirm"
+                                class="btn-primary"/>
+
+                        <button string="Batal"
+                                special="cancel"/>
+                    </footer>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

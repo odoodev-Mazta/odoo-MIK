@@ -5,6 +5,9 @@
         <field name="name">Usulan Dana</field>
         <field name="res_model">usulan.usulan.dana</field>
         <field name="view_mode">list,form</field>
+        <field name="context">
+            {'default_document_type': 'ud'}
+        </field>
     </record>
 
     <record id="view_usulan_usulan_dana_list" model="ir.ui.view">
@@ -63,6 +66,7 @@
                     </div>
                     <group>
                         <group string="Data Departemen">
+                            <field name="is_advance" widget="boolean_toggle"/>
                             <field name="department_id"/>
                             <field name="pic_id"/>
                             <field name="pic_phone" widget="phone"/>
@@ -89,8 +93,9 @@
 
                             <field name="line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
-                                    <field name="item_name"/>
-                                    <field name="setup_item_id" string="COA" options="{'no_create': True}"/>
+<!--                                    <field name="item_name"/>-->
+                                    <field name="setup_item_id"/>
+                                    <field name="account_id" options="{'no_open': True}"/>
                                     <field name="mou_id"/>
                                     <field name="quantity"/>
                                     <field name="currency_id"/>

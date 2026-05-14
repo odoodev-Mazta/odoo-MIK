@@ -5,7 +5,6 @@
         <record id="seq_usulan_usulan_dana" model="ir.sequence">
             <field name="name">Sequence Usulan Dana</field>
             <field name="code">usulan.usulan.dana</field>
-            <field name="prefix">MIK-%(year)s/%(month)s/UD-</field>
             <field name="padding">4</field>
             <field name="number_next">1</field>
             <field name="number_increment">1</field>
@@ -16,7 +15,6 @@
         <record id="seq_usulan_up_country" model="ir.sequence">
             <field name="name">Sequence Up Country</field>
             <field name="code">usulan.up.country</field>
-            <field name="prefix">MIK-%(year)s/%(month)s/UC-</field>
             <field name="padding">4</field>
             <field name="number_next">1</field>
             <field name="number_increment">1</field>

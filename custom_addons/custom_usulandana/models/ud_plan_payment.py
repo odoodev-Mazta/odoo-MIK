@@ -7,6 +7,10 @@ class UsulanPlanPayment(models.Model):
 
     name = fields.Char(string='No. Plan Payment', readonly=True, copy=False, default='New')
     usulan_dana_id = fields.Many2one('usulan.usulan.dana', string='Source Usulan Dana', readonly=True)
+    usulan_up_country_id = fields.Many2one(
+        'usulan.up.country',
+        string='Source Up Country'
+    )
     department_id = fields.Many2one('hr.department', string='Departemen', readonly=True)
     description = fields.Text(string='Keterangan Usulan', readonly=True)
     state = fields.Selection([

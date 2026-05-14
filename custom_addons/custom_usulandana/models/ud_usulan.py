@@ -101,6 +101,14 @@ class UsulanUsulanDana(models.Model):
         compute='_compute_is_my_approval',
         search='_search_is_my_approval'
     )
+    is_advance = fields.Boolean(string="Advance")
+    document_type = fields.Selection([
+        ('ud', 'Usulan Dana'),
+        ('uc', 'Up Country'),
+    ],
+        string='Tipe Dokumen',
+        default='ud'
+    )
 
     @api.onchange('purchase_order_id')
     def _onchange_purchase_order_id(self):
@@ -240,7 +248,34 @@ class UsulanUsulanDana(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
-                vals['name'] = self.env['ir.sequence'].next_by_code('usulan.usulan.dana') or 'New'
+                department = self.env['hr.department'].browse(
+                    vals.get('department_id')
+                )
+                dept_code = department.subkode or 'NON'
+
+                today = fields.Date.today()
+                year = today.strftime('%Y')
+                month = today.strftime('%m')
+
+                document_type = vals.get('document_type', 'ud')
+                surat_code_map = {
+                    'ud': 'UD',
+                    'uc': 'UC',
+                }
+                surat_code = surat_code_map.get(
+                    document_type,
+                    'DOC'
+                )
+                sequence = self.env['ir.sequence'].next_by_code(
+                    'usulan.usulan.dana'
+                ) or '0001'
+
+                vals['name'] = (
+                    f"MIK-{year}/{month}/"
+                    f"{dept_code}/"
+                    f"{surat_code}-"
+                    f"{sequence}"
+                )
         return super().create(vals_list)
 
     def action_submit(self):
@@ -360,7 +395,7 @@ class UsulanUsulanDanaLine(models.Model):
         string='Parent',
         ondelete='cascade'
     )
-    item_name = fields.Char(string='Nama Item', required=True)
+    # item_name = fields.Char(string='Nama Item', required=True)
     setup_item_id = fields.Many2one(
         'usulan.dana.setup',
         string='Nama Item',
@@ -413,13 +448,11 @@ class UsulanUsulanDanaLine(models.Model):
     @api.depends('payment_schedule_ids', 'payment_schedule_ids.date_payment')
     def _compute_payment_summary(self):
         for line in self:
-            # PENTING: Gunakan .sudo() jika ada kendala akses, dan pastikan memfilter line_id yang tepat
             schedules = line.payment_schedule_ids
             count = len(schedules)
             if count == 0:
                 line.payment_summary = "Belum Diset"
             elif count == 1:
-                # Ambil tanggal pertama
                 date_val = schedules[0].date_payment
                 line.payment_summary = f"Jatuh Tempo ({date_val.strftime('%d-%m-%Y')})" if date_val else "Jatuh Tempo"
             else:
@@ -471,9 +504,8 @@ class UsulanUsulanDanaLine(models.Model):
     def action_open_payment_wizard(self):
         self.ensure_one()
 
-        # [PERBAIKAN] Gunakan self._origin.id untuk mengecek apakah ID sudah permanen
         if not self._origin.id:
-            from odoo import exceptions  # Pastikan exceptions sudah di-import di atas jika belum
+            from odoo import exceptions
             raise exceptions.UserError(
                 "Silakan klik ikon awan/tombol 'Save' untuk menyimpan dokumen terlebih dahulu sebelum mengatur termin.")
 
@@ -492,7 +524,6 @@ class UsulanUsulanDanaLine(models.Model):
             'view_mode': 'form',
             'target': 'new',
             'context': {
-                # [PERBAIKAN] Pastikan ID yang dikirim ke Wizard adalah ID asli (bukan virtual)
                 'default_line_id': self._origin.id,
                 'default_total_amount': self.grand_total,
                 'default_wizard_line_ids': existing_lines,

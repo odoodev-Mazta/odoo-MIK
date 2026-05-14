@@ -5,6 +5,9 @@
         <field name="name">Usulan Up Country</field>
         <field name="res_model">usulan.up.country</field>
         <field name="view_mode">list,form</field>
+        <field name="context">
+            {'default_document_type': 'uc'}
+        </field>
     </record>
 
     <record id="view_usulan_up_country_list" model="ir.ui.view">
@@ -18,8 +21,8 @@
                        decoration-info="jenis == 'draft'"
                        decoration-success="jenis == 'usulan_dana'"/>
                 <field name="name"/>
-                <field name="tujuan"/>
-                <field name="tipe"/>
+<!--                <field name="tujuan"/>-->
+<!--                <field name="tipe"/>-->
                 <field name="amount" sum="Total Usulan"/>
                 <field name="date_submitted"/>
                 <field name="status_approval" widget="badge"
@@ -42,12 +45,13 @@
             <form string="Usulan Up Country">
                 <header>
                     <button name="action_submit" string="Ajukan" type="object" class="oe_highlight" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'to_approve'"/>
-                    <button name="action_reject" string="Tolak" type="object" class="btn-danger" invisible="state != 'to_approve'"/>
-                    <button name="action_rilis" string="Rilis Dana" type="object" class="btn-info" invisible="state != 'approve'"/>
-                    <button name="action_cancel" string="Cancel" type="object" invisible="state not in ('draft', 'to_approve')"/>
+                    <button name="action_approve_head" string="Approve Head" type="object" class="btn-success" invisible="state != 'waiting_head'" groups="custom_usulandana.group_head_dept"/>
+                    <button name="action_approve_purchasing" string="Approve Purchasing" type="object" class="btn-success" invisible="state != 'waiting_purchasing'" groups="custom_usulandana.group_purchasing"/>
+                    <button name="action_reject" string="Reject" type="object" class="btn-danger" invisible="state not in ('waiting_head','waiting_purchasing')"/>
+                    <button name="action_rilis" string="Rilis Dana" type="object" class="btn-info" invisible="state != 'approve'" groups="custom_usulandana.group_finance"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state in ('rilis','cancel')"/>
 
-                    <field name="state" widget="statusbar" statusbar_visible="draft,to_approve,approve,rilis"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_head,waiting_purchasing,approve,rilis"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -56,17 +60,105 @@
                     </div>
                     <group>
                         <group>
+                            <separator string="Data Karyawan"/>
+                            <field name="employee_id"/>
+                            <field name="job_id" />
                             <field name="department_id" readonly="state != 'draft'"/>
-                            <field name="tujuan" readonly="state != 'draft'"/>
-                            <field name="tipe" readonly="state != 'draft'"/>
-                            <field name="currency_id" invisible="1"/>
+                            <field name="kontak_wa"/>
+                            <field name="email"/>
+                            <field name="nama_ktp"/>
+                            <field name="nomor_ktp"/>
                         </group>
                         <group>
-                            <field name="date_created"/>
+                            <separator string="Data Kota"/>
+                            <field name="kota_depart_id"/>
+                            <field name="kota_tujuan_id"/>
+                            <field name="tgl_depart"/>
+                            <field name="tgl_pulang"/>
+                            <field name="uang_makan"/>
+                            <field name="uang_lainnya"/>
+                            <button name="action_open_uang_lainnya_wizard"
+                                    type="object"
+                                    string="Uang Lainnya"
+                                    icon="fa-money"/>
+                            <button name="action_open_rencana_kerja_wizard"
+                                    type="object"
+                                    string="Rencana Kerja"
+                                    icon="fa-tasks"
+                                    class="oe_highlight"/>
+                            <field name="date_created" invisible="1"/>
                             <field name="date_submitted" invisible="state == 'draft'"/>
-                            <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state != 'draft'"/>
+<!--                            <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="state != 'draft'"/>-->
+                        </group>
+                        <group>
+                            <separator string="Info Lainnya"/>
+                            <field name="is_advance"/>
+                            <field name="domestic_intl" widget="boolean_toggle"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Transportasi dan Akomodasi" name="item_details">
+                            <field name="line_uc_ids" readonly="state != 'draft'">
+                                <list>
+                                    <field name="transportasi"/>
+                                    <field name="dari_kota_id"/>
+                                    <field name="ke_kota_id"/>
+                                    <field name="nama_transportasi"/>
+                                    <field name="time_info_display"
+                                           readonly="1"/>
+                                    <field name="tgl_check_depart"/>
+                                    <field name="notes"/>
+
+                                    <button name="action_open_payment_wizard"
+                                            type="object"
+                                            string="Set Termin"
+                                            icon="fa-calendar"/>
+
+                                    <field name="payment_summary"/>
+                                </list>
+
+                                <form string="Detail Transportasi / Akomodasi">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="transportasi"/>
+                                                <field name="nama_transportasi"
+                                                       placeholder="Nama hotel / armada"/>
+                                                <field name="tgl_check_depart"
+                                                       readonly="1"/>
+                                            </group>
+
+                                            <group attrs="{'invisible':[('transportasi','=','hotel')]}">
+                                                <field name="dari_kota_id"/>
+                                                <field name="ke_kota_id"/>
+                                                <field name="dt_start"
+                                                       string="Jam Berangkat" invisible="1"/>
+                                                <field name="dt_end"
+                                                       string="Jam Tiba" invisible="1"/>
+                                            </group>
+
+                                            <group attrs="{'invisible':[('transportasi','!=','hotel')]}">
+                                                <field name="dt_start"
+                                                       string="Check In"/>
+                                                <field name="dt_end"
+                                                       string="Check Out"/>
+                                            </group>
+                                        </group>
+
+                                        <group>
+                                            <field name="time_info_display"
+                                                   readonly="1"/>
+                                        </group>
+
+                                        <group>
+                                            <field name="notes"
+                                                   placeholder="Tambahkan catatan..."/>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
                 <div class="oe_chatter">
                     <chatter />
