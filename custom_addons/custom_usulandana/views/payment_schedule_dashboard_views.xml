@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="action_payment_schedule_dashboard" model="ir.actions.client">
+        <field name="name">Scheduling</field>
+        <field name="tag">payment_schedule_dashboard</field>
+    </record>
+
+</odoo>

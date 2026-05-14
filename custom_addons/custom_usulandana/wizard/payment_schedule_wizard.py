@@ -6,6 +6,10 @@ class UsulanPaymentWizard(models.TransientModel):
     _description = 'Wizard Termin Pembayaran'
 
     line_id = fields.Many2one('usulan.usulan.dana.line', string='Line Item')
+    up_country_line_id = fields.Many2one(
+        'usulan.up.country.line',
+        string='Up Country Line'
+    )
     total_amount = fields.Monetary(string='Total Tagihan', currency_field='currency_id', readonly=True)
     currency_id = fields.Many2one('res.currency', related='line_id.currency_id')
 
@@ -50,31 +54,39 @@ class UsulanPaymentWizard(models.TransientModel):
     def action_confirm(self):
         self.ensure_one()
 
-        # 1. Pastikan kita punya ID asli target line
-        target_line = self.line_id
+        Schedule = self.env['usulan.payment.schedule']
 
-        # [PERBAIKAN] Gunakan cara yang sama untuk mengecek di wizard
-        if not target_line or not target_line._origin.id:
-            return {'type': 'ir.actions.act_window_close'}
+        # FLOW UD
+        if self.line_id:
+            real_id = self.line_id._origin.id
 
-        # Gunakan target_line._origin.id untuk memastikan kita menghapus dan membuat di ID database sungguhan
-        real_line_id = target_line._origin.id
+            Schedule.search([
+                ('line_id', '=', real_id)
+            ]).unlink()
 
-        # 2. Hapus total jadwal lama untuk line ini dari database langsung
-        self.env['usulan.payment.schedule'].search([('line_id', '=', real_line_id)]).unlink()
+            for l in self.wizard_line_ids:
+                Schedule.create({
+                    'line_id': real_id,
+                    'date_payment': l.date_payment,
+                    'amount_percentage': l.amount_percentage,
+                    'amount': l.amount,
+                })
 
-        # 3. Create data baru satu per satu ke tabel permanen
-        for w_line in self.wizard_line_ids:
-            self.env['usulan.payment.schedule'].create({
-                'line_id': real_line_id,
-                'date_payment': w_line.date_payment,
-                'amount_percentage': w_line.amount_percentage,
-                'amount': w_line.amount,
-            })
+        # FLOW UC
+        elif self.up_country_line_id:
+            real_id = self.up_country_line_id._origin.id
 
-        # 4. Paksa refresh summary agar UI langsung terupdate
-        target_line._compute_payment_summary()
+            Schedule.search([
+                ('up_country_line_id', '=', real_id)
+            ]).unlink()
 
+            for l in self.wizard_line_ids:
+                Schedule.create({
+                    'up_country_line_id': real_id,
+                    'date_payment': l.date_payment,
+                    'amount_percentage': l.amount_percentage,
+                    'amount': l.amount,
+                })
         return {'type': 'ir.actions.act_window_close'}
 
 class UsulanPaymentWizardLine(models.TransientModel):

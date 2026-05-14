@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <t t-name="custom_usulandana.PaymentScheduleDashboard">
+        <div class="schedule_dashboard">
+            <!-- LEFT SIDE -->
+            <div class="schedule_left">
+                <!-- HEADER -->
+                <div class="dashboard_header">
+                    <select t-model="state.year">
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+
+                    <div class="summary waiting">
+                        Menggantung:
+                        <t t-esc="state.data.summary?.menggantung"/>
+                    </div>
+
+                    <div class="summary plan">
+                        Plan Payment:
+                        <t t-esc="state.data.summary?.plan_payment"/>
+                    </div>
+
+                    <div class="summary reschedule">
+                        Reschedule:
+                        <t t-esc="state.data.summary?.reschedule"/>
+                    </div>
+                </div>
+
+                <!-- MONTH -->
+                <div class="month_selector">
+                    <t t-foreach="months"
+                       t-as="month"
+                       t-key="month.number">
+
+                        <button
+                            t-att-class="state.month === month.number ? 'active_month' : ''"
+                            t-on-click="() => this.selectMonth(month.number)">
+
+                            <t t-esc="month.name"/>
+                        </button>
+                    </t>
+                </div>
+
+                <!-- DAY HEADER -->
+                <div class="calendar_header">
+                    <div>Sen</div>
+                    <div>Sel</div>
+                    <div>Rab</div>
+                    <div>Kam</div>
+                    <div>Jum</div>
+                    <div>Sab</div>
+                    <div>Min</div>
+                </div>
+                <!-- CALENDAR BODY -->
+                <div class="calendar_body">
+
+                    <t t-foreach="state.data.calendar || []"
+                       t-as="week"
+                       t-foreach-index="week_index"
+                       t-key="week_index">
+
+                        <div class="calendar_week">
+
+                            <t t-foreach="week"
+                               t-as="day"
+                               t-foreach-index="day_index"
+                               t-key="day_index">
+
+                                <div t-att-class="
+                                        'calendar_day ' +
+                                        (day.is_holiday ? 'holiday ' : '') +
+                                        (day.is_sunday ? 'sunday ' : '') +
+                                        (!day.day ? 'empty_day' : '')
+                                    "
+                                    t-on-click="() => this.openSchedulePopup(day.full_date)"
+                                >
+
+                                    <div class="day_number">
+                                        <t t-esc="day.day"/>
+                                    </div>
+
+                                    <t t-if="day.holiday_name">
+                                        <div class="holiday_label">
+                                            <t t-esc="day.holiday_name"/>
+                                        </div>
+                                    </t>
+
+                                    <t t-foreach="day.payments"
+                                       t-as="payment"
+                                       t-key="payment.id">
+
+                                        <div class="payment_card">
+
+                                            <div class="vendor">
+                                                <t t-esc="payment.vendor"/>
+                                            </div>
+
+                                            <div class="amount">
+                                                Rp
+                                                <t t-esc="payment.amount"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+            </div>
+
+            <div class="schedule_right">
+                <!-- BIG CONTAINER -->
+                <div class="right_card big_right_card">
+
+                    <!-- TITLE -->
+                    <div class="big_right_title">
+                        Dashboard Simulasi Payment
+                    </div>
+
+                    <!-- SIMULASI -->
+                    <div class="inner_card">
+
+                        <div class="right_title">
+                            Simulasi Payment
+                            <t t-esc="months.find(m => m.number === state.month)?.name"/>
+                            <t t-esc="state.year"/>
+                        </div>
+
+                        <div class="week_summary">
+
+                            <t t-foreach="state.data.week_summary || []"
+                               t-as="week"
+                               t-key="week.week">
+
+                                <div class="week_item">
+
+                                    <div class="week_name">
+                                        Minggu <t t-esc="week.week"/>
+                                    </div>
+
+                                    <div class="week_amount">
+                                        Rp <t t-esc="week.total"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- FINANCIAL -->
+                    <div class="inner_card">
+
+                        <div class="right_title">
+                            Rincian Dana
+                        </div>
+
+                        <div class="finance_section">
+
+                            <div class="finance_item">
+                                <span>Saldo Bank</span>
+
+                                <strong>
+                                    Rp <t t-esc="state.data.bank_balance || 0"/>
+                                </strong>
+                            </div>
+
+                            <div class="finance_item">
+                                <span>Outstanding Piutang</span>
+
+                                <strong>
+                                    Rp <t t-esc="state.data.outstanding_receivable || 0"/>
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UPDATE -->
+                    <div class="inner_card">
+
+                        <div class="right_title">
+                            Update Plan Payment Hari Ini
+                        </div>
+
+                        <div class="update_item released">
+                            <div>
+                                <div class="update_label">
+                                    Sudah Rilis
+                                </div>
+
+                                <div class="update_count">
+                                    <t t-esc="state.data.today_release_count || 0"/>
+                                    Payment
+                                </div>
+                            </div>
+
+                            <div class="update_amount">
+                                Rp <t t-esc="state.data.today_release_amount || 0"/>
+                            </div>
+                        </div>
+
+                        <div class="update_item pending">
+
+                            <div>
+                                <div class="update_label">
+                                    Belum Rilis
+                                </div>
+
+                                <div class="update_count">
+                                    <t t-esc="state.data.today_pending_count || 0"/>
+                                    Payment
+                                </div>
+                            </div>
+
+                            <div class="update_amount">
+                                Rp <t t-esc="state.data.today_pending_amount || 0"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
