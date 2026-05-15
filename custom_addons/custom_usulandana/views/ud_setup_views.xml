@@ -15,6 +15,7 @@
                 <sheet>
                     <group>
                         <field name="name"/>
+                        <field name="jenis"/>
                         <field name="account_id"/>
                         <field name="asset_type" readonly="1"/>
                         <field name="state" readonly="1"/>
@@ -32,6 +33,7 @@
                 <field name="date_created"/>
                 <field name="user_id"/>
                 <field name="name"/>
+                <field name="jenis"/>
                 <field name="account_id"/>
                 <field name="asset_type"/>
 
