@@ -46,7 +46,7 @@ class UsulanUpCountry(models.Model):
     kota_tujuan_id = fields.Many2one('usulan.master.kota', string="Kota Tujuan", readonly=False)
     tgl_depart = fields.Date(string="Tanggal Keberangkatan", readonly=False)
     tgl_pulang = fields.Date(string="Tanggal Pulang", readonly=False)
-    uang_makan = fields.Monetary(string="Uang Makan", readonly=True, currency_id='currency_id')
+    uang_makan = fields.Monetary(string="Uang Makan", readonly=True, currency_field='currency_id')
     uang_lainnya_line_ids = fields.One2many(
         'uang.lainnya.line',
         'up_country_id',
@@ -86,12 +86,12 @@ class UsulanUpCountry(models.Model):
     jenis = fields.Selection([
         ('draft', 'Draft'),
         ('usulan_dana', 'UD')
-    ], string='Jenis', compute='_compute_kolom_list_view', store=True)
+    ], string='Jenis', store=True)
     status_approval = fields.Selection([
         ('waiting', 'Menunggu'),
         ('approved', 'Approved'),
         ('rejected', 'Ditolak')
-    ], string='Status Approval', compute='_compute_kolom_list_view', store=True)
+    ], string='Status Approval', store=True)
     document_type = fields.Selection([
         ('ud', 'Usulan Dana'),
         ('uc', 'Up Country'),
