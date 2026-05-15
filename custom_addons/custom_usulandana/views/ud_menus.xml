@@ -32,8 +32,13 @@
           name="Departemen"
           parent="menu_main_plan_payment_ud"
           action="action_usulan_plan_payment"
-          sequence="1"/>
+          sequence="3"/>
 
+    <menuitem id="menu_payment_scheduling_dashboard"
+          name="Scheduling"
+          parent="menu_main_plan_payment_ud"
+          action="action_payment_schedule_dashboard"
+          sequence="2"/>
 
     <!--  SUBMENU(s) SETUP  -->
     <menuitem id="menu_setup_item"
@@ -46,6 +51,36 @@
               name="Approval Matrix"
               parent="menu_main_setup_ud"
               action="action_usulan_approval_setup"
-              sequence="10"/>
+              sequence="2"/>
+
+    <menuitem id="menu_master_kota"
+              name="Master Kota"
+              parent="menu_main_setup_ud"
+              action="action_usulan_master_kota"
+              sequence="3"/>
+
+    <menuitem id="menu_master_jenis_rencana_kerja"
+              name="Master Jenis Rencana Kerja"
+              parent="menu_main_setup_ud"
+              action="action_master_jenis_rencana_kerja"
+              sequence="4"/>
+
+    <menuitem id="menu_master_tipe_visit"
+              name="Master Tipe Visit"
+              parent="menu_main_setup_ud"
+              action="action_master_tipe_visit"
+              sequence="5"/>
+
+    <menuitem id="menu_master_tujuan_rencana_kerja"
+              name="Master Tujuan Rencana Kerja"
+              parent="menu_main_setup_ud"
+              action="action_master_tujuan_rencana_kerja"
+              sequence="6"/>
+
+    <menuitem id="menu_master_jenis_transportasi"
+              name="Master Jenis Transportasi"
+              parent="menu_main_setup_ud"
+              action="action_master_jenis_transportasi"
+              sequence="7"/>
 
 </odoo>

@@ -15,7 +15,6 @@ export class UsulanUpCountryDashboard extends Component {
             await this.fetchStats();
         });
 
-        // Reaktif jika baris di tabel diubah/dihapus
         useEffect(
             () => {
                 if (this.props.list && this.props.list.records) {
@@ -24,7 +23,6 @@ export class UsulanUpCountryDashboard extends Component {
             },
             () => {
                 if (!this.props.list || !this.props.list.records) return [];
-                // Pantau perubahan jumlah baris dan perubahan field 'state'
                 return [
                     this.props.list.records.length,
                     ...this.props.list.records.map(r => r.data.state)
@@ -34,14 +32,12 @@ export class UsulanUpCountryDashboard extends Component {
     }
 
     async fetchStats() {
-        // Panggil read_group ke backend
         const data = await this.orm.call("usulan.up.country", "read_group", [
             [], // Ambil semua data
             ['state'],
             ['state']
         ]);
 
-        // [UPDATE] Siapkan penampung untuk keenam status
         let counts = {
             draft: 0,
             to_approve: 0,
@@ -53,7 +49,6 @@ export class UsulanUpCountryDashboard extends Component {
         let total = 0;
 
         data.forEach(group => {
-            // Cocokkan langsung id state dari database ke object counts
             if (counts[group.state] !== undefined) {
                 counts[group.state] += group.state_count;
             }
