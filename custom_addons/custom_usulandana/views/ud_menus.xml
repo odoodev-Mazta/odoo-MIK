@@ -21,11 +21,17 @@
               action="action_usulan_up_country"
               sequence="2"/>
 
-    <menuitem id="menu_monitoring_payment_term"
-              name="Monitoring Pembayaran"
+    <menuitem id="menu_cek_tax_ud"
+              name="Cek Tax"
               parent="menu_main_usulan"
-              action="action_payment_schedule_monitoring"
+              action="action_usulan_dana_tax"
               sequence="3"/>
+
+<!--    <menuitem id="menu_monitoring_payment_term"-->
+<!--              name="Monitoring Pembayaran"-->
+<!--              parent="menu_main_usulan"-->
+<!--              action="action_payment_schedule_monitoring"-->
+<!--              sequence="3"/>-->
 
     <!--  SUBMENU(s) PLAN PAYMENT-->
     <menuitem id="menu_plan_payment_report"
@@ -82,5 +88,11 @@
               parent="menu_main_setup_ud"
               action="action_master_jenis_transportasi"
               sequence="7"/>
+
+    <menuitem id="menu_master_pph_setup_ud"
+              name="Pph"
+              parent="menu_main_setup_ud"
+              action="action_pph_setup_ud"
+              sequence="8"/>
 
 </odoo>

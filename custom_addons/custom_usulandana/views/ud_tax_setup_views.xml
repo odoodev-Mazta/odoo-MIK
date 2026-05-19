@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="action_pph_setup_ud" model="ir.actions.act_window">
+        <field name="name">Setup Pph</field>
+        <field name="res_model">pph.setup</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_pph_setup_ud_form" model="ir.ui.view">
+        <field name="name">pph.setup.form</field>
+        <field name="model">pph.setup</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="pph_type"/>
+                        <field name="kategori"/>
+                        <field name="percent_value" invisible="kategori != '%'"/>
+                        <field name="fixed_value" invisible="kategori != 'value'"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pph_setup_ud_list" model="ir.ui.view">
+        <field name="name">pph.setup.list</field>
+        <field name="model">pph.setup</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="pph_type"/>
+                <field name="kategori"/>
+                <field name="percent_value"/>
+                <field name="fixed_value"/>
+<!--                <field name="active"/>-->
+            </list>
+        </field>
+    </record>
+
+</odoo>

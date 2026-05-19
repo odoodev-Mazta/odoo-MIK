@@ -7,6 +7,8 @@ access_usulan_up_country,usulan.up.country,model_usulan_up_country,base.group_us
 access_usulan_up_country_line,usulan.up.country.line,model_usulan_up_country_line,base.group_user,1,1,1,1
 access_usulan_usulan_dana,usulan.usulan.dana,model_usulan_usulan_dana,base.group_user,1,1,1,1
 access_usulan_usulan_dana_line,usulan.usulan.dana.line,model_usulan_usulan_dana_line,base.group_user,1,1,1,1
+access_usulan_dana_tax,usulan.dana.tax,model_usulan_dana_tax,base.group_user,1,1,1,1
+access_usulan_dana_tax_line,usulan.dana.tax.line,model_usulan_dana_tax_line,base.group_user,1,1,1,1
 access_up_country_purchasing,access.up.country.purchasing,model_usulan_up_country,custom_usulandana.group_purchasing,1,1,1,0
 access_usulan_payment_schedule,usulan.payment.schedule,model_usulan_payment_schedule,base.group_user,1,1,1,1
 access_usulan_payment_wizard,usulan.payment.wizard,model_usulan_payment_wizard,base.group_user,1,1,1,1
@@ -26,6 +28,7 @@ access_jenis_rencana_kerja,jenis.rencana.kerja,model_jenis_rencana_kerja,base.gr
 access_tipe_visit,tipe.visit,model_tipe_visit,base.group_user,1,1,1,1
 access_tujuan_rencana_kerja,tujuan.rencana.kerja,model_tujuan_rencana_kerja,base.group_user,1,1,1,1
 access_jenis_transportasi,jenis.transportasi,model_jenis_transportasi,base.group_user,1,1,1,1
+access_pph_setup,pph.setup,model_pph_setup,base.group_user,1,1,1,1
 access_uang_lainnya_line,uang.lainnya.line,model_uang_lainnya_line,base.group_user,1,1,1,1
 access_uang_lainnya_wizard,uang.lainnya.wizard,model_uang_lainnya_wizard,base.group_user,1,1,1,1
 access_uang_lainnya_wizard_line,uang.lainnya.wizard.line,model_uang_lainnya_wizard_line,base.group_user,1,1,1,1

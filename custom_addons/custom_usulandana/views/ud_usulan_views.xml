@@ -47,9 +47,13 @@
                     <button name="action_approve_ceo" string="Approve (CEO)" type="object" class="btn-success oe_highlight"
                             invisible="state != 'waiting_ceo'"
                             groups="custom_usulandana.group_ceo"/>
-                    <button name="action_approve_finance" string="Approve &amp; Buat Plan Payment" type="object" class="btn-primary oe_highlight"
+                    <button name="action_approve_finance" string="Approve" type="object" class="btn-primary oe_highlight"
                             invisible="state != 'waiting_finance'"
                             groups="custom_usulandana.group_finance"/>
+                    <button name="action_request_tax" string="Cek Tax" type="object"
+                            invisible="state != 'approve'" class="btn-primary"/>
+                    <button name="action_create_plan_payment" string="Buat Plan Payment" type="object"
+                            invisible="state != 'plan_payment' or plan_payment_id" class="btn-primary"/>
                     <button name="action_reject" string="Reject" type="object" class="btn-danger"
                             invisible="state not in ('waiting_head', 'waiting_coo', 'waiting_ceo', 'waiting_finance')"/>
                     <button name="action_cancel" type="object" string="Cancel Usulan"
@@ -58,7 +62,7 @@
                             groups="custom_usulandana.group_head_dept"
                             confirm="Apakah Anda yakin ingin membatalkan Usulan Dana ini? Tindakan ini akan membatalkan Plan Payment yang terkait."/>
 
-                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_head,waiting_finance,approve,rilis"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,waiting_head,waiting_finance,approve,check_tax,plan_payment,rilis"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -103,6 +107,7 @@
                                     <field name="price_unit"/>
                                     <field name="discount"/>
                                     <field name="tax_ids" widget="many2many_tags"/>
+                                    <field name="pph_id" readonly="1"/>
                                     <field name="price_subtotal" readonly="1" force_save="1"/>
                                     <field name="grand_total" readonly="1" force_save="1"/>
                                     <field name="grand_total_currency" readonly="1" force_save="1"/>
