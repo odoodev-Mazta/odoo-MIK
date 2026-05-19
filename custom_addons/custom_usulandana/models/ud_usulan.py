@@ -57,6 +57,8 @@ class UsulanUsulanDana(models.Model):
         ('waiting_ceo', 'Waiting CEO'),
         ('waiting_finance', 'Waiting Finance'),
         ('approve', 'Approved'),
+        ('check_tax', 'Check Tax'),
+        ('plan_payment', 'Plan Payment'),
         ('rilis', 'Rilis'),
         ('reject', 'Rejected'),
         ('cancel', 'Cancelled')
@@ -108,6 +110,10 @@ class UsulanUsulanDana(models.Model):
     ],
         string='Tipe Dokumen',
         default='ud'
+    )
+    plan_payment_id = fields.Many2one(
+        'usulan.plan.payment',
+        string='Plan Payment'
     )
 
     @api.onchange('purchase_order_id')
@@ -279,8 +285,14 @@ class UsulanUsulanDana(models.Model):
         return super().create(vals_list)
 
     def action_submit(self):
-        """ Saat diajukan, Odoo mencari tahu harus lari ke mana dokumen ini """
         for record in self:
+            for line in record.line_ids:
+                if not line.payment_schedule_ids:
+                    raise exceptions.UserError(
+                        f"Termin pembayaran untuk item "
+                        f"'{line.setup_item_id.name}' belum diset."
+                    )
+
             total = record.amount_total
 
             domain = [('min_amount', '<=', total)]
@@ -331,12 +343,31 @@ class UsulanUsulanDana(models.Model):
             record.state = 'waiting_finance'
 
     def action_approve_finance(self):
-        """ Ini adalah action_approve yang lama (Final) """
         for record in self:
             record.state = 'approve'
 
-            # [BARU] Cari mou_id dari baris usulan dana
+    def action_request_tax(self):
+        for rec in self:
+            rec.state = 'check_tax'
+
+            self.env['usulan.dana.tax'].create({
+                'usulan_dana_id': rec.id,
+                'state': 'draft',
+                'line_ids': [(0, 0, {
+                    'usulan_line_id': line.id,
+                    'description': line.setup_item_id.name,
+                    'original_amount': line.price_subtotal,
+                }) for line in rec.line_ids]
+            })
+
+    # def action_confirm_tax(self):
+    #     for record in self:
+    #         record.state = 'plan_payment'
+
+    def action_create_plan_payment(self):
+        for record in self:
             mou_reference_id = False
+
             for line in record.line_ids:
                 if hasattr(line, 'mou_id') and line.mou_id:
                     mou_reference_id = line.mou_id.id
@@ -351,9 +382,42 @@ class UsulanUsulanDana(models.Model):
                 'mou_id': mou_reference_id,
             })
 
-            all_schedules = record.line_ids.mapped('payment_schedule_ids')
+            all_schedules = record.line_ids.mapped(
+                'payment_schedule_ids'
+            )
+
             if all_schedules:
-                all_schedules.write({'plan_payment_id': plan.id})
+                all_schedules.write({
+                    'plan_payment_id': plan.id
+                })
+
+            record.plan_payment_id = plan.id
+            record.state = 'plan_payment'
+
+    # def action_approve_finance(self):
+    #     """ Ini adalah action_approve yang lama (Final) """
+    #     for record in self:
+    #         record.state = 'approve'
+    #
+    #         # [BARU] Cari mou_id dari baris usulan dana
+    #         mou_reference_id = False
+    #         for line in record.line_ids:
+    #             if hasattr(line, 'mou_id') and line.mou_id:
+    #                 mou_reference_id = line.mou_id.id
+    #                 break
+    #
+    #         plan = self.env['usulan.plan.payment'].create({
+    #             'name': f"PP/{record.name}",
+    #             'usulan_dana_id': record.id,
+    #             'department_id': record.department_id.id,
+    #             'description': record.description,
+    #             'state': 'menggantung',
+    #             'mou_id': mou_reference_id,
+    #         })
+    #
+    #         all_schedules = record.line_ids.mapped('payment_schedule_ids')
+    #         if all_schedules:
+    #             all_schedules.write({'plan_payment_id': plan.id})
 
     def action_reject(self):
         for record in self:
@@ -444,6 +508,10 @@ class UsulanUsulanDanaLine(models.Model):
                                       currency_field='currency_id')
 
     mou_id = fields.Many2one('draft.maklon', string='No. MOU', domain=[('state', '=', 'mou')])
+    # field pada cek tax
+    pph_id = fields.Many2one('pph.setup', string="PPh")
+    tax_amount = fields.Float(string="Tax Amount")
+    final_amount = fields.Float(string="Final Amount")
 
     @api.depends('payment_schedule_ids', 'payment_schedule_ids.date_payment')
     def _compute_payment_summary(self):
