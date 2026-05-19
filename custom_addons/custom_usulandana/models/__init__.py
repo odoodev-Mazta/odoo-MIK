@@ -5,3 +5,5 @@ from . import ud_plan_payment
 from . import ud_payment_schedule
 from . import account_move
 from . import ud_approval
+from . import ud_tax_setup
+from . import ud_cek_tax

@@ -24,6 +24,8 @@
         'views/ud_master_tipe_visit_views.xml',
         'views/ud_master_tujuan_rencana_kerja_views.xml',
         'views/ud_master_jenis_transportasi_views.xml',
+        'views/ud_tax_setup_views.xml',
+        'views/ud_cek_tax_views.xml',
         'views/ud_menus.xml',
         'wizard/payment_schedule_wizard_views.xml',
         'wizard/mass_payment_wizard_views.xml',

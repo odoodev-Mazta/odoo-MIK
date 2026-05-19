@@ -42,8 +42,22 @@ class UsulanUpCountry(models.Model):
     nama_ktp = fields.Char(string="Nama (Sesuai KTP)", readonly=False)
     nomor_ktp = fields.Char(string="Nomor KTP", readonly=False)
 
-    kota_depart_id = fields.Many2one( 'usulan.master.kota', string="Kota Keberangkatan", readonly=False)
-    kota_tujuan_id = fields.Many2one('usulan.master.kota', string="Kota Tujuan", readonly=False)
+    kota_depart_id = fields.Many2one( 'usulan.master.kota',
+                                      string="Kota Keberangkatan", readonly=False,
+                                      domain="""
+                                              [('category', '=',
+                                                  domestic_intl and 'domestik' or 'internasional'
+                                              )]
+                                          """
+                                      )
+    kota_tujuan_id = fields.Many2one('usulan.master.kota',
+                                     string="Kota Tujuan", readonly=False,
+                                     domain="""
+                                             [('category', '=',
+                                                 domestic_intl and 'domestik' or 'internasional'
+                                             )]
+                                         """
+                                     )
     tgl_depart = fields.Date(string="Tanggal Keberangkatan", readonly=False)
     tgl_pulang = fields.Date(string="Tanggal Pulang", readonly=False)
     uang_makan = fields.Monetary(string="Uang Makan", readonly=True, currency_field='currency_id')
@@ -110,6 +124,11 @@ class UsulanUpCountry(models.Model):
     line_uc_ids = fields.One2many('usulan.up.country.line', 'up_country_id', string='Transportasi dan Akomodasi')
     is_advance = fields.Boolean(string="Advance", default=True)
     domestic_intl = fields.Boolean(string="Dalam Negeri")
+
+    @api.onchange('domestic_intl')
+    def _onchange_domestic_intl(self):
+        self.kota_depart_id = False
+        self.kota_tujuan_id = False
 
     def action_open_uang_lainnya_wizard(self):
         self.ensure_one()
