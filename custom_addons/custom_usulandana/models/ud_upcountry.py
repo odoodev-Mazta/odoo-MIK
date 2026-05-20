@@ -134,6 +134,10 @@ class UsulanUpCountry(models.Model):
         self.ensure_one()
 
         lines = [(0, 0, {
+            'tanggal': l.tanggal,
+            'jenis_id': l.jenis_id.id,
+            'dari': l.dari,
+            'ke': l.ke,
             'keterangan': l.keterangan,
             'amount': l.amount,
         }) for l in self.uang_lainnya_line_ids]
@@ -198,6 +202,16 @@ class UsulanUpCountry(models.Model):
 
     def action_submit(self):
         for record in self:
+            if not record.uang_lainnya_line_ids:
+                raise exceptions.UserError(
+                    "Uang Lainnya wajib diisi."
+                )
+
+            if not record.rencana_kerja_line_ids:
+                raise exceptions.UserError(
+                    "Rencana Kerja wajib diisi."
+                )
+
             record.req_head = True
             record.req_purchasing = True
 

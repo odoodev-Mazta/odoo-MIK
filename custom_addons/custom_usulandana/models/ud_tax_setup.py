@@ -15,6 +15,11 @@ class PphSetup(models.Model):
         ('pph4ayat2', 'Pph 4 Ayat 2'),
     ], string="Jenis Pph", readonly=False)
 
+    tax_effect = fields.Selection([
+        ('deduct', 'Mengurangi'),
+        ('add', 'Menambahkan'),
+    ], string="Sifat PPh", default='deduct', required=True)
+
     kategori = fields.Selection([
         ('%', '%'),
         ('value', 'Value'),
@@ -31,6 +36,7 @@ class PphSetup(models.Model):
         compute='_compute_display_name',
         store=True
     )
+    description = fields.Text(string="Detail PPh", readonly=False)
 
     @api.constrains('kategori', 'percent_value', 'fixed_value')
     def _check_tax_value(self):
@@ -55,7 +61,7 @@ class PphSetup(models.Model):
                         "Nilai % harus kosong jika kategori Fixed Value."
                     )
 
-    @api.depends('pph_type', 'kategori','percent_value', 'fixed_value')
+    @api.depends('pph_type', 'kategori','percent_value', 'fixed_value', 'tax_effect')
     def _compute_display_name(self):
         for rec in self:
 
@@ -63,11 +69,15 @@ class PphSetup(models.Model):
                 rec._fields['pph_type'].selection
             ).get(rec.pph_type)
 
+            sifat = dict(
+                rec._fields['tax_effect'].selection
+            ).get(rec.tax_effect)
+
             if rec.kategori == '%':
-                rec.display_name = (
-                    f"{pph_label} - {rec.percent_value}%"
-                )
+                nilai = f"{rec.percent_value}%"
             else:
-                rec.display_name = (
-                    f"{pph_label} - Rp {rec.fixed_value:,.0f}"
-                )
+                nilai = f"Rp {rec.fixed_value:,.0f}"
+
+            rec.display_name = (
+                f"{pph_label} - {sifat} {nilai}"
+            )
