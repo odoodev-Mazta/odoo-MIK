@@ -80,14 +80,15 @@ class UsulanDanaTaxLine(models.Model):
             final = line.original_amount
 
             if line.pph_id:
-                if line.pph_id.kategori == '%':
 
-                    tax = (
-                            line.original_amount *
-                            line.pph_id.percent_value / 100
-                    )
+                if line.pph_id.kategori == '%':
+                    tax = line.original_amount * line.pph_id.percent_value / 100.0
                 elif line.pph_id.kategori == 'value':
                     tax = line.pph_id.fixed_value
-                final = line.original_amount + tax
+
+                if line.pph_id.tax_effect == 'deduct':
+                    final = line.original_amount - tax
+                else:
+                    final = line.original_amount + tax
             line.tax_amount = tax
             line.final_amount = final

@@ -15,10 +15,12 @@
                 <sheet>
                     <group>
                         <field name="pph_type"/>
+                        <field name="tax_effect"/>
                         <field name="kategori"/>
                         <field name="percent_value" invisible="kategori != '%'"/>
                         <field name="fixed_value" invisible="kategori != 'value'"/>
                         <field name="currency_id" invisible="1"/>
+                        <field name="description"/>
                     </group>
                 </sheet>
             </form>
@@ -31,9 +33,11 @@
         <field name="arch" type="xml">
             <list>
                 <field name="pph_type"/>
+                <field name="tax_effect"/>
                 <field name="kategori"/>
                 <field name="percent_value"/>
                 <field name="fixed_value"/>
+                <field name="description"/>
 <!--                <field name="active"/>-->
             </list>
         </field>
