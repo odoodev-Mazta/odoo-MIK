@@ -464,7 +464,6 @@ class UsulanUsulanDanaLine(models.Model):
         'usulan.dana.setup',
         string='Nama Item',
         required=True,
-        domain="[('state', '=', 'done')]"
     )
     account_id = fields.Many2one(
         'account.account',
