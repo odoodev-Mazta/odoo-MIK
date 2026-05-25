@@ -26,6 +26,7 @@
         'views/ud_master_jenis_transportasi_views.xml',
         'views/ud_tax_setup_views.xml',
         'views/ud_cek_tax_views.xml',
+        # 'views/ud_report_plan_payment_views.xml',
         'views/ud_menus.xml',
         'wizard/payment_schedule_wizard_views.xml',
         'wizard/mass_payment_wizard_views.xml',
@@ -36,6 +37,7 @@
     ],
     'assets':{
         'web.assets_backend': [
+            'web/static/lib/Chart/Chart.js',
             'custom_usulandana/static/src/js/setup_item_list.js',
             'custom_usulandana/static/src/xml/setup_item_views.xml',
             'custom_usulandana/static/src/js/approval_dashboard.js',
@@ -49,6 +51,9 @@
             'custom_usulandana/static/src/js/payment_schedule_dashboard.js',
             'custom_usulandana/static/src/xml/payment_schedule_dashboard.xml',
             'custom_usulandana/static/src/scss/payment_schedule_dashboard.scss',
+            # 'custom_usulandana/static/src/js/report_plan_payment_dashboard.js',
+            # 'custom_usulandana/static/src/xml/report_plan_payment_dashboard.xml',
+            # 'custom_usulandana/static/src/scss/report_plan_payment_dashboard.scss',
         ]
     },
     'auto_install': False,

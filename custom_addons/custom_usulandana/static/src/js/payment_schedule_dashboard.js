@@ -40,23 +40,15 @@ class PaymentScheduleDashboard extends Component {
     async openSchedulePopup(fullDate) {
         if (!fullDate) return;
 
-        const result = await this.orm.call(
-            "usulan.plan.payment.calendar.wizard",
-            "get_schedule_by_date",
-            [fullDate, this.state.year, this.state.month]
+        const action = await this.orm.call(
+            "usulan.payment.schedule",
+            "action_open_calendar_popup",
+            [fullDate]
         );
 
-        await this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "usulan.plan.payment.calendar.wizard",
-            view_mode: "form",
-            views: [[false, "form"]],
-            target: "new",
-            context: {
-                default_selected_date: fullDate,
-                default_line_ids: result.lines,
-            },
-        });
+        if (action) {
+            await this.action.doAction(action);
+        }
     }
 
     async loadData() {

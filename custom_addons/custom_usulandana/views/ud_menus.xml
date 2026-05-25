@@ -46,6 +46,12 @@
           action="action_payment_schedule_dashboard"
           sequence="2"/>
 
+<!--    <menuitem id="menu_report_plan_payment_dashboard"-->
+<!--          name="Report"-->
+<!--          parent="menu_main_plan_payment_ud"-->
+<!--          action="action_report_plan_payment_dashboard"-->
+<!--          sequence="1"/>-->
+
     <!--  SUBMENU(s) SETUP  -->
     <menuitem id="menu_setup_item"
               name="Item"
