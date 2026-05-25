@@ -27,26 +27,48 @@ class UsulanPaymentSchedule(models.Model):
         ('paid', 'Sudah Dibayar')
     ], string='Status Bayar', default='unpaid')
     plan_payment_id = fields.Many2one('usulan.plan.payment', string='Plan Payment Parent', ondelete='cascade')
+    description = fields.Text(
+        related='plan_payment_id.description',
+        string='Keterangan',
+        store=True,
+        readonly=True
+    )
     actual_payment_date = fields.Date(string='Realisasi Bayar')
     vendor_bill_id = fields.Many2one('account.move', string='Vendor Bill Terkait', readonly=True)
 
     def write(self, vals):
+
+        old_dates = {
+            rec.id: rec.plan_payment_date
+            for rec in self
+        }
+
         res = super(UsulanPaymentSchedule, self).write(vals)
 
-        if 'plan_payment_date' in vals and vals.get('plan_payment_date') and not self.env.context.get('skip_auto_bill'):
+        if 'plan_payment_date' in vals and not self.env.context.get('skip_auto_bill'):
             for record in self:
+                old_date = old_dates.get(record.id)
+                new_date = record.plan_payment_date
 
-                if not record.vendor_bill_id:
-                    record._create_automated_vendor_bill()
+                # DETEKSI RESCHEDULE
+                if old_date and new_date and old_date != new_date:
+                    record.plan_payment_id.state = 'reschedule'
 
-                    if record.plan_payment_id.state in ['menggantung', 'reschedule']:
-                        record.plan_payment_id.state = 'plan_payment'
-                else:
-                    if record.vendor_bill_id.state == 'draft':
-                        record.vendor_bill_id.write({'invoice_date': record.plan_payment_date})
+                # AUTO CREATE / UPDATE BILL
+                if new_date:
+                    if not record.vendor_bill_id:
+                        record._create_automated_vendor_bill()
+                        if record.plan_payment_id.state in ['menggantung', 'reschedule']:
+                            record.plan_payment_id.state = 'plan_payment'
+                    else:
+                        if record.vendor_bill_id.state == 'draft':
+                            record.vendor_bill_id.write({
+                                'invoice_date': new_date
+                            })
 
-                    if record.plan_payment_id.state == 'reschedule':
-                        record.plan_payment_id.state = 'plan_payment'
+                        if record.plan_payment_id.state == 'reschedule':
+                            record.plan_payment_id.state = 'plan_payment'
+
         return res
 
     def _create_automated_vendor_bill(self):
@@ -156,7 +178,17 @@ class UsulanPaymentSchedule(models.Model):
             ('plan_payment_date', '!=', False),
             ('plan_payment_date', '>=', start_date),
             ('plan_payment_date', '<=', end_date),
+            ('plan_payment_id.state', 'not in', ['rilis', 'cancel']),
         ])
+
+        schedules = schedules.filtered(
+            lambda s:
+            not (
+                    s.plan_payment_id.usulan_dana_id
+                    and
+                    s.plan_payment_id.usulan_dana_id.status_payment == 'paid'
+            )
+        )
 
         plan_payments = self.env['usulan.plan.payment'].search([])
 
@@ -166,6 +198,7 @@ class UsulanPaymentSchedule(models.Model):
         month_matrix = monthcalendar(year, month)
 
         weekly_summary = []
+        weekly_plan_payment = {i: 0 for i in range(1, 6)}
 
         for week_index, week in enumerate(month_matrix, start=1):
 
@@ -205,19 +238,28 @@ class UsulanPaymentSchedule(models.Model):
                     'is_holiday': is_holiday,
                     'full_date': current_date.strftime('%Y-%m-%d'),
                     'holiday_name': holiday_name,
+                    'payments_total': sum(day_schedules.mapped('amount')),
+                    'payments_count': len(day_schedules),
 
-                    'payments': [{
-                        'id': schedule.id,
-                        'vendor': (
-                            schedule.plan_payment_id.usulan_dana_id.vendor_id.name
-                        ) or (
-                            schedule.plan_payment_id.usulan_up_country_id.employee_id.name
-                        ),
-                        'amount': schedule.amount,
-                        'state': schedule.plan_payment_id.state,
-                        'plan_name': schedule.plan_payment_id.name,
-                    } for schedule in day_schedules]
+                    # 'payments': [{
+                    #     'id': schedule.id,
+                    #     'vendor': (
+                    #         schedule.plan_payment_id.usulan_dana_id.vendor_id.name
+                    #     ) or (
+                    #         schedule.plan_payment_id.usulan_up_country_id.employee_id.name
+                    #     ),
+                    #     'amount': schedule.amount,
+                    #     'state': schedule.plan_payment_id.state,
+                    #     'plan_name': schedule.plan_payment_id.name,
+                    # } for schedule in day_schedules]
                 })
+
+            weekly_summary.append({
+                'week': week_index,
+                'amount': week_total,
+            })
+
+            weekly_plan_payment[week_index] = week_total
 
             calendar_data.append(week_data)
 
@@ -226,80 +268,123 @@ class UsulanPaymentSchedule(models.Model):
                 'amount': week_total,
             })
 
+            # dummy total surplus
+            total_plan_payment = sum(
+                weekly_plan_payment.values()
+            )
+
+            bank_balance = 0
+            outstanding_receivable = 0
+
+            total_fund = (
+                    bank_balance +
+                    outstanding_receivable
+            )
+
+            surplus = total_fund - total_plan_payment
+            surplus_negative = surplus < 0
+
+            # dummy progress bar rilis dan not rilis
+            today_release_amount = sum(
+                schedules.filtered(
+                    lambda s: s.plan_payment_id.state == 'rilis'
+                ).mapped('amount')
+            )
+
+            today_pending_amount = sum(
+                schedules.filtered(
+                    lambda s: s.plan_payment_id.state != 'rilis'
+                ).mapped('amount')
+            )
+
+            total_amount = (
+                today_release_amount +
+                today_pending_amount
+            )
+
+            release_percentage = (
+                (today_release_amount / total_amount) * 100
+            ) if total_amount else 0
+
+            pending_percentage = (
+                (today_pending_amount / total_amount) * 100
+            ) if total_amount else 0
+
         return {
             'summary': {
-                'menggantung': len(
-                    plan_payments.filtered(
-                        lambda x: x.state == 'menggantung'
-                    )
-                ),
-                'plan_payment': len(
-                    plan_payments.filtered(
-                        lambda x: x.state == 'plan_payment'
-                    )
-                ),
-                'reschedule': len(
-                    plan_payments.filtered(
-                        lambda x: x.state == 'reschedule'
-                    )
-                ),
+                'menggantung': len(plan_payments.filtered(lambda x: x.state == 'menggantung')),
+                'plan_payment': len(plan_payments.filtered(lambda x: x.state == 'plan_payment')),
+                'reschedule': len(plan_payments.filtered(lambda x: x.state == 'reschedule')),
             },
             'calendar': calendar_data,
             'weekly_summary': weekly_summary,
+            'weekly_plan_payment': [
+                {
+                    'week': i,
+                    'amount': weekly_plan_payment.get(i, 0),
+                }
+                for i in range(1, 6)
+            ],
+            # data dummy total surplus
+            'bank_balance': bank_balance,
+            'outstanding_receivable': outstanding_receivable,
+            'total_plan_payment': total_plan_payment,
+            'surplus': surplus,
+            'surplus_negative': surplus_negative,
+            'today_release_amount': today_release_amount,
+            'today_pending_amount': today_pending_amount,
+            'release_percentage': round(release_percentage, 2),
+            'pending_percentage': round(pending_percentage, 2),
         }
 
     @api.model
     def action_open_calendar_popup(self, selected_date):
+
         schedules = self.search([
             ('plan_payment_date', '=', selected_date)
         ])
 
-        line_vals = []
-        for schedule in schedules:
-            plan = schedule.plan_payment_id
-            usulan = (
-                    plan.usulan_dana_id
-                    or
-                    plan.usulan_up_country_id
-            )
-
-            line_vals.append((0, 0, {
-                'department_id':
-                    plan.department_id.id,
-
-                'tgl_usulan':
-                    usulan.tgl_usulan
-                    if hasattr(usulan, 'tgl_usulan')
-                    else False,
-
-                'due_date':
-                    schedule.date_payment,
-
-                'description':
-                    plan.description,
-
-                'amount':
-                    schedule.amount,
-
-                'plan_payment_id':
-                    plan.id,
-
-                'state':
-                    plan.state,
-            }))
         wizard = self.env[
             'usulan.plan.payment.calendar.wizard'
         ].create({
             'selected_date': selected_date,
-            'line_ids': line_vals,
+            'schedule_ids': [(6, 0, schedules.ids)],
         })
+
+        view_id = self.env.ref(
+            'custom_usulandana.view_calendar_plan_payment_popup'
+        ).id
 
         return {
             'type': 'ir.actions.act_window',
             'name': f'Plan Payment {selected_date}',
-            'res_model':
-                'usulan.plan.payment.calendar.wizard',
+            'res_model': 'usulan.plan.payment.calendar.wizard',
             'res_id': wizard.id,
             'view_mode': 'form',
+            'views': [(view_id, 'form')],
             'target': 'new',
         }
+
+    def action_open_plan_payment(self):
+        self.ensure_one()
+
+        view_id = self.env.ref(
+            'custom_usulandana.view_plan_payment_form'
+        ).id
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Plan Payment',
+            'res_model': 'usulan.plan.payment',
+            'res_id': self.plan_payment_id.id,
+            'view_mode': 'form',
+            'views': [(view_id, 'form')],
+            'target': 'current',
+        }
+
+    def unlink(self):
+        if self.env.context.get('from_reschedule_wizard'):
+            raise UserError(
+                "Data tidak boleh dihapus dari wizard reschedule. Hanya boleh reschedule tanggal."
+            )
+        return super().unlink()
