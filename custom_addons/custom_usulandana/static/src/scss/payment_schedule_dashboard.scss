@@ -313,3 +313,60 @@
 
     color: #495057;
 }
+
+.section_spacing {
+    margin-top: 24px;
+}
+
+.surplus_item {
+    background: #e8fff0;
+    border: 1px solid #b7ebc6;
+}
+
+.surplus_item strong {
+    color: #1b7f3b;
+}
+
+.negative_surplus {
+    background: #ffeaea;
+    border: 1px solid #ffb3b3;
+}
+
+.negative_surplus strong {
+    color: #d10000;
+}
+
+.update_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.update_percent {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.progress_bar {
+    width: 25%;
+    height: 4px;
+    background: #f1f1f1;
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 4px 0 8px 0;
+}
+
+.progress_fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+.released_fill {
+    background: #2ecc71;
+}
+
+.pending_fill {
+    background: #ff9800;
+}

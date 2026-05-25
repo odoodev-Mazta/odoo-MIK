@@ -5,29 +5,45 @@
         <field name="name">calendar.plan.payment.popup.form</field>
         <field name="model">usulan.plan.payment.calendar.wizard</field>
         <field name="arch" type="xml">
-            <form string="Plan Payment">
+            <form string="Plan Payment Dashboard">
                 <sheet>
-                    <group>
-                        <field name="selected_date" readonly="1"/>
+                    <group col="2">
+                        <!-- LEFT SIDE -->
+                        <group string="Department Summary">
+
+                            <!-- nanti diisi qweb/html -->
+                            <field name="department_summary_html"
+                                   widget="html"
+                                   readonly="1"/>
+                        </group>
+
+                        <!-- RIGHT SIDE -->
+                        <group string="Plan Payment List">
+                            <field name="schedule_ids" options="{'no_delete': True, 'no_create': True}">
+                                <list editable="bottom">
+                                    <field name="department_id"/>
+                                    <field name="date_payment"/>
+                                    <field name="description"/>
+                                    <field name="amount"/>
+                                    <field name="plan_payment_date"/>
+                                    <button name="action_open_plan_payment"
+                                            type="object"
+                                            icon="fa-external-link"
+                                            title="Open Plan Payment"/>
+                                </list>
+                            </field>
+                        </group>
                     </group>
-                    <field name="line_ids" nolabel="1">
-                        <list create="0" delete="0">
-                            <field name="department_id"/>
-                            <field name="tgl_usulan"/>
-                            <field name="due_date"/>
-                            <field name="description"/>
-                            <field name="amount"/>
-                            <field name="state" widget="badge"/>
-                            <field name="plan_payment_id"/>
-                            <button name="action_open_plan_payment"
-                                    type="object"
-                                    string="Open"
-                                    class="btn-primary"/>
-                        </list>
-                    </field>
                 </sheet>
                 <footer>
-                    <button string="Close" special="cancel" class="btn-secondary"/>
+                    <button string="Save Changes"
+                            name="action_save_changes"
+                            type="object"
+                            class="btn-primary"/>
+
+                    <button string="Close"
+                            special="cancel"
+                            class="btn-secondary"/>
                 </footer>
             </form>
         </field>

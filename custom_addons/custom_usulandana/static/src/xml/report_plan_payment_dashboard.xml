@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<t t-name="custom_usulandana.ReportPlanPaymentDashboard">
+    <div class="report_dashboard">
+        <!-- TOP -->
+        <div class="report_top">
+
+            <!-- LEFT FILTER -->
+            <div class="filter_panel">
+                <select t-model="state.year">
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+
+                <select t-model="state.month">
+                    <option value="1">Jan</option>
+                    <option value="2">Feb</option>
+                </select>
+
+                <select t-model="state.department_id">
+
+                    <option value="">
+                        Semua Departemen
+                    </option>
+
+                    <t t-foreach="state.departments"
+                       t-as="dept"
+                       t-key="dept.id">
+
+                        <option t-att-value="dept.id">
+                            <t t-esc="dept.name"/>
+                        </option>
+                    </t>
+                </select>
+            </div>
+
+            <!-- RIGHT CHART -->
+            <div class="chart_panel">
+                <div class="chart_card">
+                    <canvas id="chart_usulan_dana"/>
+                </div>
+
+                <div class="chart_card">
+                    <canvas id="chart_advance"/>
+                </div>
+
+                <div class="chart_card">
+                    <canvas id="chart_upcountry"/>
+                </div>
+
+                <div class="chart_card">
+                    <canvas id="chart_petty_cash"/>
+                </div>
+
+                <div class="chart_card">
+                    <canvas id="chart_cancel"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="report_table">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Tgl Usulan</th>
+                        <th>No Usulan</th>
+                        <th>Departemen</th>
+                        <th>Keterangan</th>
+                        <th>Schedule Payment</th>
+                        <th>Tipe</th>
+                        <th>Nominal</th>
+                        <th>Status</th>
+                        <th>Lap. Realisasi</th>
+                        <th>Attachment</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <t t-foreach="state.data.lines || []"
+                       t-as="line"
+                       t-key="line.id">
+
+                        <tr>
+
+                            <td>
+                                <t t-esc="line.tgl_usulan"/>
+                            </td>
+
+                            <td>
+                                <t t-esc="line.no_usulan"/>
+                            </td>
+
+                            <td>
+                                <t t-esc="line.department"/>
+                            </td>
+
+                            <td>
+                                <t t-esc="line.description"/>
+                            </td>
+
+                            <td>
+                                <t t-esc="line.schedule_payment"/>
+                            </td>
+
+                            <td>
+                                <t t-esc="line.type"/>
+                            </td>
+
+                            <td>
+                                Rp <t t-esc="line.amount"/>
+                            </td>
+
+                            <td>
+                                <t t-esc="line.status"/>
+                            </td>
+
+                            <td>
+                                <t t-esc="line.realization"/>
+                            </td>
+
+                            <td>
+                                <t t-esc="line.attachment"/>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</t>

@@ -86,19 +86,16 @@
                                         </div>
                                     </t>
 
-                                    <t t-foreach="day.payments"
-                                       t-as="payment"
-                                       t-key="payment.id">
-
-                                        <div class="payment_card">
-
-                                            <div class="vendor">
-                                                <t t-esc="payment.vendor"/>
+                                    <t t-if="day.payments_count">
+                                        <div class="payment_summary">
+                                            <div class="payment_count">
+                                                <t t-esc="day.payments_count"/>
+                                                Plan Payment
                                             </div>
 
-                                            <div class="amount">
+                                            <div class="payment_amount">
                                                 Rp
-                                                <t t-esc="payment.amount"/>
+                                                <t t-esc="day.payments_total"/>
                                             </div>
                                         </div>
                                     </t>
@@ -149,47 +146,84 @@
 
                     <!-- FINANCIAL -->
                     <div class="inner_card">
+                        <div class="section_block">
 
-                        <div class="right_title">
-                            Rincian Dana
-                        </div>
-
-                        <div class="finance_section">
-
-                            <div class="finance_item">
-                                <span>Saldo Bank</span>
-
-                                <strong>
-                                    Rp <t t-esc="state.data.bank_balance || 0"/>
-                                </strong>
+                            <div class="right_title">
+                                Plan Payment
                             </div>
 
-                            <div class="finance_item">
-                                <span>Outstanding Piutang</span>
+                            <div class="finance_section">
+                                <t t-foreach="state.data.weekly_plan_payment || []"
+                                   t-as="week"
+                                   t-key="week.week">
 
-                                <strong>
-                                    Rp <t t-esc="state.data.outstanding_receivable || 0"/>
-                                </strong>
+                                    <div class="finance_item">
+                                        <span>
+                                            Minggu <t t-esc="week.week"/>
+                                        </span>
+
+                                        <strong>
+                                            Rp <t t-esc="week.amount"/>
+                                        </strong>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <div class="section_block section_spacing">
+                            <div class="right_title">
+                                Rincian Dana
+                            </div>
+
+                            <div class="finance_section">
+                                <div class="finance_item">
+                                    <span>Saldo Bank</span>
+
+                                    <strong>
+                                        Rp <t t-esc="state.data.bank_balance || 0"/>
+                                    </strong>
+                                </div>
+
+                                <div class="finance_item">
+                                    <span>Outstanding Piutang</span>
+
+                                    <strong>
+                                        Rp <t t-esc="state.data.outstanding_receivable || 0"/>
+                                    </strong>
+                                </div>
+
+                                <div t-att-class="'finance_item surplus_item ' + (state.data.surplus_negative ? 'negative_surplus' : '')">
+                                    <span>Surplus</span>
+
+                                    <strong>
+                                        Rp <t t-esc="state.data.surplus || 0"/>
+                                    </strong>
+
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- UPDATE -->
                     <div class="inner_card">
-
                         <div class="right_title">
                             Update Plan Payment Hari Ini
                         </div>
 
                         <div class="update_item released">
-                            <div>
+                            <div class="update_header">
                                 <div class="update_label">
-                                    Sudah Rilis
+                                    Rilis
                                 </div>
 
-                                <div class="update_count">
-                                    <t t-esc="state.data.today_release_count || 0"/>
-                                    Payment
+                                <div class="update_percent">
+                                    <t t-esc="state.data.release_percentage || 0"/>%
+                                </div>
+                            </div>
+
+                            <div class="progress_bar">
+                                <div class="progress_fill released_fill"
+                                     t-att-style="'width:' + (state.data.release_percentage || 0) + '%'">
                                 </div>
                             </div>
 
@@ -199,15 +233,19 @@
                         </div>
 
                         <div class="update_item pending">
-
-                            <div>
+                            <div class="update_header">
                                 <div class="update_label">
-                                    Belum Rilis
+                                    Not Yet
                                 </div>
 
-                                <div class="update_count">
-                                    <t t-esc="state.data.today_pending_count || 0"/>
-                                    Payment
+                                <div class="update_percent">
+                                    <t t-esc="state.data.pending_percentage || 0"/>%
+                                </div>
+                            </div>
+
+                            <div class="progress_bar">
+                                <div class="progress_fill pending_fill"
+                                     t-att-style="'width:' + (state.data.pending_percentage || 0) + '%'">
                                 </div>
                             </div>
 
