@@ -1,0 +1,38 @@
+.pr-dashboard {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.pr-dashboard__select {
+    font-size: 12px;
+    min-width: 140px;
+    max-width: 160px;
+    padding: 3px 6px;
+    height: 28px;
+}
+
+.pr-dashboard__card {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: #e7f1ff;
+    border: 1px solid #b6d0fb;
+    border-radius: 6px;
+    color: #0a58ca;
+}
+
+.pr-dashboard__card-label {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.pr-dashboard__card-value {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+}
