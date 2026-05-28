@@ -519,6 +519,7 @@ class UsulanUsulanDanaLine(models.Model):
     pph_id = fields.Many2one('pph.setup', string="PPh")
     tax_amount = fields.Float(string="Tax Amount")
     final_amount = fields.Float(string="Final Amount")
+    keterangan = fields.Text(string="Keterangan", readonly=False)
 
     @api.depends('payment_schedule_ids', 'payment_schedule_ids.date_payment')
     def _compute_payment_summary(self):
