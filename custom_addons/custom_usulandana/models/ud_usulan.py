@@ -463,8 +463,16 @@ class UsulanUsulanDanaLine(models.Model):
     setup_item_id = fields.Many2one(
         'usulan.dana.setup',
         string='Nama Item',
-        required=True,
+        required=False,
     )
+    product_id = fields.Many2one(
+        'product.product',
+        string='Product'
+    )
+    line_type = fields.Selection([
+        ('product', 'Product'),
+        ('setup', 'Setup Item')
+    ], required=True)
     account_id = fields.Many2one(
         'account.account',
         related='setup_item_id.account_id',
