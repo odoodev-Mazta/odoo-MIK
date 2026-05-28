@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- DASHBOARD: dropdown dept + 1 card total PR -->
+    <t t-name="custom_purchase_request.PurchaseRequestDashboard" owl="1">
+        <div class="pr-dashboard">
+
+            <select class="o_input pr-dashboard__select"
+                    t-on-change="onChangeDepartment">
+                <option value="">Semua Departemen</option>
+                <t t-foreach="state.departments" t-as="dept" t-key="dept.id">
+                    <option t-att-value="dept.id"
+                            t-att-selected="dept.id === state.selectedDeptId">
+                        <t t-esc="dept.name"/>
+                    </option>
+                </t>
+            </select>
+
+            <div class="pr-dashboard__card">
+                <span class="pr-dashboard__card-label">Total Purchase Request</span>
+                <span class="pr-dashboard__card-value">
+                    <t t-esc="state.totalPR"/>
+                </span>
+            </div>
+
+        </div>
+    </t>
+
+    <!-- LIST VIEW: inject dashboard sebelum tabel -->
+    <t t-name="custom_purchase_request.ListView"
+       t-inherit="web.ListView"
+       t-inherit-mode="primary"
+       owl="1">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <PurchaseRequestDashboard onDeptChange.bind="onDeptChange"/>
+        </xpath>
+    </t>
+
+</templates>
