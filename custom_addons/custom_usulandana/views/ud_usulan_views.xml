@@ -101,11 +101,12 @@
                                     <field name="product_id"/>
                                     <field name="setup_item_id"/>
                                     <field name="account_id" options="{'no_open': True}"/>
+                                    <field name="keterangan"/>
                                     <field name="mou_id"/>
                                     <field name="quantity"/>
+                                    <field name="price_unit"/>
                                     <field name="currency_id"/>
                                     <field name="today_rate"/>
-                                    <field name="price_unit"/>
                                     <field name="discount"/>
                                     <field name="tax_ids" widget="many2many_tags"/>
                                     <field name="pph_id" readonly="1"/>
