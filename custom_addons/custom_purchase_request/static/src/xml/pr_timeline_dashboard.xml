@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="custom_purchase_request.PurchaseRequestTimelineTemplate" owl="1">
+<div class="o_pr_timeline_dashboard">
+
+    <!-- TOP SECTION -->
+    <div class="o_pr_top_section">
+        <div class="o_pr_filters">
+            <div class="o_pr_filter_title">Purchase Request Dashboard</div>
+            <div class="o_pr_search_wrap">
+                <span class="o_pr_search_icon">&#128269;</span>
+                <input type="text" class="o_pr_search_input"
+                    placeholder="Cari No. PR / Vendor / Departemen..."
+                    t-on-input="onSearch"/>
+            </div>
+            <select class="o_pr_dept_select" t-on-change="onFilterDept">
+                <option value="">Semua Departemen</option>
+                <t t-foreach="state.departments" t-as="dept" t-key="dept.id">
+                    <option t-att-value="dept.id"><t t-esc="dept.name"/></option>
+                </t>
+            </select>
+            <div class="o_pr_result_count">
+                Menampilkan <strong><t t-esc="state.filtered_pr.length"/></strong> dari
+                <strong><t t-esc="state.all_pr.length"/></strong> PR
+            </div>
+        </div>
+
+        <div class="o_pr_charts">
+            <div class="o_pr_chart_card">
+                <div class="o_pr_donut" t-attf-style="--pct:100; --color:#534AB7;">
+                    <div class="o_pr_donut_inner">
+                        <span class="o_pr_donut_num"><t t-esc="chartStats.total"/></span>
+                        <span class="o_pr_donut_lbl">Total PR</span>
+                    </div>
+                </div>
+                <div class="o_pr_chart_lbl">Total</div>
+            </div>
+            <div class="o_pr_chart_card">
+                <t t-set="pctC" t-value="chartStats.total ? Math.round(chartStats.complete / chartStats.total * 100) : 0"/>
+                <div class="o_pr_donut" t-attf-style="--pct:{{ pctC }}; --color:#1D9E75;">
+                    <div class="o_pr_donut_inner">
+                        <span class="o_pr_donut_num"><t t-esc="chartStats.complete"/></span>
+                        <span class="o_pr_donut_lbl">Complete</span>
+                    </div>
+                </div>
+                <div class="o_pr_chart_lbl"><t t-esc="pctC"/>%</div>
+            </div>
+            <div class="o_pr_chart_card">
+                <t t-set="pctP" t-value="chartStats.total ? Math.round(chartStats.onProgress / chartStats.total * 100) : 0"/>
+                <div class="o_pr_donut" t-attf-style="--pct:{{ pctP }}; --color:#BA7517;">
+                    <div class="o_pr_donut_inner">
+                        <span class="o_pr_donut_num"><t t-esc="chartStats.onProgress"/></span>
+                        <span class="o_pr_donut_lbl">On Progress</span>
+                    </div>
+                </div>
+                <div class="o_pr_chart_lbl"><t t-esc="pctP"/>%</div>
+            </div>
+            <div class="o_pr_chart_card">
+                <t t-set="pctU" t-value="chartStats.total ? Math.round(chartStats.urgent / chartStats.total * 100) : 0"/>
+                <div class="o_pr_donut" t-attf-style="--pct:{{ pctU }}; --color:#E24B4A;">
+                    <div class="o_pr_donut_inner">
+                        <span class="o_pr_donut_num"><t t-esc="chartStats.urgent"/></span>
+                        <span class="o_pr_donut_lbl">Urgent</span>
+                    </div>
+                </div>
+                <div class="o_pr_chart_lbl"><t t-esc="pctU"/>%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLE SECTION -->
+    <div class="o_pr_table_wrap">
+        <table class="o_pr_table">
+            <thead>
+                <tr>
+                    <th style="min-width:180px;">Info PR</th>
+                    <th style="min-width:110px;">Approval</th>
+                    <th style="min-width:130px;">Vendor</th>
+                    <th style="min-width:120px;">Purchase Order</th>
+                    <th style="min-width:120px;">Usulan Dana</th>
+                    <th style="min-width:120px;">Bank Disbursement</th>
+                    <th style="min-width:100px;">Progress</th>
+                    <th style="min-width:120px;">Status &amp; Deadline</th>
+                </tr>
+            </thead>
+            <tbody>
+                <t t-if="state.filtered_pr.length === 0">
+                    <tr>
+                        <td colspan="8" class="o_pr_empty">
+                            Tidak ada data Purchase Request
+                        </td>
+                    </tr>
+                </t>
+                <t t-foreach="state.filtered_pr" t-as="pr" t-key="pr.id">
+                    <tr t-attf-class="o_pr_row {{ pr.is_urgent ? 'o_pr_urgent' : '' }}">
+
+                        <!-- INFO PR -->
+                        <td class="o_pr_td_info">
+                            <t t-if="pr.is_urgent">
+                                <span class="o_pr_badge_urgent">&#9888; URGENT</span>
+                            </t>
+                            <div class="o_pr_pr_no"><t t-esc="pr.pr_no"/></div>
+                            <div class="o_pr_info_row">
+                                <span class="o_pr_info_icon">&#128197;</span>
+                                <span class="o_pr_meta"><t t-esc="pr.pr_date"/></span>
+                            </div>
+                            <div class="o_pr_info_row">
+                                <span class="o_pr_info_icon">&#127970;</span>
+                                <span class="o_pr_meta"><t t-esc="pr.department"/></span>
+                            </div>
+                            <div class="o_pr_info_row">
+                                <span class="o_pr_info_icon">&#128230;</span>
+                                <span class="o_pr_meta o_pr_product"><t t-esc="pr.product_summary"/></span>
+                            </div>
+                            <div class="o_pr_amounts">
+                                <span class="o_pr_amt_pill">Qty&#160;<strong><t t-esc="pr.total_qty"/></strong></span>
+                                <span class="o_pr_amt_pill o_pr_amt_money">
+                                    <t t-esc="pr.currency_symbol"/>&#160;<strong><t t-esc="pr.total_amount.toLocaleString('id-ID')"/></strong>
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- APPROVAL -->
+                        <t t-set="approval_stage" t-value="pr.stages.find(s => s.code === 'approval')"/>
+                        <td>
+                            <div t-attf-class="o_pr_stage_cell o_pr_stage_{{ approval_stage.status }}">
+                                <span class="o_pr_stage_dot"/>
+                                <div>
+                                    <div class="o_pr_stage_status">
+                                        <t t-esc="approval_stage.status === 'done' ? 'Approved' : 'Pending'"/>
+                                    </div>
+                                    <div class="o_pr_stage_date"><t t-esc="approval_stage.date"/></div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- VENDOR -->
+                        <t t-set="vendor_stage" t-value="pr.stages.find(s => s.code === 'vendor')"/>
+                        <td>
+                            <div t-attf-class="o_pr_stage_cell o_pr_stage_{{ vendor_stage.status }}">
+                                <span class="o_pr_stage_dot"/>
+                                <div>
+                                    <div class="o_pr_stage_status">
+                                        <t t-esc="pr.vendor !== '-' ? pr.vendor : 'Belum dipilih'"/>
+                                    </div>
+                                    <div class="o_pr_stage_date"><t t-esc="vendor_stage.date"/></div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- PO -->
+                        <t t-set="po_stage" t-value="pr.stages.find(s => s.code === 'po')"/>
+                        <td>
+                            <div t-attf-class="o_pr_stage_cell o_pr_stage_{{ po_stage.status }}">
+                                <span class="o_pr_stage_dot"/>
+                                <div>
+                                    <div class="o_pr_stage_status">
+                                        <t t-esc="pr.po_name !== '-' ? pr.po_name : 'Belum dibuat'"/>
+                                    </div>
+                                    <div class="o_pr_stage_date"><t t-esc="po_stage.date"/></div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- UD -->
+                        <t t-set="ud_stage" t-value="pr.stages.find(s => s.code === 'ud')"/>
+                        <td>
+                            <div t-attf-class="o_pr_stage_cell o_pr_stage_{{ ud_stage.status }}">
+                                <span class="o_pr_stage_dot"/>
+                                <div>
+                                    <div class="o_pr_stage_status">
+                                        <t t-esc="pr.ud_name !== '-' ? pr.ud_name : 'Belum dibuat'"/>
+                                    </div>
+                                    <div class="o_pr_stage_date"><t t-esc="ud_stage.date"/></div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- BD -->
+                        <t t-set="bd_stage" t-value="pr.stages.find(s => s.code === 'bd')"/>
+                        <td>
+                            <div t-attf-class="o_pr_stage_cell o_pr_stage_{{ bd_stage.status }}">
+                                <span class="o_pr_stage_dot"/>
+                                <div>
+                                    <div class="o_pr_stage_status">
+                                        <t t-esc="pr.bd_name !== '-' ? pr.bd_name : 'Menunggu'"/>
+                                    </div>
+                                    <div class="o_pr_stage_date"><t t-esc="bd_stage.date"/></div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- PROGRESS -->
+                        <td class="o_pr_td_progress">
+                            <div class="o_pr_progress_bar_bg">
+                                <div class="o_pr_progress_bar_fill"
+                                    t-attf-style="width:{{ pr.progress }}%; background:{{ pr.status === 'Complete' ? '#1D9E75' : pr.is_urgent ? '#E24B4A' : '#BA7517' }};"/>
+                            </div>
+                            <div class="o_pr_progress_pct"><t t-esc="pr.progress"/>%</div>
+                        </td>
+
+                        <!-- STATUS + DEADLINE -->
+                        <td class="o_pr_td_status">
+                            <span t-attf-class="o_pr_status_badge o_pr_status_{{ pr.status === 'Complete' ? 'complete' : 'progress' }}">
+                                <t t-esc="pr.status"/>
+                            </span>
+                            <div class="o_pr_deadline">
+                                &#128197;&#160;<t t-esc="pr.deadline"/>
+                            </div>
+                        </td>
+
+                    </tr>
+                </t>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</t>
+</templates>
