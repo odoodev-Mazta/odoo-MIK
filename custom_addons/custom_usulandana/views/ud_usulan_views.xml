@@ -98,6 +98,7 @@
                             <field name="line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
 <!--                                    <field name="item_name"/>-->
+                                    <field name="product_id"/>
                                     <field name="setup_item_id"/>
                                     <field name="account_id" options="{'no_open': True}"/>
                                     <field name="mou_id"/>
