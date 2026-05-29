@@ -284,6 +284,47 @@ class UsulanUsulanDana(models.Model):
                 )
         return super().create(vals_list)
 
+    def action_set_to_draft(self):
+        for record in self:
+
+            if record.state == 'rilis':
+                raise exceptions.UserError(
+                    "Dokumen yang sudah rilis tidak dapat dikembalikan ke draft."
+                )
+
+            posted_bills = record.line_ids.mapped(
+                'payment_schedule_ids.vendor_bill_id'
+            ).filtered(lambda b: b.state == 'posted')
+
+            if posted_bills:
+                raise exceptions.UserError(
+                    "Masih ada Vendor Bill yang sudah diposting."
+                )
+
+            plans = record.plan_payment_ids
+
+            schedules = record.line_ids.mapped('payment_schedule_ids')
+
+            if schedules:
+                schedules.write({
+                    'plan_payment_id': False
+                })
+
+            deletable_plans = plans.filtered(
+                lambda p: p.state in ['draft', 'menggantung', 'cancel']
+            )
+
+            if deletable_plans:
+                deletable_plans.unlink()
+
+            record.plan_payment_id = False
+
+            record.req_head = False
+            record.req_coo = False
+            record.req_ceo = False
+
+            record.state = 'draft'
+
     def action_submit(self):
         for record in self:
             for line in record.line_ids:
@@ -355,7 +396,14 @@ class UsulanUsulanDana(models.Model):
                 'state': 'draft',
                 'line_ids': [(0, 0, {
                     'usulan_line_id': line.id,
-                    'description': line.setup_item_id.name,
+                    'product_id': line.product_id.id,
+                    'uom_id': line.uom_id.id,
+                    'quantity': line.quantity,
+                    'price_unit': line.price_unit,
+                    'description':
+                        line.product_id.display_name
+                        if line.product_id
+                        else line.setup_item_id.name,
                     'original_amount': line.price_subtotal,
                 }) for line in rec.line_ids]
             })
@@ -465,6 +513,10 @@ class UsulanUsulanDanaLine(models.Model):
         string='Nama Item',
         required=False,
     )
+    uom_id = fields.Many2one(
+        'uom.uom',
+        string='UoM'
+    )
     product_id = fields.Many2one(
         'product.product',
         string='Product'
@@ -520,6 +572,13 @@ class UsulanUsulanDanaLine(models.Model):
     tax_amount = fields.Float(string="Tax Amount")
     final_amount = fields.Float(string="Final Amount")
     keterangan = fields.Text(string="Keterangan", readonly=False)
+
+    @api.onchange('product_id')
+    def _onchange_product_id(self):
+        for line in self:
+            if line.product_id:
+                line.uom_id = line.product_id.uom_id.id
+                line.price_unit = line.product_id.standard_price
 
     @api.depends('payment_schedule_ids', 'payment_schedule_ids.date_payment')
     def _compute_payment_summary(self):

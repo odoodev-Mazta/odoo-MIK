@@ -35,6 +35,7 @@ class UsulanDanaTax(models.Model):
                     'tax_amount': line.tax_amount,
                     'final_amount': line.final_amount,
                     'price_unit': new_price,
+                    'uom_id': line.uom_id.id,
                 })
 
                 for schedule in usulan_line.payment_schedule_ids:
@@ -50,6 +51,29 @@ class UsulanDanaTax(models.Model):
 
 class UsulanDanaTaxLine(models.Model):
     _name = 'usulan.dana.tax.line'
+
+    product_id = fields.Many2one(
+        'product.product',
+        string='Product'
+    )
+
+    uom_id = fields.Many2one(
+        'uom.uom',
+        string='UoM'
+    )
+
+    quantity = fields.Float(
+        string='Qty'
+    )
+
+    price_unit = fields.Float(
+        string='Unit Price'
+    )
+
+    currency_id = fields.Many2one(
+        'res.currency',
+        default=lambda self: self.env.company.currency_id
+    )
 
     tax_id = fields.Many2one('usulan.dana.tax')
 
