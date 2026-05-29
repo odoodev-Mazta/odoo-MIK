@@ -38,6 +38,8 @@
             <form string="Usulan Dana">
                 <header>
                     <button name="action_submit" string="Ajukan" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_set_to_draft" string="Set to Draft" type="object"
+                            class="btn-secondary" invisible="state not in ('waiting_head', 'waiting_coo', 'waiting_ceo', 'waiting_finance', 'approve', 'check_tax', 'plan_payment', 'reject', 'cancel')"/>
                     <button name="action_approve_head" string="Approve (Head Dept)" type="object" class="btn-success oe_highlight"
                             invisible="state != 'waiting_head'"
                             groups="custom_usulandana.group_head_dept"/>
@@ -104,6 +106,7 @@
                                     <field name="keterangan"/>
                                     <field name="mou_id"/>
                                     <field name="quantity"/>
+                                    <field name="uom_id"/>
                                     <field name="price_unit"/>
                                     <field name="currency_id"/>
                                     <field name="today_rate"/>
