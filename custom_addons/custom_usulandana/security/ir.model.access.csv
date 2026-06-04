@@ -32,3 +32,6 @@ access_pph_setup,pph.setup,model_pph_setup,base.group_user,1,1,1,1
 access_uang_lainnya_line,uang.lainnya.line,model_uang_lainnya_line,base.group_user,1,1,1,1
 access_uang_lainnya_wizard,uang.lainnya.wizard,model_uang_lainnya_wizard,base.group_user,1,1,1,1
 access_uang_lainnya_wizard_line,uang.lainnya.wizard.line,model_uang_lainnya_wizard_line,base.group_user,1,1,1,1
+access_usulan_payment_schedule_header,usulan.payment.schedule.header,model_usulan_payment_schedule_header,base.group_user,1,1,1,1
+access_usulan_payment_header_wizard,usulan.payment.header.wizard,model_usulan_payment_header_wizard,base.group_user,1,1,1,1
+access_usulan_payment_header_wizard_line,usulan.payment.header.wizard.line,model_usulan_payment_header_wizard_line,base.group_user,1,1,1,1

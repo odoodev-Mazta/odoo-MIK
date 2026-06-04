@@ -69,7 +69,7 @@
                                     <field name="actual_payment_date" string="Tgl Pembayaran (Aktual)" readonly="1"/>
                                     <field name="state" widget="badge" decoration-success="state == 'paid'"/>
                                     <button name="action_pay_termin" type="object" string="Pilih Cara Bayar"
-                                            icon="fa-file-text-o" class="btn-info" invisible="not vendor_bill_id"/>
+                                            icon="fa-file-text-o" class="btn-info" invisible="state == 'paid'"/>
 
                                     <field name="vendor_bill_id" column_invisible="1"/>
                                 </list>

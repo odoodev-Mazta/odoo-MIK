@@ -92,11 +92,40 @@
                         <group string="Dokumen Pendukung">
                             <field name="attachment_ids" widget="many2many_binary" string="Lampiran"/>
                         </group>
+
+                        <group string="Mode Termin Pembayaran">
+                            <field name="payment_mode" widget="radio"
+                                   readonly="state != 'draft'"/>
+
+                            <!-- Tombol + ringkasan termin — hanya muncul jika per_usulan -->
+                            <field name="header_payment_summary"
+                                   string="Info Termin"
+                                   readonly="1"
+                                   invisible="payment_mode != 'per_usulan'"/>
+                            <button name="action_open_header_payment_wizard"
+                                    type="object"
+                                    string="⚙ Atur Termin Pembayaran"
+                                    class="btn-primary"
+                                    invisible="payment_mode != 'per_usulan' or state != 'draft'"/>
+                        </group>
                     </group>
 
                     <notebook>
-                        <page string="Item Details" name="item_details">
+                        <page string="Jadwal Pembayaran"
+                              name="header_schedule"
+                              invisible="payment_mode != 'per_usulan'">
+                            <field name="header_schedule_ids"
+                                   readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="date_payment"/>
+                                    <field name="amount_percentage"/>
+                                    <field name="amount" widget="monetary"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
 
+                        <page string="Item Details" name="item_details">
                             <field name="line_ids" readonly="state != 'draft'">
                                 <list editable="bottom">
 <!--                                    <field name="item_name"/>-->
@@ -109,6 +138,8 @@
                                     <field name="uom_id"/>
                                     <field name="price_unit"/>
                                     <field name="currency_id"/>
+                                    <field name="is_foreign_currency" column_invisible="1"/>
+                                    <field name="idr_currency_id" column_invisible="1"/>
                                     <field name="today_rate"/>
                                     <field name="discount"/>
                                     <field name="tax_ids" widget="many2many_tags"/>

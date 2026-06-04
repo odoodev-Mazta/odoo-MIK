@@ -24,7 +24,6 @@ class UsulanDanaTax(models.Model):
                     continue
 
                 usulan_line = line.usulan_line_id
-
                 new_price = (
                     line.final_amount / usulan_line.quantity
                     if usulan_line.quantity else 0
@@ -38,16 +37,24 @@ class UsulanDanaTax(models.Model):
                     'uom_id': line.uom_id.id,
                 })
 
+                # Update schedule per-item (existing)
                 for schedule in usulan_line.payment_schedule_ids:
                     schedule.amount = (
-                            line.final_amount *
-                            (schedule.amount_percentage / 100.0)
+                            line.final_amount * (schedule.amount_percentage / 100.0)
                     )
 
             record.state = 'done'
-            record.usulan_dana_id.write({
-                'state': 'plan_payment'
-            })
+            usulan = record.usulan_dana_id
+            usulan.write({'state': 'plan_payment'})
+
+            # Update schedule header jika mode per_usulan
+            # Recalculate amount header berdasarkan amount_total terbaru
+            if usulan.payment_mode == 'per_usulan':
+                new_total = usulan.amount_total
+                for header_schedule in usulan.header_schedule_ids:
+                    header_schedule.amount = (
+                            new_total * (header_schedule.amount_percentage / 100.0)
+                    )
 
 class UsulanDanaTaxLine(models.Model):
     _name = 'usulan.dana.tax.line'
