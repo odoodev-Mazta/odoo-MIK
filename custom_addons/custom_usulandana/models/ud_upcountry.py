@@ -124,6 +124,7 @@ class UsulanUpCountry(models.Model):
     line_uc_ids = fields.One2many('usulan.up.country.line', 'up_country_id', string='Transportasi dan Akomodasi')
     is_advance = fields.Boolean(string="Advance", default=True)
     domestic_intl = fields.Boolean(string="Dalam Negeri")
+    active = fields.Boolean(default=True)
 
     @api.onchange('domestic_intl')
     def _onchange_domestic_intl(self):
