@@ -34,6 +34,7 @@
         'wizard/payment_calendar_wizard_views.xml',
         'wizard/rencana_kerja_wizard_views.xml',
         'wizard/uang_lainnya_wizard_views.xml',
+        'wizard/payment_header_wizard_views.xml',
     ],
     'assets':{
         'web.assets_backend': [

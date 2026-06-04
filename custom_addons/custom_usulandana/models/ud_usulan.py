@@ -1,4 +1,5 @@
 from odoo import models, fields, api, exceptions
+from odoo.tools import float_round
 
 
 class UsulanUsulanDana(models.Model):
@@ -42,7 +43,11 @@ class UsulanUsulanDana(models.Model):
     amount_dpp = fields.Monetary(string='DPP', compute='_compute_amount_total', store=True)
     amount_ppn = fields.Monetary(string='PPN(11%)', compute='_compute_amount_total', store=True)
     amount_total = fields.Monetary(string='Total Nilai Usulan', compute='_compute_amount_total', store=True)
-    currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id)
+    currency_id = fields.Many2one(
+        'res.currency',
+        compute='_compute_currency_id',
+        store=True
+    )
     is_ppn = fields.Boolean(string='PPN 11%', default=False, tracking=True)
     attachment_ids = fields.Many2many(
         'ir.attachment',
@@ -115,6 +120,53 @@ class UsulanUsulanDana(models.Model):
         'usulan.plan.payment',
         string='Plan Payment'
     )
+    payment_mode = fields.Selection([
+        ('per_item', 'Per Item'),
+        ('per_usulan', 'Per Usulan Dana'),
+    ], string='Mode Termin Bayar', default='per_item', required=True, tracking=True)
+
+    header_schedule_ids = fields.One2many(
+        'usulan.payment.schedule.header',
+        'usulan_id',
+        string='Jadwal Pembayaran'
+    )
+
+    header_payment_summary = fields.Char(
+        string='Info Termin',
+        compute='_compute_header_payment_summary',
+        store=True
+    )
+
+    @api.depends('header_schedule_ids', 'header_schedule_ids.date_payment')
+    def _compute_header_payment_summary(self):
+        for rec in self:
+            schedules = rec.header_schedule_ids
+            count = len(schedules)
+            if count == 0:
+                rec.header_payment_summary = "Belum Diset"
+            elif count == 1:
+                date_val = schedules[0].date_payment
+                rec.header_payment_summary = (
+                    f"Jatuh Tempo ({date_val.strftime('%d-%m-%Y')})"
+                    if date_val else "Jatuh Tempo"
+                )
+            else:
+                rec.header_payment_summary = f"{count}x Termin"
+
+    @api.onchange('payment_mode')
+    def _onchange_payment_mode(self):
+        """Bersihkan schedule lama ketika mode diganti."""
+        if self.payment_mode == 'per_usulan':
+            for line in self.line_ids:
+                line.payment_schedule_ids = [(5, 0, 0)]
+        elif self.payment_mode == 'per_item':
+            self.header_schedule_ids = [(5, 0, 0)]
+
+    @api.depends()
+    def _compute_currency_id(self):
+        idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
+        for rec in self:
+            rec.currency_id = idr
 
     @api.onchange('purchase_order_id')
     def _onchange_purchase_order_id(self):
@@ -225,15 +277,16 @@ class UsulanUsulanDana(models.Model):
 
         return []
 
-    @api.depends('line_ids.price_subtotal', 'line_ids.ppn_amount', 'line_ids.grand_total', 'line_ids.price_raw',
-                 'line_ids.discount_amount')
+    @api.depends('line_ids.price_subtotal', 'line_ids.ppn_amount', 'line_ids.grand_total',
+                 'line_ids.price_raw', 'line_ids.discount_amount',
+                 'line_ids.currency_id', 'line_ids.today_rate')  # tambah trigger konversi
     def _compute_amount_total(self):
         for record in self:
             record.amount_invoice_raw = sum(record.line_ids.mapped('price_raw'))
             record.amount_discount = sum(record.line_ids.mapped('discount_amount'))
-
             record.amount_dpp = sum(record.line_ids.mapped('price_subtotal'))
             record.amount_ppn = sum(record.line_ids.mapped('ppn_amount'))
+            # grand_total di line sudah semua IDR, langsung sum
             record.amount_total = sum(record.line_ids.mapped('grand_total'))
 
     @api.depends('state')
@@ -327,19 +380,31 @@ class UsulanUsulanDana(models.Model):
 
     def action_submit(self):
         for record in self:
-            for line in record.line_ids:
-                if not line.payment_schedule_ids:
+            # ── Validasi termin sesuai mode ──────────────────────────────────
+            if record.payment_mode == 'per_item':
+                for line in record.line_ids:
+                    if not line.payment_schedule_ids:
+                        raise exceptions.UserError(
+                            f"Termin pembayaran untuk item "
+                            f"'{line.setup_item_id.name or line.product_id.name}' belum diset."
+                        )
+            elif record.payment_mode == 'per_usulan':
+                if not record.header_schedule_ids:
                     raise exceptions.UserError(
-                        f"Termin pembayaran untuk item "
-                        f"'{line.setup_item_id.name}' belum diset."
+                        "Termin pembayaran belum diset. "
+                        "Silakan klik tombol 'Atur Termin Pembayaran' terlebih dahulu."
+                    )
+                total_pct = sum(record.header_schedule_ids.mapped('amount_percentage'))
+                if abs(total_pct - 100.0) > 0.01:
+                    raise exceptions.UserError(
+                        f"Total persentase termin harus 100%. Saat ini: {total_pct:.2f}%"
                     )
 
+            # ── Sisa logic tidak berubah ─────────────────────────────────────
             total = record.amount_total
-
             domain = [('min_amount', '<=', total)]
             rules = self.env['usulan.approval.setup'].search(domain)
 
-            # Filter manual untuk max_amount (karena 0 artinya unlimited)
             valid_rule = False
             for rule in rules:
                 if rule.max_amount == 0 or rule.max_amount >= total:
@@ -348,7 +413,8 @@ class UsulanUsulanDana(models.Model):
 
             if not valid_rule:
                 raise exceptions.UserError(
-                    f"Sistem tidak menemukan Setup Approval untuk nominal {total}. Hubungi Admin!")
+                    f"Sistem tidak menemukan Setup Approval untuk nominal {total}. Hubungi Admin!"
+                )
 
             record.req_head = valid_rule.need_head_dept
             record.req_coo = valid_rule.need_coo
@@ -362,6 +428,44 @@ class UsulanUsulanDana(models.Model):
                 record.state = 'waiting_ceo'
             else:
                 record.state = 'waiting_finance'
+
+    # def action_submit(self):
+    #     for record in self:
+    #         for line in record.line_ids:
+    #             if not line.payment_schedule_ids:
+    #                 raise exceptions.UserError(
+    #                     f"Termin pembayaran untuk item "
+    #                     f"'{line.setup_item_id.name}' belum diset."
+    #                 )
+    #
+    #         total = record.amount_total
+    #
+    #         domain = [('min_amount', '<=', total)]
+    #         rules = self.env['usulan.approval.setup'].search(domain)
+    #
+    #         # Filter manual untuk max_amount (karena 0 artinya unlimited)
+    #         valid_rule = False
+    #         for rule in rules:
+    #             if rule.max_amount == 0 or rule.max_amount >= total:
+    #                 valid_rule = rule
+    #                 break
+    #
+    #         if not valid_rule:
+    #             raise exceptions.UserError(
+    #                 f"Sistem tidak menemukan Setup Approval untuk nominal {total}. Hubungi Admin!")
+    #
+    #         record.req_head = valid_rule.need_head_dept
+    #         record.req_coo = valid_rule.need_coo
+    #         record.req_ceo = valid_rule.need_ceo
+    #
+    #         if record.req_head:
+    #             record.state = 'waiting_head'
+    #         elif record.req_coo:
+    #             record.state = 'waiting_coo'
+    #         elif record.req_ceo:
+    #             record.state = 'waiting_ceo'
+    #         else:
+    #             record.state = 'waiting_finance'
 
     def action_approve_head(self):
         for record in self:
@@ -415,7 +519,6 @@ class UsulanUsulanDana(models.Model):
     def action_create_plan_payment(self):
         for record in self:
             mou_reference_id = False
-
             for line in record.line_ids:
                 if hasattr(line, 'mou_id') and line.mou_id:
                     mou_reference_id = line.mou_id.id
@@ -430,14 +533,17 @@ class UsulanUsulanDana(models.Model):
                 'mou_id': mou_reference_id,
             })
 
-            all_schedules = record.line_ids.mapped(
-                'payment_schedule_ids'
-            )
+            all_schedules = record.line_ids.mapped('payment_schedule_ids')
 
             if all_schedules:
-                all_schedules.write({
-                    'plan_payment_id': plan.id
-                })
+                for schedule in all_schedules:
+                    line = schedule.line_id
+                    amount_idr = line.grand_total * (schedule.amount_percentage / 100.0) if line else schedule.amount
+
+                    schedule.with_context(skip_auto_bill=True).write({
+                        'plan_payment_id': plan.id,
+                        'amount': amount_idr,
+                    })
 
             record.plan_payment_id = plan.id
             record.state = 'plan_payment'
@@ -498,6 +604,35 @@ class UsulanUsulanDana(models.Model):
                 plans.write({'state': 'cancel'})
             record.state = 'cancel'
 
+    def action_open_header_payment_wizard(self):
+        """Buka wizard set termin untuk keseluruhan Usulan Dana."""
+        self.ensure_one()
+
+        if not self.id:
+            raise exceptions.UserError(
+                "Silakan simpan dokumen terlebih dahulu sebelum mengatur termin."
+            )
+
+        existing_lines = [(0, 0, {
+            'date_payment': s.date_payment,
+            'amount_percentage': s.amount_percentage,
+            'amount': s.amount,
+            'note': s.note,
+        }) for s in self.header_schedule_ids]
+
+        return {
+            'name': 'Atur Termin Pembayaran (Per Usulan Dana)',
+            'type': 'ir.actions.act_window',
+            'res_model': 'usulan.payment.header.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_usulan_id': self.id,
+                'default_total_amount': self.amount_total,
+                'default_wizard_line_ids': existing_lines,
+            }
+        }
+
 class UsulanUsulanDanaLine(models.Model):
     _name = 'usulan.usulan.dana.line'
     _description = 'Line Usulan Dana'
@@ -536,7 +671,23 @@ class UsulanUsulanDanaLine(models.Model):
 
     # Currency per Line
     currency_id = fields.Many2one('res.currency', string='Currency', default=lambda self: self.env.company.currency_id)
-    today_rate = fields.Float(string="Today's Currency", help="Exchange rate hari ini")
+    today_rate = fields.Float(
+        string="Today Rate",
+        digits=(16, 4),
+        default=1.0,
+        help="Kurs konversi ke IDR. Otomatis diisi dari data kurs Odoo, dapat diubah manual."
+    )
+    is_foreign_currency = fields.Boolean(
+        string='Foreign Currency?',
+        compute='_compute_is_foreign_currency',
+        store=True
+    )
+    idr_currency_id = fields.Many2one(
+        'res.currency',
+        string='IDR Currency',
+        compute='_compute_idr_currency_id',
+        store=True
+    )
 
     price_unit = fields.Monetary(string='Price', currency_field='currency_id')
     discount = fields.Float(string='Discount (%)')
@@ -545,8 +696,13 @@ class UsulanUsulanDanaLine(models.Model):
     ppn_amount = fields.Monetary(string='Nilai PPN', compute='_compute_subtotal', store=True,
                                  currency_field='currency_id')
 
-    grand_total = fields.Monetary(string='Grand Total', compute='_compute_subtotal', store=True,
-                                  currency_field='currency_id')
+    grand_total = fields.Monetary(
+        string='Grand Total (IDR)',
+        compute='_compute_subtotal',
+        store=True,
+        currency_field='idr_currency_id',
+        help="Grand Total selalu dalam IDR. Jika currency bukan IDR, otomatis dikonversi menggunakan kurs hari ini."
+    )
     grand_total_currency = fields.Float(string='GT Currency', compute='_compute_subtotal', store=True)
 
     # termin bayar
@@ -612,29 +768,61 @@ class UsulanUsulanDanaLine(models.Model):
             else:
                 line.tax_ids = [(5, 0, 0)]
 
-    @api.depends('quantity', 'price_unit', 'discount', 'today_rate', 'usulan_id.is_ppn')
-    def _compute_subtotal(self):
+    @api.depends()
+    def _compute_idr_currency_id(self):
+        idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
         for line in self:
-            # 1. Hitung Total (DPP) -> Price * Qty - Discount
+            line.idr_currency_id = idr
+
+    @api.depends('currency_id')
+    def _compute_is_foreign_currency(self):
+        idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
+        for line in self:
+            line.is_foreign_currency = bool(line.currency_id and line.currency_id != idr)
+
+    @api.onchange('currency_id')
+    def _onchange_currency_id(self):
+        idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
+        for line in self:
+            if not line.currency_id or line.currency_id == idr:
+                line.today_rate = 1.0
+            else:
+                # currency.rate Odoo: 1 IDR = X foreign  →  invers = 1 foreign = (1/X) IDR
+                rate = line.currency_id.rate
+                line.today_rate = float_round(1.0 / rate, precision_digits=4) if rate else 1.0
+
+    @api.depends('quantity', 'price_unit', 'discount', 'today_rate',
+                 'usulan_id.is_ppn', 'currency_id')
+    def _compute_subtotal(self):
+        idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
+
+        for line in self:
+            # 1. Harga kotor & diskon (dalam currency line)
             total_awal = line.quantity * line.price_unit
             diskon_nominal = total_awal * (line.discount / 100.0)
 
             line.price_raw = total_awal
             line.discount_amount = diskon_nominal
 
+            # 2. DPP (dalam currency line)
             dpp = total_awal - diskon_nominal
             line.price_subtotal = dpp
 
-            # 2. Hitung PPN jika tombol on/off dinyalakan
+            # 3. PPN (dalam currency line)
             ppn = dpp * 0.11 if line.usulan_id.is_ppn else 0.0
             line.ppn_amount = ppn
 
-            # 3. Hitung Grand Total -> DPP + PPN
-            gt = dpp + ppn
-            line.grand_total = gt
+            # 4. Subtotal dalam currency line (sebelum konversi)
+            gt_raw = dpp + ppn
 
-            # 4. Hitung Grand Total Currency -> Grand Total * Rate
-            line.grand_total_currency = gt * line.today_rate
+            # 5. Konversi ke IDR
+            if line.currency_id and line.currency_id != idr:
+                rate = line.today_rate if line.today_rate else 1.0
+                gt_idr = gt_raw * rate
+            else:
+                gt_idr = gt_raw
+            line.grand_total = gt_idr
+            line.grand_total_currency = gt_idr
 
     def action_open_payment_wizard(self):
         self.ensure_one()
