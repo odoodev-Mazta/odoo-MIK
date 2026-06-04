@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="view_usulan_payment_header_wizard_form" model="ir.ui.view">
+        <field name="name">usulan.payment.header.wizard.form</field>
+        <field name="model">usulan.payment.header.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Atur Termin Pembayaran Per Usulan Dana">
+                <sheet>
+                    <group>
+                        <group string="Info Usulan">
+                            <field name="usulan_id" readonly="1"/>
+                            <field name="total_amount" widget="monetary"/>
+                        </group>
+                        <group string="Pengaturan Termin">
+                            <field name="payment_type" widget="radio"/>
+                            <field name="installment_count"
+                                   invisible="payment_type == 'full'"/>
+                            <field name="total_percentage"
+                                   decoration-danger="total_percentage != 100"
+                                   decoration-success="total_percentage == 100"/>
+                            <field name="remaining_percentage"
+                                   decoration-danger="remaining_percentage != 0"
+                                   decoration-success="remaining_percentage == 0"/>
+                        </group>
+                    </group>
+
+                    <field name="wizard_line_ids">
+                        <list editable="bottom">
+                            <field name="date_payment"/>
+                            <field name="amount_percentage"/>
+                            <field name="amount" readonly="1" widget="monetary"/>
+                            <field name="note"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button name="action_confirm" type="object"
+                            string="Simpan Termin"
+                            class="btn-primary"/>
+                    <button special="cancel" string="Batal"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>
