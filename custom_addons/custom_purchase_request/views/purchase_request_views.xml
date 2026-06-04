@@ -31,9 +31,11 @@
                 <header>
                     <button name="action_submit" string="PR" type="object"
                             class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_create_usulan_dana" string="Usulan Dana" type="object"
+                    <button name="action_to_po" string="PO" type="object"
                             class="btn-success" invisible="state != 'pr'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,pr,ud"/>
+                    <button name="action_create_usulan_dana" string="Usulan Dana" type="object"
+                            class="btn-success" invisible="state != 'po' or usulan_dana_id"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,pr,po,ud"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon"
@@ -57,11 +59,13 @@
                         <group>
                             <field name="deliver_to"/>
                             <field name="vendor_id"/>
+                            <field name="usulan_dana_id"/>
+                            <field name="attachment_ids" widget="many2many_binary"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Products">
-                            <field name="request_line_ids" widget="section_and_note_one2many">
+                            <field name="product_line_ids" widget="section_and_note_one2many" context="{'default_line_type': 'product'}">
                                 <list editable="bottom">
                                     <control>
                                         <create string="Add a product"/>
@@ -70,12 +74,14 @@
                                         <create string="Add a note"
                                                 context="{'default_display_type':'line_note'}"/>
                                     </control>
+                                    <field name="line_type" column_invisible="1"/>
                                     <field name="sequence" widget="handle"/>
                                     <field name="display_type" column_invisible="1"/>
-                                    <field name="product_id" required="not display_type"/>
+                                    <field name="product_id"/>
                                     <field name="name"/>
                                     <field name="product_qty"/>
                                     <field name="product_uom"/>
+                                    <field name="currency_id"/>
                                     <field name="price_unit"/>
                                     <field name="tax_ids" widget="many2many_tags"/>
                                     <field name="date_planned"/>
@@ -84,8 +90,9 @@
                             </field>
                         </page>
                         <page string="Item Setup">
-                            <field name="request_line_ids">
+                            <field name="item_line_ids" context="{'default_line_type': 'setup'}">
                                 <list editable="bottom">
+                                    <field name="line_type" column_invisible="1"/>
                                     <field name="setup_item_id"/>
                                     <field name="name"/>
                                     <field name="item_qty"/>
