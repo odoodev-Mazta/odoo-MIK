@@ -19,7 +19,7 @@ class PurchaseRequest(models.Model):
         string='Department'
     )
 
-    pic_dept = fields.Char(
+    pic_dept = fields.Many2one('res.users',
         string='PIC Department'
     )
 
@@ -31,7 +31,7 @@ class PurchaseRequest(models.Model):
         string='Estimated Arrival Date'
     )
 
-    deliver_to = fields.Char(
+    deliver_to = fields.Many2one('res.company',
         string='Deliver To'
     )
 
@@ -41,9 +41,15 @@ class PurchaseRequest(models.Model):
         domain=[('supplier_rank', '>', 0)]
     )
 
+    attachment_ids = fields.Many2many(
+        'ir.attachment',
+        string='Attachments'
+    )
+
     state = fields.Selection([
         ('draft', 'Draft'),
         ('pr', 'Purchase Request'),
+        ('po', 'Purchase Order'),
         ('ud', 'Usulan Dana'),
     ], default='draft', tracking=True)
 
@@ -87,6 +93,37 @@ class PurchaseRequest(models.Model):
         store=True,
     )
 
+    usulan_dana_id = fields.Many2one(
+        'usulan.usulan.dana',
+        string='No. Usulan Dana',
+        tracking=True
+    )
+
+    product_line_ids = fields.One2many(
+        'purchase.request.line',
+        compute='_compute_line_split',
+        inverse='_inverse_product_line_ids',
+        string='Products',
+        store=False,
+    )
+
+    item_line_ids = fields.One2many(
+        'purchase.request.line',
+        compute='_compute_line_split',
+        inverse='_inverse_item_line_ids',
+        string='Items',
+        store=False,
+    )
+
+    def write(self, vals):
+        res = super().write(vals)
+        if vals.get('attachment_ids'):
+            self.message_post(
+                body="Attachment uploaded",
+                attachment_ids=self.attachment_ids.ids
+            )
+        return res
+
     @api.depends('request_line_ids.product_id')
     def _compute_product_summary(self):
         for rec in self:
@@ -109,6 +146,10 @@ class PurchaseRequest(models.Model):
         for rec in self:
             rec.state = 'pr'
 
+    def action_to_po(self):
+        for rec in self:
+            rec.state = 'po'
+
     def action_to_usulan_dana(self):
         for rec in self:
             rec.state = 'ud'
@@ -121,6 +162,74 @@ class PurchaseRequest(models.Model):
                     'purchase.request'
                 ) or '/'
         return super().create(vals_list)
+
+    @api.depends('request_line_ids', 'request_line_ids.line_type', 'request_line_ids.product_id','request_line_ids.setup_item_id')
+    def _compute_line_split(self):
+        for rec in self:
+            rec.product_line_ids = rec.request_line_ids.filtered(
+                lambda l: l.line_type == 'product'
+            )
+
+            rec.item_line_ids = rec.request_line_ids.filtered(
+                lambda l: l.line_type == 'setup'
+            )
+
+    @api.depends('request_line_ids', 'request_line_ids.line_type', 'request_line_ids.product_id',
+                 'request_line_ids.setup_item_id')
+    def _compute_line_split(self):
+        for rec in self:
+            rec.product_line_ids = rec.request_line_ids.filtered(lambda l: l.line_type == 'product')
+            rec.item_line_ids = rec.request_line_ids.filtered(lambda l: l.line_type == 'setup')
+
+    def _inverse_product_line_ids(self):
+        for rec in self:
+            other_lines = rec.request_line_ids.filtered(lambda l: l.line_type != 'product')
+            rec.request_line_ids = other_lines + rec.product_line_ids
+
+    def _inverse_item_line_ids(self):
+        for rec in self:
+            other_lines = rec.request_line_ids.filtered(lambda l: l.line_type != 'setup')
+            rec.request_line_ids = other_lines + rec.item_line_ids
+
+    @api.onchange('usulan_dana_id')
+    def _onchange_usulan_dana(self):
+        if not self.usulan_dana_id:
+            return
+
+        self.currency_id = self.usulan_dana_id.currency_id.id
+
+        self.request_line_ids = [(5, 0, 0)]
+
+        lines = []
+
+        for ud_line in self.usulan_dana_id.line_ids:
+
+            vals = {
+                'price_unit': ud_line.price_unit,
+                'tax_ids': [(6, 0, ud_line.tax_ids.ids)],
+            }
+
+            if ud_line.product_id:
+                vals.update({
+                    'line_type': 'product',
+                    'product_id': ud_line.product_id.id,
+                    'product_qty': ud_line.quantity,
+                    'currency_id': ud_line.currency_id.id,
+                    'product_uom': ud_line.uom_id.id,
+                    'name': ud_line.product_id.display_name,
+                })
+
+            elif ud_line.setup_item_id:
+                vals.update({
+                    'line_type': 'setup',
+                    'setup_item_id': ud_line.setup_item_id.id,
+                    'item_qty': ud_line.quantity,
+                    'name': ud_line.setup_item_id.name,
+                })
+
+            lines.append((0, 0, vals))
+
+        self.request_line_ids = lines
 
     def action_create_usulan_dana(self):
         self.ensure_one()
@@ -149,12 +258,17 @@ class PurchaseRequest(models.Model):
         usulan = self.env['usulan.usulan.dana'].create({
             'department_id': self.department_id.id,
             'vendor_id': self.vendor_id.id,
+            'currency_id': self.currency_id.id,
             'tgl_usulan': self.date_usulan,
             'description': f'Generate dari PR {self.name}',
+            # 'purchase_request_name': self.name,
             'line_ids': lines
         })
 
-        self.state = 'ud'
+        self.write({
+            'state': 'ud',
+            'usulan_dana_id': usulan.id,
+        })
 
         return {
             'type': 'ir.actions.act_window',
@@ -163,40 +277,6 @@ class PurchaseRequest(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
-
-    # def action_create_usulan_dana(self):
-    #     self.ensure_one()
-    #     UsulanDana = self.env['usulan.usulan.dana']
-    #
-    #     usulan = UsulanDana.create({
-    #         'name': 'New',
-    #         'department_id': self.department_id.id,
-    #         'vendor_id': self.vendor_id.id,
-    #         'tgl_usulan': fields.Date.today(),
-    #         'description': f"Generated from PR {self.name}",
-    #         'purchase_request_id': self.id,
-    #     })
-    #
-    #     UsulanLine = self.env['usulan.usulan.dana.line']
-    #
-    #     for line in self.request_line_ids:
-    #         UsulanLine.create({
-    #             'usulan_id': usulan.id,
-    #             'setup_item_id': line.setup_item_id.id,
-    #             'quantity': line.product_qty,
-    #             'price_unit': line.price_unit,
-    #             'tax_ids': [(6, 0, line.tax_ids.ids)],
-    #             'purchase_request_line_id': line.id,
-    #         })
-    #
-    #     self.state = 'ud'
-    #     return {
-    #         'type': 'ir.actions.act_window',
-    #         'res_model': 'usulan.usulan.dana',
-    #         'res_id': usulan.id,
-    #         'view_mode': 'form',
-    #         'target': 'current',
-    #     }
 
 class PurchaseRequestLine(models.Model):
     _name = 'purchase.request.line'
@@ -208,7 +288,7 @@ class PurchaseRequestLine(models.Model):
         ('line_section', 'Section'),
         ('line_note', 'Note'),
     ])
-    product_id = fields.Many2one('product.product', string='Product')
+    product_id = fields.Many2one('product.product', string='Product', required=False)
     name = fields.Text(string='Description')
     product_qty = fields.Float(string='Quantity', default=1.0)
     item_qty = fields.Float(
@@ -221,7 +301,6 @@ class PurchaseRequestLine(models.Model):
 
     currency_id = fields.Many2one(
         'res.currency',
-        related='request_id.currency_id',
         store=True
     )
 
@@ -239,9 +318,21 @@ class PurchaseRequestLine(models.Model):
         required=False
     )
 
+    line_type = fields.Selection([
+        ('product', 'Product'),
+        ('setup', 'Setup Item'),
+    ], required=True, default='product')
+
     @api.depends('product_qty', 'price_unit', 'currency_id')
     def _compute_amount(self):
         for line in self:
-            line.price_subtotal = line.currency_id.round(
-                line.product_qty * line.price_unit
-            )
+            currency = line.currency_id or line.request_id.currency_id
+
+            if currency:
+                line.price_subtotal = currency.round(
+                    line.product_qty * line.price_unit
+                )
+            else:
+                line.price_subtotal = (
+                        line.product_qty * line.price_unit
+                )
