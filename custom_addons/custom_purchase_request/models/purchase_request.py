@@ -19,7 +19,7 @@ class PurchaseRequest(models.Model):
         string='Department'
     )
 
-    pic_dept = fields.Many2one('res.users',
+    pic_dept = fields.Many2one('hr.employee',
         string='PIC Department'
     )
 
