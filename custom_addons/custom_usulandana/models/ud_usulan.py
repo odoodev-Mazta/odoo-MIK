@@ -137,6 +137,8 @@ class UsulanUsulanDana(models.Model):
         store=True
     )
 
+    active = fields.Boolean(default=True)
+
     @api.depends('header_schedule_ids', 'header_schedule_ids.date_payment')
     def _compute_header_payment_summary(self):
         for rec in self:

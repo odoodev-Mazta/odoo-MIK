@@ -71,6 +71,7 @@
                         </group>
                         <group>
                             <separator string="Data Kota"/>
+                            <field name="domestic_intl" widget="boolean_toggle"/>
                             <field name="kota_depart_id"/>
                             <field name="kota_tujuan_id"/>
                             <field name="tgl_depart"/>
@@ -93,7 +94,6 @@
                         <group>
                             <separator string="Info Lainnya"/>
                             <field name="is_advance"/>
-                            <field name="domestic_intl" widget="boolean_toggle"/>
                         </group>
                     </group>
                     <notebook>
