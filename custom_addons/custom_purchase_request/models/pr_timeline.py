@@ -47,7 +47,10 @@ class PurchaseRequestTimeline(models.Model):
                 {
                     'code': 'vendor',
                     'label': 'Vendor',
-                    'status': 'done' if pr.vendor_id else 'pending',
+                    'status': 'done' if (
+                            pr.recommended_vendor_1
+                            or pr.recommended_vendor_2
+                    ) else 'pending',
                     'date': '-',
                 },
                 {
@@ -79,7 +82,12 @@ class PurchaseRequestTimeline(models.Model):
                 'pr_no': pr.name,
                 'department': pr.department_id.name if pr.department_id else '-',
                 'department_id': pr.department_id.id if pr.department_id else False,
-                'vendor': pr.vendor_id.name if pr.vendor_id else '-',
+                'vendor': ' / '.join(
+                    filter(None, [
+                        pr.recommended_vendor_1,
+                        pr.recommended_vendor_2,
+                    ])
+                ) or '-',
                 'product_summary': pr.product_summary or '-',
                 'total_qty': pr.total_qty,
                 'total_amount': pr.total_amount,

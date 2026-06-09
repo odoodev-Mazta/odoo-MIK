@@ -23,9 +23,14 @@ class PurchaseRequestReport(models.Model):
         string='Department'
     )
 
-    vendor_id = fields.Many2one(
-        'res.partner',
-        string='Vendor'
+    recommended_vendor_1 = fields.Char(
+        string='Vendor 1',
+        readonly=True
+    )
+
+    recommended_vendor_2 = fields.Char(
+        string='Vendor 2',
+        readonly=True
     )
 
     state = fields.Selection([
@@ -119,7 +124,8 @@ class PurchaseRequestReport(models.Model):
                     r.id AS request_id,
                     r.name AS name,
                     r.department_id AS department_id,
-                    r.vendor_id AS vendor_id,
+                    r.recommended_vendor_1 AS recommended_vendor_1,
+                    r.recommended_vendor_2 AS recommended_vendor_2,
                     r.state AS state,
                     r.create_date AS date_usulan,
                     r.estimated_date AS estimated_date,

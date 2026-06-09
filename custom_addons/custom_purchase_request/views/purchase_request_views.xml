@@ -17,7 +17,8 @@
                        options="{'currency_field': 'currency_id'}"/>
                 <field name="currency_id" column_invisible="1"/>
                 <field name="estimated_date"/>
-                <field name="vendor_id" string="Vendor"/>
+                <field name="recommended_vendor_1" string="Vendor 1"/>
+                <field name="recommended_vendor_2" string="Vendor 2"/>
                 <field name="state" string="Status" widget="badge"/>
             </list>
         </field>
@@ -58,9 +59,29 @@
 
                         <group>
                             <field name="deliver_to"/>
-                            <field name="vendor_id"/>
                             <field name="usulan_dana_id"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
+                        </group>
+                    </group>
+                    <group>
+                        <separator string="Rekomendasi Vendor"/>
+                        <group string="Rekomendasi 1">
+                            <field name="recommended_vendor_1"/>
+                            <field name="recommended_vendor_1_address"/>
+                            <field name="recommended_vendor_1_phone"/>
+                            <field name="recommended_vendor_1_email"/>
+                            <field name="recommended_vendor_1_website"/>
+                            <field name="recommended_vendor_1_type"/>
+                        </group>
+
+                        <!-- Kolom kanan -->
+                        <group string="Rekomendasi 2">
+                            <field name="recommended_vendor_2"/>
+                            <field name="recommended_vendor_2_address"/>
+                            <field name="recommended_vendor_2_phone"/>
+                            <field name="recommended_vendor_2_email"/>
+                            <field name="recommended_vendor_2_website"/>
+                            <field name="recommended_vendor_2_type"/>
                         </group>
                     </group>
                     <notebook>
