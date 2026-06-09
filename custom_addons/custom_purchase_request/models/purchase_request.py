@@ -35,11 +35,67 @@ class PurchaseRequest(models.Model):
         string='Deliver To'
     )
 
-    vendor_id = fields.Many2one(
-        'res.partner',
+    # rekomen vendor 1
+    recommended_vendor_1 = fields.Char(
         string='Vendor',
         domain=[('supplier_rank', '>', 0)]
     )
+
+    recommended_vendor_1_address = fields.Char(
+        string='Alamat',
+        readonly=False,
+    )
+
+    recommended_vendor_1_phone = fields.Char(
+        string='No WA',
+        readonly=False,
+    )
+
+    recommended_vendor_1_email = fields.Char(
+        string='Email',
+        readonly=False,
+    )
+
+    recommended_vendor_1_website = fields.Char(
+        string='Website',
+        readonly=False,
+    )
+
+    recommended_vendor_1_type = fields.Selection([
+        ('online', 'Online'),
+        ('offline', 'Offline'),
+    ], string='Jenis')
+
+    # rekomendasi vendor 2
+    recommended_vendor_2 = fields.Char(
+        string='Vendor',
+        domain=[('supplier_rank', '>', 0)]
+    )
+
+    recommended_vendor_2_address = fields.Char(
+        string='Alamat',
+        readonly=False,
+    )
+
+    recommended_vendor_2_phone = fields.Char(
+        string='No WA',
+        readonly=False,
+    )
+
+    recommended_vendor_2_email = fields.Char(
+        string='Email',
+        readonly=False,
+    )
+
+    recommended_vendor_2_website = fields.Char(
+        string='Website',
+        readonly=False,
+    )
+
+    recommended_vendor_2_type = fields.Selection([
+        ('online', 'Online'),
+        ('offline', 'Offline'),
+    ], string='Jenis')
 
     attachment_ids = fields.Many2many(
         'ir.attachment',
@@ -257,7 +313,7 @@ class PurchaseRequest(models.Model):
 
         usulan = self.env['usulan.usulan.dana'].create({
             'department_id': self.department_id.id,
-            'vendor_id': self.vendor_id.id,
+            # 'vendor_id': self.vendor_id.id,
             'currency_id': self.currency_id.id,
             'tgl_usulan': self.date_usulan,
             'description': f'Generate dari PR {self.name}',
