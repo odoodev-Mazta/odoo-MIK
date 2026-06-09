@@ -20,7 +20,7 @@ class UsulanUpCountry(models.Model):
     #     ('proyek', 'Proyek'),
     #     ('darurat', 'Darurat/Urgent')
     # ], string='Tipe Usulan', required=True)
-    employee_id = fields.Many2one('hr.employee', string='Karyawan', readonly=False)
+    employee_id = fields.Many2one('hr.employee', string='Karyawan', readonly=False, required=True)
     job_id = fields.Many2one(
         related='employee_id.job_id',
         store=True,
@@ -39,11 +39,11 @@ class UsulanUpCountry(models.Model):
         readonly=True,
         string="Email"
     )
-    nama_ktp = fields.Char(string="Nama (Sesuai KTP)", readonly=False)
-    nomor_ktp = fields.Char(string="Nomor KTP", readonly=False)
+    nama_ktp = fields.Char(string="Nama (Sesuai KTP)", readonly=False, required=True)
+    nomor_ktp = fields.Char(string="Nomor KTP", readonly=False, required=True)
 
     kota_depart_id = fields.Many2one( 'usulan.master.kota',
-                                      string="Kota Keberangkatan", readonly=False,
+                                      string="Kota Keberangkatan", readonly=False, required=True,
                                       domain="""
                                               [('category', '=',
                                                   domestic_intl and 'domestik' or 'internasional'
@@ -51,15 +51,15 @@ class UsulanUpCountry(models.Model):
                                           """
                                       )
     kota_tujuan_id = fields.Many2one('usulan.master.kota',
-                                     string="Kota Tujuan", readonly=False,
+                                     string="Kota Tujuan", readonly=False, required=True,
                                      domain="""
                                              [('category', '=',
                                                  domestic_intl and 'domestik' or 'internasional'
                                              )]
                                          """
                                      )
-    tgl_depart = fields.Date(string="Tanggal Keberangkatan", readonly=False)
-    tgl_pulang = fields.Date(string="Tanggal Pulang", readonly=False)
+    tgl_depart = fields.Date(string="Tanggal Keberangkatan", readonly=False, required=True)
+    tgl_pulang = fields.Date(string="Tanggal Pulang", readonly=False, required=True)
     uang_makan = fields.Monetary(string="Uang Makan", readonly=True, currency_field='currency_id')
     uang_lainnya_line_ids = fields.One2many(
         'uang.lainnya.line',
