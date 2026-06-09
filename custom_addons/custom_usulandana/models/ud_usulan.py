@@ -10,7 +10,7 @@ class UsulanUsulanDana(models.Model):
 
     name = fields.Char(string='No Usulan', readonly=False, default='New')
     department_id = fields.Many2one('hr.department', string='Departemen', default=lambda self: self.env.user.employee_id.department_id.id, required=True)
-    pic_id = fields.Many2one('hr.employee', string='PIC (Karyawan)')
+    pic_id = fields.Many2one('hr.employee', string='PIC (Karyawan)', required=True)
     pic_phone = fields.Char(string='No WA PIC')
     pic_bank_account = fields.Char(string='Data Rekening PIC')
     tgl_usulan = fields.Date(string="Tanggal Usulan", readonly=False)
