@@ -137,7 +137,7 @@ class PurchaseRequestReport(models.Model):
                     -- LINE
                     l.id AS line_id,
                     l.product_id AS product_id,
-                    l.name AS description,
+                    l.description AS description,
                     l.product_qty AS qty,
                     l.product_uom AS product_uom,
                     l.price_unit AS price_unit,

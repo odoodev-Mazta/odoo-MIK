@@ -32,11 +32,7 @@
                 <header>
                     <button name="action_submit" string="PR" type="object"
                             class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_to_po" string="PO" type="object"
-                            class="btn-success" invisible="state != 'pr'"/>
-                    <button name="action_create_usulan_dana" string="Usulan Dana" type="object"
-                            class="btn-success" invisible="state != 'po' or usulan_dana_id"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,pr,po,ud"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,pr"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon"
@@ -60,6 +56,8 @@
                         <group>
                             <field name="deliver_to"/>
                             <field name="usulan_dana_id"/>
+                            <field name="customer_id"/>
+                            <field name="mou_id" options="{'no_create': True}"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </group>
                     </group>
@@ -99,7 +97,7 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="display_type" column_invisible="1"/>
                                     <field name="product_id"/>
-                                    <field name="name"/>
+                                    <field name="description"/>
                                     <field name="product_qty"/>
                                     <field name="product_uom"/>
                                     <field name="currency_id"/>
@@ -115,7 +113,7 @@
                                 <list editable="bottom">
                                     <field name="line_type" column_invisible="1"/>
                                     <field name="setup_item_id"/>
-                                    <field name="name"/>
+                                    <field name="description"/>
                                     <field name="item_qty"/>
                                 </list>
                             </field>
