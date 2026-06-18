@@ -105,8 +105,6 @@ class PurchaseRequest(models.Model):
     state = fields.Selection([
         ('draft', 'Draft'),
         ('pr', 'Purchase Request'),
-        ('po', 'Purchase Order'),
-        ('ud', 'Usulan Dana'),
     ], default='draft', tracking=True)
 
     is_urgent = fields.Boolean(
@@ -171,6 +169,17 @@ class PurchaseRequest(models.Model):
         store=False,
     )
 
+    customer_id = fields.Many2one(
+        'res.partner',
+        string='Customer'
+    )
+
+    mou_id = fields.Many2one(
+        'draft.maklon',
+        string='No. MOU',
+        domain="[('nama_cust','=',customer_id), ('state','=','mou')]"
+    )
+
     def write(self, vals):
         res = super().write(vals)
         if vals.get('attachment_ids'):
@@ -179,6 +188,15 @@ class PurchaseRequest(models.Model):
                 attachment_ids=self.attachment_ids.ids
             )
         return res
+
+    @api.onchange('customer_id')
+    def _onchange_customer(self):
+        self.mou_id = False
+
+    @api.onchange('mou_id')
+    def _onchange_mou(self):
+        if self.mou_id:
+            self.customer_id = self.mou_id.nama_cust
 
     @api.depends('request_line_ids.product_id')
     def _compute_product_summary(self):
@@ -201,14 +219,6 @@ class PurchaseRequest(models.Model):
     def action_submit(self):
         for rec in self:
             rec.state = 'pr'
-
-    def action_to_po(self):
-        for rec in self:
-            rec.state = 'po'
-
-    def action_to_usulan_dana(self):
-        for rec in self:
-            rec.state = 'ud'
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -345,7 +355,7 @@ class PurchaseRequestLine(models.Model):
         ('line_note', 'Note'),
     ])
     product_id = fields.Many2one('product.product', string='Product', required=False)
-    name = fields.Text(string='Description')
+    description = fields.Text(string='Description')
     product_qty = fields.Float(string='Quantity', default=1.0)
     item_qty = fields.Float(
         string='Item Qty',
