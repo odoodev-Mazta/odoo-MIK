@@ -26,6 +26,13 @@ class UsulanPlanPayment(models.Model):
     payment_progress = fields.Char(string='Progres Bayar', compute='_compute_progress', store=True)
     vendor_bill_id = fields.Many2one('account.move', string='Vendor Bill Terkait', readonly=True)
     mou_id = fields.Many2one('draft.maklon', string='No. MOU', domain=[('state', '=', 'mou')])
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        default=lambda self: self.env.company,
+        required=True,
+        index=True,
+    )
 
     @api.depends('payment_line_ids.amount', 'payment_line_ids.state')
     def _compute_progress(self):
