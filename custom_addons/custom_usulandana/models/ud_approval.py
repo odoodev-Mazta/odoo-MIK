@@ -11,6 +11,13 @@ class UsulanDanaApproval(models.Model):
     department_id = fields.Many2one('hr.department', string='Departemen', readonly=True)
     description = fields.Text(string='Keterangan', readonly=True)
     amount = fields.Float(string='Nilai Usulan', readonly=True)
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        default=lambda self: self.env.company,
+        required=True,
+        index=True,
+    )
 
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -45,37 +52,51 @@ class UsulanDanaApproval(models.Model):
         # 2. Buat ulang View-nya
         self.env.cr.execute("""
             CREATE VIEW %s AS (
-                SELECT 
-                (ud.id * 10) + 1 AS id,
-                ud.name,
-                ud.date_submitted AS date_requested,
-                ud.department_id,
-                ud.description,
-                ud.amount_total AS amount,
-                ud.state,
-                EXISTS (SELECT 1 FROM ir_attachment WHERE res_model = 'usulan.dana' AND res_id = ud.id) AS has_attachment,
-                'usulan.usulan.dana' AS source_model, --
-                ud.id AS source_id,
-                req_coo,
-                req_ceo
-            FROM usulan_usulan_dana ud
-    
-            UNION ALL
-    
-            SELECT 
-                (up.id * 10) + 2 AS id,
-                up.name,
-                up.date_submitted AS date_requested,
-                up.department_id,
-                NULL::text AS description,
-                up.amount AS amount,
-                up.state,
-                EXISTS (SELECT 1 FROM ir_attachment WHERE res_model = 'usulan.up.country' AND res_id = up.id) AS has_attachment,
-                'usulan.up.country' AS source_model, --
-                up.id AS source_id,
-                FALSE AS req_coo,
-                FALSE AS req_ceo
-            FROM usulan_up_country up
+                SELECT
+                    (ud.id * 10) + 1 AS id,
+                    ud.name,
+                    ud.date_submitted AS date_requested,
+                    ud.company_id,
+                    ud.department_id,
+                    ud.description,
+                    ud.amount_total AS amount,
+                    ud.state,
+                    EXISTS (
+                        SELECT 1
+                        FROM ir_attachment
+                        WHERE res_model = 'usulan.dana'
+                          AND res_id = ud.id
+                    ) AS has_attachment,
+                    'usulan.usulan.dana' AS source_model,
+                    ud.id AS source_id,
+                    ud.req_coo,
+                    ud.req_ceo
+                
+                FROM usulan_usulan_dana ud
+                
+                UNION ALL
+                
+                SELECT
+                    (up.id * 10) + 2 AS id,
+                    up.name,
+                    up.date_submitted AS date_requested,
+                    up.company_id,
+                    up.department_id,
+                    NULL::text AS description,
+                    up.amount AS amount,
+                    up.state,
+                    EXISTS (
+                        SELECT 1
+                        FROM ir_attachment
+                        WHERE res_model = 'usulan.up.country'
+                          AND res_id = up.id
+                    ) AS has_attachment,
+                    'usulan.up.country' AS source_model,
+                    up.id AS source_id,
+                    FALSE AS req_coo,
+                    FALSE AS req_ceo
+                
+                FROM usulan_up_country up
         )
     """ % (self._table,))
 

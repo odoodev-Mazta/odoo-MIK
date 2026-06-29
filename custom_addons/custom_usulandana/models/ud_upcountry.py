@@ -20,6 +20,13 @@ class UsulanUpCountry(models.Model):
     #     ('proyek', 'Proyek'),
     #     ('darurat', 'Darurat/Urgent')
     # ], string='Tipe Usulan', required=True)
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        default=lambda self: self.env.company,
+        required=True,
+        index=True,
+    )
     employee_id = fields.Many2one('hr.employee', string='Karyawan', readonly=False, required=True)
     job_id = fields.Many2one(
         related='employee_id.job_id',
@@ -80,6 +87,15 @@ class UsulanUpCountry(models.Model):
     )
     amount = fields.Monetary(string='Nilai Usulan', currency_field='currency_id', tracking=True)
     currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id)
+    rental_mobil = fields.Boolean(string="Rental Mobil")
+    rental_mobil_hari = fields.Integer(
+        string="Hari Rental Mobil"
+    )
+
+    rental_motor = fields.Boolean(string="Rental Motor")
+    rental_motor_hari = fields.Integer(
+        string="Hari Rental Motor"
+    )
     state = fields.Selection([
         ('draft', 'Draft'),
         ('waiting_head', 'Waiting Head Dept'),
@@ -125,6 +141,26 @@ class UsulanUpCountry(models.Model):
     is_advance = fields.Boolean(string="Advance", default=True)
     domestic_intl = fields.Boolean(string="Dalam Negeri")
     active = fields.Boolean(default=True)
+
+    from odoo import api, exceptions
+
+    @api.constrains(
+        'rental_mobil',
+        'rental_mobil_hari',
+        'rental_motor',
+        'rental_motor_hari'
+    )
+    def _check_rental_days(self):
+        for rec in self:
+            if rec.rental_mobil and rec.rental_mobil_hari <= 0:
+                raise exceptions.ValidationError(
+                    "Jumlah hari rental mobil harus lebih dari 0."
+                )
+
+            if rec.rental_motor and rec.rental_motor_hari <= 0:
+                raise exceptions.ValidationError(
+                    "Jumlah hari rental motor harus lebih dari 0."
+                )
 
     @api.onchange('domestic_intl')
     def _onchange_domestic_intl(self):
