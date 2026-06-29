@@ -36,9 +36,9 @@
     </record>
 
     <record id="rule_usulan_dana_head_dept" model="ir.rule">
-        <field name="name">Head Dept: Hanya Departemen Sendiri</field>
+        <field name="name">Head Dept</field>
         <field name="model_id" ref="model_usulan_usulan_dana"/>
-        <field name="domain_force">[('department_id', '=', user.employee_id.department_id.id)]</field>
+        <field name="domain_force">[(1,'=',1)]</field>
         <field name="groups" eval="[(4, ref('group_head_dept'))]"/>
     </record>
 
@@ -59,14 +59,23 @@
     <record id="rule_usulan_dana_finance" model="ir.rule">
         <field name="name">Finance: Global Access (Semua Data)</field>
         <field name="model_id" ref="model_usulan_usulan_dana"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
+<!--        <field name="domain_force">[(1, '=', 1)]</field>-->
+        <field name="domain_force">
+            [('company_id', 'in', company_ids)]
+        </field>
         <field name="groups" eval="[(4, ref('group_finance'))]"/>
     </record>
 
     <record id="rule_up_country_head" model="ir.rule">
         <field name="name">Up Country: Head Dept</field>
         <field name="model_id" ref="model_usulan_up_country"/>
-        <field name="domain_force">[('department_id', '=', user.employee_id.department_id.id)]</field>
+        <field name="domain_force">[(1, '=', 1)]</field>
+<!--        <field name="domain_force">-->
+<!--            [-->
+<!--                ('company_id', 'in', company_ids),-->
+<!--                ('department_id', '=', user.employee_id.department_id.id)-->
+<!--            ]-->
+<!--        </field>-->
         <field name="groups" eval="[(4, ref('group_head_dept'))]"/>
     </record>
 
@@ -80,7 +89,13 @@
     <record id="rule_plan_payment_head_dept" model="ir.rule">
         <field name="name">Plan Payment: Head Dept (Own Dept)</field>
         <field name="model_id" ref="model_usulan_plan_payment"/>
-        <field name="domain_force">[('department_id', '=', user.employee_id.department_id.id)]</field>
+        <field name="domain_force">[(1, '=', 1)]</field>
+<!--        <field name="domain_force">-->
+<!--            [-->
+<!--                ('company_id', 'in', company_ids),-->
+<!--                ('department_id', '=', user.employee_id.department_id.id)-->
+<!--            ]-->
+<!--        </field>-->
         <field name="groups" eval="[(4, ref('group_head_dept'))]"/>
     </record>
 
@@ -108,7 +123,13 @@
     <record id="rule_approval_head_dept" model="ir.rule">
         <field name="name">Approval Usulan: Head Dept</field>
         <field name="model_id" ref="model_usulan_dana_approval"/>
-        <field name="domain_force">[('department_id', '=', user.employee_id.department_id.id)]</field>
+        <field name="domain_force">[(1,'=',1)]</field>
+<!--        <field name="domain_force">-->
+<!--            [-->
+<!--                ('company_id', 'in', company_ids),-->
+<!--                ('department_id', '=', user.employee_id.department_id.id)-->
+<!--            ]-->
+<!--        </field>-->
         <field name="groups" eval="[(4, ref('group_head_dept'))]"/>
     </record>
 
@@ -131,6 +152,17 @@
         <field name="model_id" ref="model_usulan_dana_approval"/>
         <field name="domain_force">[(1, '=', 1)]</field>
         <field name="groups" eval="[(4, ref('group_finance'))]"/>
+    </record>
+
+
+    <!--  rule baru untuk view data per company  -->
+    <record id="rule_usulan_dana_company" model="ir.rule">
+        <field name="name">Usulan Dana - Company Restriction</field>
+        <field name="model_id" ref="model_usulan_usulan_dana"/>
+<!--        <field name="global" eval="True"/>-->
+        <field name="domain_force">
+            [('company_id', 'in', company_ids)]
+        </field>
     </record>
 
 </odoo>
