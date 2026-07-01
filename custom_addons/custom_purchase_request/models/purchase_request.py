@@ -180,6 +180,57 @@ class PurchaseRequest(models.Model):
         domain="[('nama_cust','=',customer_id), ('state','=','mou')]"
     )
 
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        required=True,
+        default=lambda self: self.env.company,
+        index=True,
+    )
+
+    # purchase_order_id = fields.Many2one(
+    #     'purchase.order',
+    #     string='Purchase Order',
+    #     readonly=True,
+    #     copy=False,
+    # )
+    #
+    # def action_create_po(self):
+    #     self.ensure_one()
+    #
+    #     order_lines = []
+    #
+    #     for line in self.product_line_ids:
+    #         order_lines.append((0, 0, {
+    #             'product_id': line.product_id.id,
+    #             'name': line.description or line.product_id.display_name,
+    #             'product_qty': line.product_qty,
+    #             'price_unit': line.price_unit,
+    #             'date_planned': self.estimated_date,  # <-- ambil dari header PR
+    #         }))
+    #
+    #     po = self.env['purchase.order'].create({
+    #         'customer_id': self.customer_id.id,
+    #         'mou_id': self.mou_id.id,
+    #         'currency_id': self.currency_id.id,
+    #         'order_line': order_lines,
+    #     })
+    #
+    #     # Kosongkan tax
+    #     po.order_line.write({
+    #         'tax_ids': [(5, 0, 0)],
+    #     })
+    #
+    #     self.purchase_order_id = po.id
+    #
+    #     return {
+    #         'type': 'ir.actions.act_window',
+    #         'res_model': 'purchase.order',
+    #         'res_id': po.id,
+    #         'view_mode': 'form',
+    #         'target': 'current',
+    #     }
+
     def write(self, vals):
         res = super().write(vals)
         if vals.get('attachment_ids'):
@@ -195,8 +246,35 @@ class PurchaseRequest(models.Model):
 
     @api.onchange('mou_id')
     def _onchange_mou(self):
-        if self.mou_id:
-            self.customer_id = self.mou_id.nama_cust
+        if not self.mou_id:
+            return
+        # set customer otomatis
+        self.customer_id = self.mou_id.nama_cust
+
+        # # samakan currency dengan MOU
+        # self.currency_id = self.mou_id.currency_id
+        #
+        # # hapus line lama
+        # self.request_line_ids = [(5, 0, 0)]
+        #
+        # lines = []
+        #
+        # for line in self.mou_id.maklon_line_ids:
+        #     vals = {
+        #         'line_type': 'product',
+        #         'product_id': line.product.id,
+        #         'description': line.product.display_name,
+        #         'product_qty': line.product_qty,
+        #         'product_uom': line.uom_id.id,
+        #         'price_unit': line.product_hna,
+        #         'tax_ids': [(6, 0, line.tax_ids.ids)],
+        #         'currency_id': self.mou_id.currency_id.id,
+        #         'date_planned': line.date_estimasi,
+        #     }
+        #
+        #     lines.append((0, 0, vals))
+        #
+        # self.request_line_ids = lines
 
     @api.depends('request_line_ids.product_id')
     def _compute_product_summary(self):
