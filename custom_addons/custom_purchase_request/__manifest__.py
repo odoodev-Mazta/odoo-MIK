@@ -4,6 +4,7 @@
     'depends': ['purchase', 'web', 'base', 'hr', 'account', 'product', 'custom_usulandana', 'custom_ecatalogue'],
     'data': [
         'security/ir.model.access.csv',
+        'security/security.xml',
         'data/sequence.xml',
         'views/purchase_request_views.xml',
         'views/pr_timeline_views.xml',
