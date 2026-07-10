@@ -3,3 +3,5 @@ access_draft_maklon,draft.maklon,model_draft_maklon,base.group_user,1,1,1,1
 access_draft_maklon_line,draft.maklon.line,model_draft_maklon_line,base.group_user,1,1,1,1
 access_ecatalogue_viewer,ecatalogue.viewer,model_ecatalogue_product,custom_ecatalogue.group_ecatalogue_viewer,1,0,0,0
 access_ecatalogue_manager,ecatalogue.manager,model_ecatalogue_product,custom_ecatalogue.group_ecatalogue_manager,1,1,1,1
+access_master_data_brand,master.data.brand,model_master_data_brand,base.group_user,1,1,1,1
+access_master_data_brand_line,master.data.brand.line,model_master_data_brand_line,base.group_user,1,1,1,1
