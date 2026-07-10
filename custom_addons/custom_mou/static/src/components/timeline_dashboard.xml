@@ -1,115 +1,969 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <templates xml:space="preserve">
     <t t-name="custom_mou.TimelineTemplate" owl="1">
-        <div class="o_dashboard_container p-4 bg-light w-100 h-100 d-flex flex-column overflow-hidden">
+
+        <div class="o_trk_root" style="
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            height: 100%;
+            overflow: hidden;
+            background: var(--o-view-background-color, #f8f9fa);
+        ">
 
             <t t-if="state.selected_mou">
 
-                <div class="card shadow-sm border-0 mb-4 flex-shrink-0">
-                    <div class="card-body d-flex align-items-center justify-content-between p-4">
+                <!-- ═══════════════════════════════ HEADER CARD ═══════════════════════════════ -->
+                <div style="
+                    background: #ffffff;
+                    border: 0.5px solid #dee2e6;
+                    border-radius: 12px;
+                    padding: 1rem 1.25rem;
+                    display: flex;
+                    align-items: stretch;
+                    gap: 1.25rem;
+                    flex-shrink: 0;
+                ">
+                    <!-- Selector -->
+                    <div style="display:flex;flex-direction:column;gap:0.5rem;min-width:220px;">
 
-                        <div class="d-flex flex-column gap-2" style="width: 300px; border-right: 2px solid #eee; padding-right: 20px;">
-                            <div>
-                                <label class="text-muted small fw-bold mb-1">Pelanggan</label>
-                                <select class="form-select fw-bold border-primary" t-on-change="onChangeSelection">
-                                    <option t-foreach="state.all_mou" t-as="mou" t-key="'p_'+mou.id"
-                                            t-att-value="mou.id" t-att-selected="mou.id === state.selected_mou.id">
-                                        <t t-esc="mou.pelanggan"/>
-                                    </option>
+                        <!-- Dropdown Pelanggan -->
+                        <div>
+                            <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:0.6px;font-weight:500;margin-bottom:3px;">Pelanggan</div>
+                            <div style="position:relative;display:flex;align-items:center;">
+                                <i class="fa fa-user-o" style="
+                                    position:absolute;left:8px;
+                                    font-size:12px;color:#6c757d;
+                                    pointer-events:none;z-index:1;
+                                "></i>
+                                <i class="fa fa-chevron-down" style="
+                                    position:absolute;right:8px;
+                                    font-size:10px;color:#adb5bd;
+                                    pointer-events:none;z-index:1;
+                                "></i>
+                                <select class="form-select form-select-sm fw-semibold border-0"
+                                        style="
+                                            font-size:14px;
+                                            box-shadow:none;
+                                            background:transparent;
+                                            padding-left:26px;
+                                            padding-right:24px;
+                                            appearance:none;
+                                            -webkit-appearance:none;
+                                            width:100%;
+                                            cursor:pointer;
+                                        "
+                                        t-on-change="onChangePelanggan">
+                                    <t t-foreach="uniquePelanggan" t-as="mou" t-key="'p_'+mou.id">
+                                        <option t-att-value="mou.pelanggan"
+                                                t-att-selected="mou.pelanggan === state.selected_mou.pelanggan">
+                                            <t t-esc="mou.pelanggan"/>
+                                        </option>
+                                    </t>
                                 </select>
                             </div>
-                            <div>
-                                <label class="text-muted small fw-bold mb-1">No. MOU</label>
-                                <select class="form-select bg-light" t-on-change="onChangeSelection">
-                                    <option t-foreach="state.all_mou" t-as="mou" t-key="'n_'+mou.id"
-                                            t-att-value="mou.id" t-att-selected="mou.id === state.selected_mou.id">
-                                        <t t-esc="mou.no_mou"/>
-                                    </option>
+                        </div>
+
+                        <!-- Dropdown No. MOU -->
+                        <div>
+                            <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:0.6px;font-weight:500;margin-bottom:3px;">No. MOU</div>
+                            <div style="position:relative;display:flex;align-items:center;">
+                                <i class="fa fa-file-text-o" style="
+                                    position:absolute;left:8px;
+                                    font-size:12px;color:#6c757d;
+                                    pointer-events:none;z-index:1;
+                                "></i>
+                                <i class="fa fa-chevron-down" style="
+                                    position:absolute;right:8px;
+                                    font-size:10px;color:#adb5bd;
+                                    pointer-events:none;z-index:1;
+                                "></i>
+                                <select class="form-select form-select-sm border-0"
+                                        style="
+                                            font-size:12px;
+                                            color:#6c757d;
+                                            box-shadow:none;
+                                            background:transparent;
+                                            padding-left:26px;
+                                            padding-right:24px;
+                                            appearance:none;
+                                            -webkit-appearance:none;
+                                            width:100%;
+                                            cursor:pointer;
+                                        "
+                                        t-on-change="onChangeMou">
+                                    <t t-foreach="mouForSelectedPelanggan" t-as="mou" t-key="'n_'+mou.id">
+                                        <option t-att-value="mou.id"
+                                                t-att-selected="mou.id === state.selected_mou.id">
+                                            <t t-esc="mou.no_mou"/>
+                                        </option>
+                                    </t>
                                 </select>
                             </div>
                         </div>
 
-                        <div class="flex-grow-1 px-5">
-                            <div class="d-flex justify-content-between align-items-end mb-2">
-                                <h5 class="mb-0 fw-bold text-dark">Status Penyelesaian</h5>
-                                <h3 class="mb-0 fw-bold text-success"><t t-esc="state.selected_mou.progress"/>%</h3>
-                            </div>
-                            <div class="progress shadow-sm" style="height: 25px; border-radius: 15px; background-color: #e9ecef;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                                     role="progressbar"
-                                     t-attf-style="width: {{ state.selected_mou.progress }}%;">
-                                </div>
+                        <!-- Dropdown No. SO -->
+                        <div>
+                            <div style="font-size:11px;color:#6c757d;text-transform:uppercase;letter-spacing:0.6px;font-weight:500;margin-bottom:3px;">No. SO</div>
+                            <div style="position:relative;display:flex;align-items:center;">
+                                <i class="fa fa-shopping-cart" style="
+                                    position:absolute;left:8px;
+                                    font-size:12px;color:#6c757d;
+                                    pointer-events:none;z-index:1;
+                                "></i>
+                                <i class="fa fa-chevron-down" style="
+                                    position:absolute;right:8px;
+                                    font-size:10px;color:#adb5bd;
+                                    pointer-events:none;z-index:1;
+                                "></i>
+                                <select class="form-select form-select-sm border-0"
+                                        style="
+                                            font-size:12px;
+                                            color:#6c757d;
+                                            box-shadow:none;
+                                            background:transparent;
+                                            padding-left:26px;
+                                            padding-right:24px;
+                                            appearance:none;
+                                            -webkit-appearance:none;
+                                            width:100%;
+                                            cursor:pointer;
+                                        "
+                                        t-on-change="onChangeSo">
+                                    <option value="">-- Semua SO --</option>
+                                    <t t-foreach="state.selected_mou.sale_orders || []" t-as="so" t-key="'so_'+so.id">
+                                        <option t-att-value="so.id" t-att-selected="state.selected_so_id === so.id">
+                                            <t t-esc="so.name"/><t t-if="so.is_repeat_order"> — Repeat Order</t>
+                                        </option>
+                                    </t>
+                                </select>
                             </div>
                         </div>
 
-                        <div class="bg-danger bg-opacity-10 text-black p-3 rounded-3 text-center ms-3 shadow-sm border border-danger" style="min-width: 180px;">
-                            <div class="text-uppercase fw-bold small mb-1"><i class="fa fa-calendar me-1"></i> DEADLINE</div>
-                            <h4 class="mb-0 fw-bold"><t t-esc="state.selected_mou.deadline"/></h4>
-                        </div>
+                        <!-- Badge info SO terpilih -->
+                        <t t-if="selectedSaleOrder">
+                            <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                <t t-if="selectedSaleOrder.is_repeat_order">
+                                    <span style="font-size:9px;padding:1px 6px;border-radius:99px;background:#ede9ff;color:#3b1fa8;border:0.5px solid #7048e8;font-weight:500;">
+                                        REPEAT ORDER
+                                    </span>
+                                </t>
+                                <span style="font-size:9px;padding:1px 6px;border-radius:99px;background:#f8f9fa;color:#6c757d;border:0.5px solid #dee2e6;">
+                                    <t t-esc="selectedSaleOrder.timeline_stage_label"/>
+                                </span>
+                                <span t-attf-style="font-size:9px;padding:1px 6px;border-radius:99px;font-weight:500;background:{{selectedSaleOrder.is_paid ? '#d1e7dd' : '#fff5f5'}};color:{{selectedSaleOrder.is_paid ? '#0a3622' : '#dc3545'}};">
+                                    <t t-if="selectedSaleOrder.is_paid">Lunas</t>
+                                    <t t-else="">Belum Lunas</t>
+                                </span>
+                            </div>
+                        </t>
 
+                    </div>
+
+                    <div style="width:0.5px;background:#dee2e6;align-self:stretch;"></div>
+
+                    <!-- Progress keseluruhan -->
+                    <div style="flex:1;display:flex;flex-direction:column;gap:6px;justify-content:center;">
+                        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                            <span style="font-size:12px;color:#6c757d;">Penyelesaian keseluruhan</span>
+                            <span style="font-size:22px;font-weight:500;color:#198754;">
+                                <t t-esc="state.selected_mou.progress"/>%
+                            </span>
+                        </div>
+                        <div style="height:6px;background:#e9ecef;border-radius:99px;overflow:hidden;">
+                            <div t-attf-style="width:{{state.selected_mou.progress}}%;height:100%;background:#198754;border-radius:99px;transition:width 0.6s ease;"></div>
+                        </div>
+                        <!-- Stage dots -->
+                        <div style="display:flex;gap:3px;margin-top:2px;">
+                            <t t-foreach="displayStages" t-as="s" t-key="s.code">
+                                <div t-attf-style="
+                                    height:4px;flex:1;border-radius:2px;
+                                    background:{{s.status === 'done' ? '#198754' : s.status === 'process' ? '#0d6efd' : '#dee2e6'}};
+                                    transition:background 0.3s;
+                                "></div>
+                            </t>
+                        </div>
+                        <!-- Stage summary teks -->
+                        <div style="font-size:11px;color:#6c757d;margin-top:1px;">
+                            <t t-esc="state.selected_mou.stages.filter(s => s.status === 'done').length"/>
+                            dari
+                            <t t-esc="state.selected_mou.stages.length"/>
+                            tahapan selesai
+                        </div>
+                    </div>
+
+                    <div style="width:0.5px;background:#dee2e6;align-self:stretch;"></div>
+
+                    <!-- Deadline -->
+                    <div style="
+                        background:#fff5f5;
+                        border:0.5px solid #f5c2c7;
+                        border-radius:8px;
+                        padding:0.75rem 1rem;
+                        display:flex;flex-direction:column;align-items:center;justify-content:center;
+                        min-width:120px;gap:2px;
+                    ">
+                        <span style="font-size:10px;color:#dc3545;text-transform:uppercase;letter-spacing:0.8px;font-weight:500;">
+                            <i class="fa fa-calendar-o me-1"></i>Deadline
+                        </span>
+                        <span style="font-size:15px;font-weight:500;color:#dc3545;">
+                            <t t-esc="state.selected_mou.deadline or '-'"/>
+                        </span>
                     </div>
                 </div>
 
-                <div class="flex-grow-1 overflow-hidden d-flex flex-column pt-2">
-                    <div class="d-flex flex-nowrap h-100 gap-3 px-1">
+                <!-- CHART -->
+                <!-- <div style="
+                    background:#ffffff;
+                    border:0.5px solid #dee2e6;
+                    border-radius:12px;
+                    padding:1rem 1.25rem;
+                    flex-shrink:0;">
+                    <div style="font-size:11px;font-weight:500;color:#6c757d;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">
+                        <i class="fa fa-bar-chart me-1"></i>Progress per tahapan
+                    </div>
 
-                        <t t-foreach="state.selected_mou.stages" t-as="stage" t-key="stage.name">
-                            <div t-attf-class="flex-grow-1 d-flex flex-column rounded-3 shadow-sm border-top border-4 border-{{ stage.color }}"
-                                 style="width: 11%; min-width: 160px; background: white; transition: transform 0.2s;">
-
-                                <div class="p-3 text-center border-bottom">
-                                    <div t-attf-class="badge rounded-pill mb-2 bg-{{ stage.color }} bg-opacity-10 text-{{ stage.color }} px-3 py-1 fw-bolder" style="font-size: 0.7rem;">
-                                        <i t-attf-class="fa {{ stage.status === 'done' ? 'fa-check' : (stage.status === 'process' ? 'fa-refresh fa-spin' : 'fa-pause') }} me-1"></i>
-                                        <t t-esc="stage.status.toUpperCase()"/>
-                                    </div>
-                                    <h6 class="fw-bolder text-dark mb-0" style="font-size: 0.9rem; letter-spacing: -0.2px;">
+                    <div style="display:grid;grid-template-columns:1fr 220px;gap:1.5rem;align-items:start;">
+                        <div style="display:flex;flex-direction:column;gap:7px;">
+                            <t t-foreach="state.selected_mou.stages" t-as="stage" t-key="stage.code">
+                                <t t-set="bar_pct" t-value="stage.status === 'done' ? 100 : stage.status === 'process' ? (stage.code === 'registrasi' ? getRegistrasiPct(stage) : 30) : 0"/>
+                                <t t-set="bar_color" t-value="stage.status === 'done' ? '#198754' : stage.status === 'process' ? '#0d6efd' : '#dee2e6'"/>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span style="font-size:11px;color:#6c757d;width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                         <t t-esc="stage.name"/>
-                                    </h6>
+                                    </span>
+                                    <div style="flex:1;height:16px;background:#f1f3f5;border-radius:4px;overflow:hidden;position:relative;">
+                                        <div t-attf-style="
+                                            width:{{bar_pct}}%;
+                                            height:100%;
+                                            background:{{bar_color}};
+                                            border-radius:4px;
+                                            transition:width 0.8s cubic-bezier(.4,0,.2,1);
+                                            display:flex;align-items:center;padding-left:6px;
+                                        ">
+                                            <t t-if="bar_pct >= 20">
+                                                <span style="font-size:10px;font-weight:500;color:#fff;white-space:nowrap;">
+                                                    <t t-esc="bar_pct"/>%
+                                                </span>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    <span t-attf-style="font-size:10.5px;font-weight:500;color:{{bar_color}};width:28px;text-align:right;flex-shrink:0;">
+                                        <t t-if="bar_pct &lt; 20"><t t-esc="bar_pct"/>%</t>
+                                    </span>
+                                </div>
+                            </t>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+                            <t t-set="cnt_done"    t-value="state.selected_mou.stages.filter(s => s.status === 'done').length"/>
+                            <t t-set="cnt_process" t-value="state.selected_mou.stages.filter(s => s.status === 'process').length"/>
+                            <t t-set="cnt_waiting" t-value="state.selected_mou.stages.filter(s => s.status === 'waiting').length"/>
+                            <t t-set="cnt_total"   t-value="state.selected_mou.stages.length"/>
+
+                            <div style="position:relative;width:120px;height:120px;">
+                                <canvas t-att-id="'donut_' + state.selected_mou.id"
+                                        style="width:120px;height:120px;"
+                                        width="120" height="120"
+                                        t-att-data-done="cnt_done"
+                                        t-att-data-process="cnt_process"
+                                        t-att-data-waiting="cnt_waiting"
+                                        t-att-data-pct="state.selected_mou.progress">
+                                </canvas>
+                            </div>
+
+                            <div style="display:flex;flex-direction:column;gap:5px;width:100%;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;">
+                                    <div style="display:flex;align-items:center;gap:5px;">
+                                        <div style="width:10px;height:10px;border-radius:2px;background:#198754;flex-shrink:0;"></div>
+                                        <span style="font-size:11px;color:#6c757d;">Selesai</span>
+                                    </div>
+                                    <span style="font-size:11px;font-weight:500;color:#198754;"><t t-esc="cnt_done"/></span>
+                                </div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;">
+                                    <div style="display:flex;align-items:center;gap:5px;">
+                                        <div style="width:10px;height:10px;border-radius:2px;background:#0d6efd;flex-shrink:0;"></div>
+                                        <span style="font-size:11px;color:#6c757d;">Proses</span>
+                                    </div>
+                                    <span style="font-size:11px;font-weight:500;color:#0d6efd;"><t t-esc="cnt_process"/></span>
+                                </div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;">
+                                    <div style="display:flex;align-items:center;gap:5px;">
+                                        <div style="width:10px;height:10px;border-radius:2px;background:#dee2e6;flex-shrink:0;"></div>
+                                        <span style="font-size:11px;color:#6c757d;">Menunggu</span>
+                                    </div>
+                                    <span style="font-size:11px;font-weight:500;color:#6c757d;"><t t-esc="cnt_waiting"/></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> -->
+
+                <!-- TIMELINE -->
+                <div style="overflow-x:auto;overflow-y:hidden;flex:1;padding-bottom:4px;">
+                    <div style="display:flex;gap:8px;min-width:max-content;height:100%;">
+
+                        <t t-foreach="displayStages" t-as="stage" t-key="stage.code">
+                            <t t-set="has_sub" t-value="stage.sub_registrasi !== null and stage.sub_registrasi !== undefined"/>
+                            <t t-set="st_color" t-value="stage.status === 'done' ? '#198754' : stage.status === 'process' ? '#0d6efd' : '#dee2e6'"/>
+
+                            <div t-attf-style="
+                                width: {{has_sub ? '215px' : '155px'}};
+                                display:flex;flex-direction:column;
+                                background:#ffffff;
+                                border:0.5px solid #dee2e6;
+                                border-radius:12px;
+                                overflow:hidden;
+                                border-top:3px solid {{st_color}};
+                                height:100%;
+                            ">
+
+                                <!-- Column header -->
+                                <div style="padding:10px 10px 8px;border-bottom:0.5px solid #dee2e6;background:#f8f9fa;flex-shrink:0;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                                        <!-- Status badge -->
+                                        <div t-attf-style="
+                                            display:inline-flex;align-items:center;gap:3px;
+                                            font-size:10px;font-weight:500;border-radius:99px;
+                                            padding:2px 8px;
+                                            background:{{stage.status === 'done' ? '#d1e7dd' : stage.status === 'process' ? '#cfe2ff' : '#f8f9fa'}};
+                                            color:{{stage.status === 'done' ? '#0a3622' : stage.status === 'process' ? '#084298' : '#6c757d'}};
+                                            border:0.5px solid {{stage.status === 'done' ? '#a3cfbb' : stage.status === 'process' ? '#9ec5fe' : '#dee2e6'}};
+                                        ">
+                                            <i t-attf-class="fa {{stage.status === 'done' ? 'fa-check' : stage.status === 'process' ? 'fa-circle-o-notch fa-spin' : 'fa-clock-o'}}"></i>
+                                            <t t-if="stage.status === 'done'">Selesai</t>
+                                            <t t-elif="stage.status === 'process'">Proses</t>
+                                            <t t-else="">Menunggu</t>
+                                        </div>
+                                        <!-- Pct label di pojok -->
+                                        <t t-if="stage.status !== 'waiting'">
+                                            <span t-attf-style="font-size:10px;font-weight:500;color:{{st_color}};">
+                                                <t t-if="stage.status === 'done'">100%</t>
+                                                <t t-else="">
+                                                    <t t-if="stage.code === 'registrasi'"><t t-esc="getRegistrasiPct(stage)"/>%</t>
+                                                    <t t-else="">–</t>
+                                                </t>
+                                            </span>
+                                        </t>
+                                    </div>
+                                    <div style="font-size:12px;font-weight:500;color:#212529;line-height:1.3;">
+                                        <t t-esc="stage.name"/>
+                                    </div>
+                                    <!-- Mini progress bar di dalam kolom header -->
+                                    <div style="height:3px;background:#e9ecef;border-radius:99px;overflow:hidden;margin-top:6px;">
+                                        <div t-attf-style="
+                                            height:100%;border-radius:99px;
+                                            background:{{st_color}};
+                                            width:{{stage.status === 'done' ? '100' : stage.status === 'process' ? (stage.code === 'registrasi' ? getRegistrasiPct(stage) : '30') : '0'}}%;
+                                            transition:width 0.6s;
+                                        "></div>
+                                    </div>
                                 </div>
 
-                                <div class="p-3 flex-grow-1 overflow-auto bg-light bg-opacity-25">
-                                    <t t-if="stage.details.length > 0">
-                                        <div class="position-relative ps-3 border-start ms-2 mt-2" style="border-color: #dee2e6 !important; border-width: 2px !important;">
+                                <!-- Column body -->
+                                <div style="flex:1;padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:0;">
 
+                                    <!-- ═══ KOLOM REGISTRASI: Accordion ═══ -->
+                                    <t t-if="has_sub">
+
+                                        <!-- Detail tagihan biasa (dari details array) -->
+                                        <t t-if="stage.details and stage.details.length > 0">
                                             <t t-foreach="stage.details" t-as="detail" t-key="detail.label">
-                                                <div class="position-relative mb-4">
-                                                    <div t-attf-class="position-absolute rounded-circle shadow-sm bg-{{ detail.is_done ? stage.color : 'white' }}"
-                                                         style="width: 12px; height: 12px; left: -22.5px; top: 4px; border: 2px solid #fff; outline: 1px solid #dee2e6;"></div>
-
-                                                    <div t-attf-class="fw-bold {{ detail.is_done ? 'text-dark' : 'text-muted' }}" style="font-size: 0.8rem; line-height: 1.2;">
+                                                <div style="position:relative;padding-left:14px;padding-bottom:10px;">
+                                                    <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#dee2e6;"></div>
+                                                    <div t-attf-style="
+                                                        position:absolute;left:-2px;top:5px;
+                                                        width:7px;height:7px;border-radius:50%;
+                                                        background:{{detail.is_done ? '#198754' : '#ffffff'}};
+                                                        border:1.5px solid {{detail.is_done ? '#198754' : '#dee2e6'}};
+                                                        outline:1px solid {{detail.is_done ? '#198754' : '#dee2e6'}};
+                                                    "></div>
+                                                    <div t-attf-style="font-size:11px;line-height:1.4;font-weight:500;color:{{detail.is_done ? '#212529' : '#6c757d'}};">
                                                         <t t-esc="detail.label"/>
                                                     </div>
-                                                    <div class="text-secondary small mt-1" style="font-size: 0.7rem;">
-                                                        <i class="fa fa-calendar-o me-1"></i> <t t-esc="detail.date"/>
+                                                    <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
+                                                        <i class="fa fa-calendar-o me-1"></i><t t-esc="detail.date"/>
                                                     </div>
+                                                </div>
+                                            </t>
+                                            <hr style="border:none;border-top:0.5px solid #dee2e6;margin:4px 0 8px;"/>
+                                        </t>
 
-                                                    <t t-if="detail.attachment_name">
-                                                        <div class="mt-2">
-                                                            <span class="badge bg-white text-primary border border-primary fw-normal p-1 shadow-xs" style="font-size: 0.65rem;">
-                                                                <i class="fa fa-paperclip me-1"></i> <t t-esc="detail.attachment_name"/>
-                                                            </span>
+                                        <div style="font-size:10px;color:#adb5bd;text-transform:uppercase;letter-spacing:0.6px;font-weight:500;margin-bottom:6px;">
+                                            <i class="fa fa-list me-1"></i>Sub Registrasi
+                                        </div>
+
+                                        <!-- Accordion: Brand / Merek -->
+                                        <div style="border:0.5px solid #dee2e6;border-radius:0;border-left:2px solid #EF9F27;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'brand')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-tag" style="color:#EF9F27;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Brand / Merek</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary and stage.sub_summary.brand.total > 0 ? '#FAEEDA' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary and stage.sub_summary.brand.total > 0 ? '#633806' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary and stage.sub_summary.brand.total > 0 ? '#EF9F27' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary and stage.sub_summary.brand.total > 0">
+                                                            <t t-esc="stage.sub_summary.brand.done"/>/<t t-esc="stage.sub_summary.brand.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'brand') ? 'fa-chevron-up' : 'fa-chevron-down'}}" style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'brand')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_registrasi.brand and stage.sub_registrasi.brand.length > 0">
+                                                        <t t-foreach="stage.sub_registrasi.brand" t-as="item" t-key="item.label">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#EF9F27;opacity:0.4;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#EF9F27' : '#fff'}};border:1.5px solid #EF9F27;"></div>
+                                                                <div t-attf-style="font-size:11px;line-height:1.4;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
+                                                                    <t t-esc="item.label"/>
+                                                                </div>
+                                                                <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#EAF3DE' : '#f8f9fa'}};color:{{item.is_done ? '#27500A' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#639922' : '#dee2e6'}};">
+                                                                    <t t-esc="item.status_label"/>
+                                                                </span>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada data
                                                         </div>
                                                     </t>
                                                 </div>
                                             </t>
-
                                         </div>
+
+                                        <!-- Accordion: Produk / NIE -->
+                                        <div style="border:0.5px solid #dee2e6;border-radius:0;border-left:2px solid #378ADD;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'nie')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-clipboard" style="color:#378ADD;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Produk / NIE</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary and stage.sub_summary.nie.total > 0 ? '#E6F1FB' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary and stage.sub_summary.nie.total > 0 ? '#0C447C' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary and stage.sub_summary.nie.total > 0 ? '#378ADD' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary and stage.sub_summary.nie.total > 0">
+                                                            <t t-esc="stage.sub_summary.nie.done"/>/<t t-esc="stage.sub_summary.nie.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'nie') ? 'fa-chevron-up' : 'fa-chevron-down'}}" style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'nie')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_registrasi.nie and stage.sub_registrasi.nie.length > 0">
+                                                        <t t-foreach="stage.sub_registrasi.nie" t-as="item" t-key="item.label">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#378ADD;opacity:0.4;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#378ADD' : '#fff'}};border:1.5px solid #378ADD;"></div>
+                                                                <div t-attf-style="font-size:11px;line-height:1.4;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
+                                                                    <t t-esc="item.label"/>
+                                                                </div>
+                                                                <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#EAF3DE' : '#f8f9fa'}};color:{{item.is_done ? '#27500A' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#639922' : '#dee2e6'}};">
+                                                                    <t t-esc="item.status_label"/>
+                                                                </span>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
+                                                                </div>
+                                                                <t t-if="item.nie_number">
+                                                                    <div style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 6px;border-radius:4px;margin-top:3px;background:#e8f4fd;border:0.5px solid #378ADD;color:#0C447C;">
+                                                                        <i class="fa fa-id-card-o"></i><t t-esc="item.nie_number"/>
+                                                                    </div>
+                                                                </t>
+                                                                <t t-if="item.masa_berakhir">
+                                                                    <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
+                                                                        <i class="fa fa-hourglass-o me-1"></i><t t-esc="item.masa_berakhir"/>
+                                                                    </div>
+                                                                </t>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada data
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                        <!-- Accordion: Halal -->
+                                        <div style="border:0.5px solid #dee2e6;border-radius:0;border-left:2px solid #639922;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'halal')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-leaf" style="color:#639922;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Halal</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary and stage.sub_summary.halal.total > 0 ? '#EAF3DE' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary and stage.sub_summary.halal.total > 0 ? '#27500A' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary and stage.sub_summary.halal.total > 0 ? '#639922' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary and stage.sub_summary.halal.total > 0">
+                                                            <t t-esc="stage.sub_summary.halal.done"/>/<t t-esc="stage.sub_summary.halal.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'halal') ? 'fa-chevron-up' : 'fa-chevron-down'}}" style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'halal')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_registrasi.halal and stage.sub_registrasi.halal.length > 0">
+                                                        <t t-foreach="stage.sub_registrasi.halal" t-as="item" t-key="item.label">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#639922;opacity:0.4;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#639922' : '#fff'}};border:1.5px solid #639922;"></div>
+                                                                <div t-attf-style="font-size:11px;line-height:1.4;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
+                                                                    <t t-esc="item.label"/>
+                                                                </div>
+                                                                <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#EAF3DE' : '#f8f9fa'}};color:{{item.is_done ? '#27500A' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#639922' : '#dee2e6'}};">
+                                                                    <t t-esc="item.status_label"/>
+                                                                </span>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
+                                                                </div>
+                                                                <t t-if="item.nomor_sertifikat">
+                                                                    <div style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 6px;border-radius:4px;margin-top:3px;background:#EAF3DE;border:0.5px solid #639922;color:#27500A;">
+                                                                        <i class="fa fa-certificate"></i><t t-esc="item.nomor_sertifikat"/>
+                                                                    </div>
+                                                                </t>
+                                                                <t t-if="item.masa_berakhir">
+                                                                    <div t-attf-style="font-size:10px;margin-top:2px;color:{{item.is_expired ? '#dc3545' : '#adb5bd'}};">
+                                                                        <i class="fa fa-hourglass-o me-1"></i><t t-esc="item.masa_berakhir"/>
+                                                                        <t t-if="item.is_expired">
+                                                                            <span style="margin-left:3px;color:#dc3545;">(Kedaluwarsa)</span>
+                                                                        </t>
+                                                                        <t t-elif="item.sisa_hari and item.sisa_hari &lt;= 90">
+                                                                            <span style="margin-left:3px;color:#fd7e14;">(<t t-esc="item.sisa_hari"/> hr)</span>
+                                                                        </t>
+                                                                    </div>
+                                                                </t>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada data
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
                                     </t>
 
+                                    <!-- ═══ KOLOM PENGADAAN: Accordion PR / PO / Delivered ═══ -->
+                                    <t t-elif="stage.code === 'pengadaan'">
+
+                                        <!-- Detail tagihan biasa -->
+                                        <t t-if="stage.details and stage.details.length > 0">
+                                            <t t-foreach="stage.details" t-as="detail" t-key="detail.label">
+                                                <div style="position:relative;padding-left:14px;padding-bottom:10px;">
+                                                    <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#dee2e6;"></div>
+                                                    <div t-attf-style="
+                                                        position:absolute;left:-2px;top:5px;
+                                                        width:7px;height:7px;border-radius:50%;
+                                                        background:{{detail.is_done ? '#198754' : '#ffffff'}};
+                                                        border:1.5px solid {{detail.is_done ? '#198754' : '#dee2e6'}};
+                                                    "></div>
+                                                    <div t-attf-style="font-size:11px;font-weight:500;color:{{detail.is_done ? '#212529' : '#6c757d'}};">
+                                                        <t t-esc="detail.label"/>
+                                                    </div>
+                                                    <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
+                                                        <i class="fa fa-calendar-o me-1"></i><t t-esc="detail.date"/>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                            <hr style="border:none;border-top:0.5px solid #dee2e6;margin:4px 0 8px;"/>
+                                        </t>
+
+                                        <div style="font-size:10px;color:#adb5bd;text-transform:uppercase;letter-spacing:0.6px;font-weight:500;margin-bottom:6px;">
+                                            <i class="fa fa-shopping-cart me-1"></i>Sub Pengadaan
+                                        </div>
+
+                                        <!-- Accordion: Purchase Request -->
+                                        <div style="border:0.5px solid #dee2e6;border-left:2px solid #7048e8;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'peng_pr')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-file-text-o" style="color:#7048e8;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Purchase Request</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.pr.total > 0 ? '#ede9ff' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.pr.total > 0 ? '#3b1fa8' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.pr.total > 0 ? '#7048e8' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.pr.total > 0">
+                                                            <t t-esc="stage.sub_summary_pengadaan.pr.done"/>/<t t-esc="stage.sub_summary_pengadaan.pr.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'peng_pr') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'peng_pr')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_pengadaan and stage.sub_pengadaan.pr.length > 0">
+                                                        <t t-foreach="stage.sub_pengadaan.pr" t-as="item" t-key="item.label">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#7048e8;opacity:0.3;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#7048e8' : '#fff'}};border:1.5px solid #7048e8;"></div>
+                                                                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                                                                    <span t-attf-style="font-size:11px;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
+                                                                        <t t-esc="item.label"/>
+                                                                    </span>
+                                                                    <t t-if="item.is_urgent">
+                                                                        <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#f8d7da;color:#842029;border:0.5px solid #f5c2c7;font-weight:500;">URGENT</span>
+                                                                    </t>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
+                                                                    <t t-esc="item.product_summary"/>
+                                                                </div>
+                                                                <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#ede9ff' : '#f8f9fa'}};color:{{item.is_done ? '#3b1fa8' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#7048e8' : '#dee2e6'}};">
+                                                                    <t t-esc="item.state_label"/>
+                                                                </span>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
+                                                                    <i class="fa fa-money me-1"></i><t t-esc="item.amount"/>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada data
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                        <!-- Accordion: Purchase Order -->
+                                        <div style="border:0.5px solid #dee2e6;border-left:2px solid #0d6efd;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'peng_po')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-shopping-bag" style="color:#0d6efd;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Purchase Order</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.po.total > 0 ? '#cfe2ff' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.po.total > 0 ? '#084298' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.po.total > 0 ? '#0d6efd' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.po.total > 0">
+                                                            <t t-esc="stage.sub_summary_pengadaan.po.done"/>/<t t-esc="stage.sub_summary_pengadaan.po.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'peng_po') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'peng_po')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_pengadaan and stage.sub_pengadaan.po.length > 0">
+                                                        <t t-foreach="stage.sub_pengadaan.po" t-as="item" t-key="item.pr_ref + '_po'">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#0d6efd;opacity:0.3;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#0d6efd' : '#fff'}};border:1.5px solid #0d6efd;"></div>
+                                                                <div t-attf-style="font-size:11px;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
+                                                                    <t t-if="item.label !== '-'"><t t-esc="item.label"/></t>
+                                                                    <t t-else="">Purchase Order</t>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:1px;">
+                                                                    Dari PR: <t t-esc="item.pr_ref"/>
+                                                                </div>
+                                                                <t t-if="item.po_state">
+                                                                    <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#cfe2ff' : '#f8f9fa'}};color:{{item.is_done ? '#084298' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#0d6efd' : '#dee2e6'}};">
+                                                                        <t t-esc="item.po_state"/>
+                                                                    </span>
+                                                                </t>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i>
+                                                                    <t t-if="item.date !== '-'"><t t-esc="item.date"/></t>
+                                                                    <t t-else="">Belum dibuat</t>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada data
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                        <!-- Accordion: Delivered -->
+                                        <div style="border:0.5px solid #dee2e6;border-left:2px solid #198754;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'peng_delivered')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-truck" style="color:#198754;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Arrived Material</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.delivered.total > 0 ? '#d1e7dd' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.delivered.total > 0 ? '#0a3622' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.delivered.total > 0 ? '#198754' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.delivered.total > 0">
+                                                            <t t-esc="stage.sub_summary_pengadaan.delivered.done"/>/<t t-esc="stage.sub_summary_pengadaan.delivered.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'peng_delivered') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'peng_delivered')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_pengadaan and stage.sub_pengadaan.delivered.length > 0">
+                                                        <t t-foreach="stage.sub_pengadaan.delivered" t-as="item" t-key="item.pr_ref + '_del'">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#198754;opacity:0.3;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#198754' : '#fff'}};border:1.5px solid #198754;"></div>
+                                                                <div style="display:flex;align-items:center;gap:4px;">
+                                                                    <span t-attf-style="font-size:11px;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
+                                                                        <t t-if="item.label !== '-'"><t t-esc="item.label"/></t>
+                                                                        <t t-else="">Penerimaan Barang</t>
+                                                                    </span>
+                                                                    <t t-if="item.is_done">
+                                                                        <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#d1e7dd;color:#0a3622;border:0.5px solid #a3cfbb;font-weight:500;">
+                                                                            <i class="fa fa-check me-1"></i>Done
+                                                                        </span>
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#f8f9fa;color:#6c757d;border:0.5px solid #dee2e6;">
+                                                                            Menunggu
+                                                                        </span>
+                                                                    </t>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:1px;">
+                                                                    Dari PR: <t t-esc="item.pr_ref"/>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i>
+                                                                    <t t-if="item.date !== '-'"><t t-esc="item.date"/></t>
+                                                                    <t t-else="">Belum diterima</t>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada data
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                    </t>
+
+                                    <!-- ═══ KOLOM DELIVERY: Accordion Pengiriman ═══ -->
+                                    <t t-elif="stage.code === 'delivery'">
+
+                                        <div style="font-size:10px;color:#adb5bd;text-transform:uppercase;letter-spacing:0.6px;font-weight:500;margin-bottom:6px;">
+                                            <i class="fa fa-truck me-1"></i>Sub Pengiriman
+                                        </div>
+
+                                        <!-- Accordion: Delivery Order -->
+                                        <div style="border:0.5px solid #dee2e6;border-left:2px solid #d63384;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'delivery_pk')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-truck" style="color:#d63384;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Delivery Order</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary_delivery and stage.sub_summary_delivery.picking.total > 0 ? '#fce4ec' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary_delivery and stage.sub_summary_delivery.picking.total > 0 ? '#7d1a4a' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary_delivery and stage.sub_summary_delivery.picking.total > 0 ? '#d63384' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary_delivery and stage.sub_summary_delivery.picking.total > 0">
+                                                            <t t-esc="stage.sub_summary_delivery.picking.done"/>/<t t-esc="stage.sub_summary_delivery.picking.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'delivery_pk') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'delivery_pk')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_delivery and stage.sub_delivery.picking.length > 0">
+                                                        <t t-foreach="stage.sub_delivery.picking" t-as="pk" t-key="pk.label">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#d63384;opacity:0.3;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{pk.is_done ? '#d63384' : '#fff'}};border:1.5px solid #d63384;"></div>
+                                                                <div t-attf-style="font-size:11px;font-weight:500;color:{{pk.is_done ? '#212529' : '#6c757d'}};">
+                                                                    <t t-esc="pk.label"/>
+                                                                </div>
+                                                                <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{pk.is_done ? '#fce4ec' : '#f8f9fa'}};color:{{pk.is_done ? '#7d1a4a' : '#6c757d'}};border:0.5px solid {{pk.is_done ? '#d63384' : '#dee2e6'}};">
+                                                                    <t t-esc="pk.state_label"/>
+                                                                </span>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="pk.date"/>
+                                                                </div>
+
+                                                                <!-- Detail produk yang dikirim -->
+                                                                <t t-if="pk.lines and pk.lines.length > 0">
+                                                                    <div style="margin-top:5px;padding-top:5px;border-top:0.5px dashed #dee2e6;">
+                                                                        <t t-foreach="pk.lines" t-as="line" t-key="line.label">
+                                                                            <div style="font-size:10px;color:#495057;margin-bottom:3px;">
+                                                                                <i class="fa fa-cube me-1" style="color:#d63384;"></i>
+                                                                                <t t-esc="line.label"/>
+                                                                                <t t-if="line.kemasan"> — <t t-esc="line.kemasan"/></t>
+                                                                            </div>
+                                                                        </t>
+                                                                    </div>
+                                                                </t>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada data
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+                                        <!-- Accordion: Retur / Pengembalian -->
+                                        <div style="border:0.5px solid #dee2e6;border-left:2px solid #dc3545;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'delivery_retur')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-undo" style="color:#dc3545;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Retur / Pengembalian</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary_delivery and stage.sub_summary_delivery.retur.total > 0 ? '#f8d7da' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary_delivery and stage.sub_summary_delivery.retur.total > 0 ? '#842029' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary_delivery and stage.sub_summary_delivery.retur.total > 0 ? '#dc3545' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary_delivery and stage.sub_summary_delivery.retur.total > 0">
+                                                            <t t-esc="stage.sub_summary_delivery.retur.done"/>/<t t-esc="stage.sub_summary_delivery.retur.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'delivery_retur') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'delivery_retur')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_delivery and stage.sub_delivery.retur.length > 0">
+                                                        <t t-foreach="stage.sub_delivery.retur" t-as="rt" t-key="rt.label">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#dc3545;opacity:0.3;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{rt.is_done ? '#dc3545' : '#fff'}};border:1.5px solid #dc3545;"></div>
+                                                                <div t-attf-style="font-size:11px;font-weight:500;color:{{rt.is_done ? '#212529' : '#6c757d'}};">
+                                                                    <t t-esc="rt.label"/>
+                                                                </div>
+                                                                <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{rt.is_done ? '#f8d7da' : '#f8f9fa'}};color:{{rt.is_done ? '#842029' : '#6c757d'}};border:0.5px solid {{rt.is_done ? '#dc3545' : '#dee2e6'}};">
+                                                                    <t t-esc="rt.state_label"/>
+                                                                </span>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="rt.date"/>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
+                                                                    <i class="fa fa-arrow-left me-1"></i>Dari: <t t-esc="rt.origin"/>
+                                                                </div>
+                                                                <t t-if="rt.lines and rt.lines.length > 0">
+                                                                    <div style="margin-top:5px;padding-top:5px;border-top:0.5px dashed #dee2e6;">
+                                                                        <t t-foreach="rt.lines" t-as="line" t-key="line">
+                                                                            <div style="font-size:10px;color:#495057;margin-bottom:3px;">
+                                                                                <i class="fa fa-cube me-1" style="color:#dc3545;"></i><t t-esc="line"/>
+                                                                            </div>
+                                                                        </t>
+                                                                    </div>
+                                                                </t>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada retur
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                    </t>
+
+                                    <!-- ═══ KOLOM BIASA (bukan registrasi, bukan pengadaan) ═══ -->
+                                    <t t-elif="stage.details and stage.details.length > 0">
+                                        <t t-foreach="stage.details" t-as="detail" t-key="detail.label">
+                                            <div style="position:relative;padding-left:14px;padding-bottom:14px;">
+                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#dee2e6;"></div>
+                                                <div t-attf-style="
+                                                    position:absolute;left:-2px;top:5px;
+                                                    width:7px;height:7px;border-radius:50%;
+                                                    background:{{detail.is_done ? '#198754' : '#ffffff'}};
+                                                    border:1.5px solid {{detail.is_done ? '#198754' : '#dee2e6'}};
+                                                "></div>
+                                                <div t-attf-style="font-size:11.5px;font-weight:500;color:{{detail.is_done ? '#212529' : '#6c757d'}};">
+                                                    <t t-esc="detail.label"/>
+                                                </div>
+                                                <div style="font-size:10.5px;color:#adb5bd;margin-top:2px;">
+                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="detail.date"/>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </t>
+
+                                    <!-- ═══ EMPTY STATE ═══ -->
                                     <t t-else="">
-                                        <div class="text-center text-muted opacity-25 mt-5">
-                                            <i class="fa fa-hourglass-start fs-2 d-block mb-2"></i>
-                                            <span style="font-size: 0.7rem;">Waiting</span>
+                                        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#adb5bd;padding:2rem 0;">
+                                            <i class="fa fa-hourglass-o" style="font-size:20px;opacity:0.4;"></i>
+                                            <span style="font-size:11px;opacity:0.6;">Menunggu</span>
                                         </div>
                                     </t>
-                                </div>
 
+                                </div>
                             </div>
                         </t>
 
                     </div>
                 </div>
+
             </t>
+
+            <!-- State kosong -->
+            <t t-else="">
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;color:#adb5bd;">
+                    <i class="fa fa-inbox" style="font-size:3rem;opacity:0.3;"></i>
+                    <span style="font-size:14px;">Belum ada data MOU</span>
+                </div>
+            </t>
+
         </div>
+
     </t>
 </templates>
