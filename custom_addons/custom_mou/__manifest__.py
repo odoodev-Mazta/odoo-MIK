@@ -3,6 +3,7 @@
     'version': '1.0',
     'category': 'Memorandum Of Understanding',
     'summary': 'Modul Custom untuk keperluan MOU',
+    'author': 'staff dev',
     'depends': ['base', 'web', 'account', 'custom_ecatalogue', 'sale'],
     'data': [
         'security/ir.model.access.csv',
