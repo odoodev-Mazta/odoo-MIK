@@ -1,9 +1,211 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <record id="action_design_dashboard" model="ir.actions.client">
-        <field name="name">Dashboard</field>
-        <field name="tag">design_module.action_design_dashboard</field>
+    <!-- ═══════════════════════════════════════════════════
+         FORM VIEW – design.usulan
+    ═══════════════════════════════════════════════════ -->
+    <record id="view_design_usulan_form" model="ir.ui.view">
+        <field name="name">design.usulan.form</field>
+        <field name="model">design.usulan</field>
+        <field name="priority">16</field>
+        <field name="arch" type="xml">
+            <form string="Usulan Design">
+
+                <!-- ── HEADER ── -->
+                <header>
+                    <!-- Draft → On Progress -->
+                    <button name="action_submit_form_design"
+                            string="Submit"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+
+                    <!-- On Progress → Ajukan ke Approval -->
+                    <button name="action_submit_to_approval"
+                            string="Ajukan ke Approval"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'progress'"/>
+
+                    <!-- Revisi hanya dari done -->
+                    <button name="action_revisi_design"
+                            string="Revisi"
+                            type="object"
+                            class="btn-warning"
+                            invisible="state != 'done'"
+                            confirm="Revisi akan mengembalikan ke On Progress. Lanjutkan?"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,progress,approval_marketing,upload_form,done"/>
+                </header>
+
+                <!-- ── BODY ── -->
+                <sheet>
+                    <!-- Smart Buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object"
+                                name="action_revisi_design"
+                                icon="fa-refresh"
+                                invisible="revisi_count == 0">
+                            <field name="revisi_count" widget="statinfo" string="Revisi"/>
+                        </button>
+
+                        <!-- Shortcut ke Approval -->
+                        <button class="oe_stat_button" type="object"
+                                name="action_open_approval"
+                                icon="fa-check-circle"
+                                invisible="approval_id == False">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Approval</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Banner: sedang dalam proses approval -->
+                    <div class="alert alert-info mb-3" role="alert"
+                         invisible="state not in ('approval_marketing','approval_client','approval_ro','upload_form')">
+                        <strong>Sedang dalam proses Approval.</strong>
+                        Lihat dan proses di menu <strong>Design → Approval</strong>.
+                    </div>
+
+                    <!-- Banner Reject -->
+                    <div class="alert alert-danger mb-3" role="alert"
+                         invisible="state != 'reject'">
+                        <strong>Ditolak.</strong>
+                        Silakan lakukan revisi dan ajukan kembali.
+                    </div>
+
+                    <!-- Banner Done -->
+                    <div class="alert alert-success mb-3" role="alert"
+                         invisible="state != 'done'">
+                        <strong>✅ Selesai.</strong> Form Design Final telah disetujui.
+                    </div>
+
+                    <!-- Title -->
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <!-- ── MAIN FIELDS ── -->
+                    <group>
+                        <group string="Informasi Design">
+                            <field name="date"
+                                   readonly="state not in ('draft','progress')"/>
+                            <field name="partner_id"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="mou_id"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True}"
+                                   domain="[('state','=','mou'),('nama_cust','=',partner_id)]"/>
+                            <field name="brand"
+                                   readonly="state not in ('draft','progress')"/>
+                        </group>
+                        <group string="Status &amp; Waktu">
+                            <field name="date_done" readonly="1"/>
+                            <field name="is_ontime" readonly="state != 'done'"/>
+                            <field name="revisi_count" readonly="1"/>
+                            <field name="approval_id" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ── NOTEBOOK ── -->
+                    <notebook>
+                        <page string="Produk" name="produk">
+                            <field name="product_line_ids"
+                                   readonly="state not in ('draft','progress')"
+                                   widget="one2many_list">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="nama_produk"/>
+                                    <field name="kemasan"/>
+                                    <field name="keterangan"/>
+                                    <field name="attachment" widget="binary" optional="show"/>
+                                    <field name="attachment_fname" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="File Design" name="file_design">
+                            <group>
+                                <field name="attachment_design"
+                                       widget="binary"
+                                       filename="attachment_design_fname"
+                                       readonly="state not in ('progress',)"/>
+                                <field name="attachment_design_fname"
+                                       invisible="not attachment_design"/>
+                            </group>
+                        </page>
+
+                        <page string="Revisi" name="revisi">
+                            <group string="Riwayat Revisi">
+                                <field name="revisi_count" string="Total Revisi" readonly="1"/>
+                            </group>
+                            <field name="revisi_line_ids" readonly="1">
+                                <list>
+                                    <field name="revisi_ke"/>
+                                    <field name="tanggal"/>
+                                    <field name="user_id"/>
+                                    <field name="state_from"/>
+                                    <field name="catatan"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Catatan" name="catatan">
+                            <field name="notes"
+                                   placeholder="Tulis catatan tambahan di sini..."
+                                   readonly="state == 'done'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════
+         LIST VIEW
+    ═══════════════════════════════════════════════════ -->
+    <record id="view_design_usulan_list" model="ir.ui.view">
+        <field name="name">design.usulan.list</field>
+        <field name="model">design.usulan</field>
+        <field name="arch" type="xml">
+            <list string="Usulan Design"
+                  decoration-danger="state=='reject'"
+                  decoration-success="state=='done'"
+                  decoration-warning="state=='progress'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="mou_id"/>
+                <field name="brand"/>
+                <field name="revisi_count" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state=='done'"
+                       decoration-warning="state in ('progress','upload_form')"
+                       decoration-info="state in ('approval_marketing','approval_client','approval_ro')"
+                       decoration-danger="state=='reject'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════
+         ACTION – Usulan
+    ═══════════════════════════════════════════════════ -->
+    <record id="action_design_usulan" model="ir.actions.act_window">
+        <field name="name">Usulan Design</field>
+        <field name="res_model">design.usulan</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['draft', 'progress', 'reject', 'done'])]</field>
+        <field name="views" eval="[
+            (ref('view_design_usulan_list'), 'list'),
+            (ref('view_design_usulan_form'), 'form'),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Buat Usulan Design baru!</p>
+        </field>
     </record>
 
 </odoo>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="custom_design.DesignApprovalDashboard">
+    <div class="o_design_dashboard p-4" style="background:#f8f9fa; min-height:100vh;">
+
+        <!-- ── HEADER CARD ── -->
+        <div class="card shadow-sm mb-4" style="border-left: 5px solid #0d6efd;">
+            <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h3 class="mb-0 fw-bold text-primary">
+                        <i class="fa fa-paint-brush me-2"/>Dashboard Approval Design
+                    </h3>
+                    <small class="text-muted">Pantau progres approval setiap usulan design</small>
+                </div>
+                <div class="text-end">
+                    <h2 class="mb-0 fw-bold text-dark"><t t-esc="state.total"/></h2>
+                    <small class="text-muted">Total Usulan</small>
+                </div>
+            </div>
+            <!-- Progress Bar Overall -->
+            <div class="card-footer bg-white pt-2 pb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <small class="text-muted">Completion Rate</small>
+                    <small class="fw-bold text-success"><t t-esc="state.done_pct"/>%</small>
+                </div>
+                <div class="progress" style="height:10px; border-radius:8px;">
+                    <div class="progress-bar bg-success"
+                         t-attf-style="width: #{state.done_pct}%; border-radius:8px;"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── LOADING ── -->
+        <t t-if="state.loading">
+            <div class="text-center py-5 text-muted">
+                <i class="fa fa-spinner fa-spin fa-2x"/>
+                <p class="mt-2">Memuat data...</p>
+            </div>
+        </t>
+
+        <!-- ── STAGE CARDS ── -->
+        <t t-else="">
+            <div class="row g-3">
+                <t t-foreach="state.stateConfig" t-as="cfg" t-key="cfg.key">
+                    <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                        <div class="card h-100 shadow-sm border-0 o_dashboard_stage_card"
+                             style="cursor:pointer; transition: transform .15s, box-shadow .15s;"
+                             t-on-click="() => this.openState(cfg.key)"
+                             t-on-mouseenter="ev => ev.currentTarget.style.transform='translateY(-3px)'"
+                             t-on-mouseleave="ev => ev.currentTarget.style.transform='translateY(0)'">
+
+                            <!-- Colored top bar -->
+                            <div style="height:5px; border-radius:6px 6px 0 0;"
+                                 t-attf-style="height:5px; border-radius:6px 6px 0 0; background:#{cfg.color};"/>
+
+                            <div class="card-body d-flex align-items-center gap-3">
+                                <!-- Icon bubble -->
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                     style="width:52px; height:52px;"
+                                     t-attf-style="width:52px; height:52px; background:#{cfg.color}20;">
+                                    <i class="fa fa-lg"
+                                       t-attf-class="fa #{cfg.icon}"
+                                       t-attf-style="color:#{cfg.color};"/>
+                                </div>
+                                <!-- Count + label -->
+                                <div>
+                                    <h2 class="mb-0 fw-bold"
+                                        t-attf-style="color:#{cfg.color};">
+                                        <t t-esc="state.counts[cfg.key] || 0"/>
+                                    </h2>
+                                    <div class="text-muted" style="font-size:.83rem; line-height:1.2;">
+                                        <t t-esc="cfg.label"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- ── PIPELINE FLOW ── -->
+            <div class="card shadow-sm mt-4 border-0">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fa fa-sitemap me-2 text-primary"/>Alur Approval
+                </div>
+                <div class="card-body d-flex align-items-center flex-wrap gap-2 py-3">
+                    <t t-foreach="state.stateConfig" t-as="cfg" t-key="cfg.key">
+                        <t t-if="cfg.key != 'reject'">
+                            <!-- Stage pill -->
+                            <span class="badge rounded-pill px-3 py-2"
+                                  style="font-size:.8rem; cursor:pointer;"
+                                  t-attf-style="background:#{cfg.color}20; color:#{cfg.color}; border:1px solid #{cfg.color}40;"
+                                  t-on-click="() => this.openState(cfg.key)">
+                                <i t-attf-class="fa #{cfg.icon} me-1"/>
+                                <t t-esc="cfg.label"/>
+                                <span class="ms-1 fw-bold">(<t t-esc="state.counts[cfg.key] || 0"/>)</span>
+                            </span>
+                            <!-- Arrow (not after last) -->
+                            <t t-if="cfg_index &lt; state.stateConfig.length - 2">
+                                <i class="fa fa-arrow-right text-muted" style="font-size:.8rem;"/>
+                            </t>
+                        </t>
+                    </t>
+                    <!-- Reject aside -->
+                    <span class="ms-auto badge rounded-pill px-3 py-2"
+                          style="font-size:.8rem; cursor:pointer; background:#dc354520; color:#dc3545; border:1px solid #dc354540;"
+                          t-on-click="() => this.openState('reject')">
+                        <i class="fa fa-times-circle me-1"/>
+                        Rejected
+                        (<t t-esc="state.counts['reject'] || 0"/>)
+                    </span>
+                </div>
+            </div>
+
+        </t>
+    </div>
+</t>
+
+</templates>
