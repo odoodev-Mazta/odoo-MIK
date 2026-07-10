@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ============================================================
+             SECURITY GROUPS
+        ============================================================ -->
+
+        <!-- Group: Product Marketing -->
+        <record id="group_registrasi_product_marketing" model="res.groups">
+            <field name="name">Registrasi / Product Marketing</field>
+        </record>
+
+        <!-- Group: Regulatory Officer (RO) -->
+        <record id="group_registrasi_regulatory" model="res.groups">
+            <field name="name">Registrasi / Regulatory Officer (RO)</field>
+        </record>
+
+        <!-- Group: Factory Manager -->
+        <record id="group_registrasi_factory_manager" model="res.groups">
+            <field name="name">Registrasi / Factory Manager</field>
+        </record>
+
+        <!-- Group: RnD -->
+        <record id="group_registrasi_rnd" model="res.groups">
+            <field name="name">Registrasi / RnD</field>
+        </record>
+
+        <!-- Group: QC -->
+        <record id="group_registrasi_qc" model="res.groups">
+            <field name="name">Registrasi / Quality Control</field>
+        </record>
+
+        <!-- Group: Finance -->
+        <record id="group_registrasi_finance" model="res.groups">
+            <field name="name">Registrasi / Finance</field>
+        </record>
+
+        <!-- Group: Manager -->
+        <record id="group_registrasi_manager" model="res.groups">
+            <field name="name">Registrasi / Manager</field>
+            <field name="implied_ids" eval="[
+                Command.link(ref('group_registrasi_product_marketing')),
+                Command.link(ref('group_registrasi_regulatory')),
+                Command.link(ref('group_registrasi_factory_manager')),
+                Command.link(ref('group_registrasi_finance')),
+            ]"/>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="custom_registrasi.DashboardRegistrasi" owl="1">
+<div class="o_dashboard_container p-4 bg-light w-100 h-100 overflow-auto">
+
+    <h2 class="mb-4 text-black fw-bold">
+        <i class="fa fa-bar-chart me-2 text-primary"></i>Dashboard Registrasi BPOM &amp; Halal
+    </h2>
+
+    <t t-if="state.loading">
+        <div class="d-flex align-items-center justify-content-center" style="height:200px;color:#6c757d;">
+            <i class="fa fa-spinner fa-spin me-2"></i> Memuat data...
+        </div>
+    </t>
+
+    <t t-else="">
+
+        <!-- ══════════════ NIE SECTION ══════════════ -->
+        <h6 class="text-uppercase text-primary fw-bold mb-2" style="letter-spacing:0.6px;">
+            <i class="fa fa-clipboard me-1"></i>Produk / NIE
+        </h6>
+
+        <!-- KPI Cards NIE -->
+        <div class="row g-3 mb-3">
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #6c757d!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-list me-1"></i>Total</div>
+                        <div class="fw-bold" style="font-size:24px;color:#6c757d;"><t t-esc="state.nie.total"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #198754!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-check-circle me-1 text-success"></i>NIE Issued</div>
+                        <div class="fw-bold" style="font-size:24px;color:#198754;"><t t-esc="state.nie.issued"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #0d6efd!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-circle-o-notch me-1 text-primary"></i>Proses</div>
+                        <div class="fw-bold" style="font-size:24px;color:#0d6efd;"><t t-esc="state.nie.process"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #6c757d!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-pencil me-1"></i>Draft</div>
+                        <div class="fw-bold" style="font-size:24px;color:#6c757d;"><t t-esc="state.nie.draft"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #dc3545!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-times-circle me-1 text-danger"></i>Failed</div>
+                        <div class="fw-bold" style="font-size:24px;color:#dc3545;"><t t-esc="state.nie.failed"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #fd7e14!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-exclamation-circle me-1" style="color:#fd7e14;"></i>Expired</div>
+                        <div class="fw-bold" style="font-size:24px;color:#fd7e14;"><t t-esc="state.nie.expired"/></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart + Tabel NIE -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body" style="height:260px;">
+                        <canvas t-ref="chartNie"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-0">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+                            <span class="text-muted" style="font-size:12px;">
+                                Filter: <span class="badge bg-secondary ms-1"><t t-esc="state.active_filter_nie"/></span>
+                            </span>
+                            <button t-if="state.active_filter_nie !== 'Semua Data'"
+                                    class="btn btn-sm btn-outline-danger"
+                                    t-on-click="() => this.resetFilter('nie')">
+                                <i class="fa fa-times me-1"></i>Reset
+                            </button>
+                        </div>
+                        <div class="table-responsive" style="max-height:220px;overflow-y:auto;">
+                            <table class="table table-striped table-hover mb-0" style="font-size:12px;">
+                                <thead class="table-light" style="position:sticky;top:0;z-index:1;">
+                                    <tr>
+                                        <th class="px-3 py-2">No. Registrasi</th>
+                                        <th class="px-3 py-2">Produk</th>
+                                        <th class="px-3 py-2">Klien</th>
+                                        <th class="px-3 py-2 text-center">Status</th>
+                                        <th class="px-3 py-2 text-center">NIE Number</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.table_nie" t-as="row" t-key="row.id">
+                                        <td class="px-3 py-2 fw-bold text-primary"><t t-esc="row.name"/></td>
+                                        <td class="px-3 py-2"><t t-esc="row.product_name"/></td>
+                                        <td class="px-3 py-2"><t t-esc="row.client"/></td>
+                                        <td class="px-3 py-2 text-center">
+                                            <span t-attf-class="badge rounded-pill bg-{{row.state_color}}">
+                                                <t t-esc="row.state_label"/>
+                                            </span>
+                                        </td>
+                                        <td class="px-3 py-2 text-center"><t t-esc="row.nie_number or '-'"/></td>
+                                    </tr>
+                                    <tr t-if="state.table_nie.length === 0">
+                                        <td colspan="5" class="text-center py-3 text-muted">Tidak ada data.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-3"/>
+
+        <!-- ══════════════ HALAL SECTION ══════════════ -->
+        <h6 class="text-uppercase fw-bold mb-2" style="letter-spacing:0.6px;color:#639922;">
+            <i class="fa fa-leaf me-1"></i>Halal
+        </h6>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #6c757d!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-list me-1"></i>Total</div>
+                        <div class="fw-bold" style="font-size:24px;color:#6c757d;"><t t-esc="state.halal.total"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #198754!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-check-circle me-1 text-success"></i>Aktif</div>
+                        <div class="fw-bold" style="font-size:24px;color:#198754;"><t t-esc="state.halal.aktif"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #0d6efd!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-circle-o-notch me-1 text-primary"></i>Proses</div>
+                        <div class="fw-bold" style="font-size:24px;color:#0d6efd;"><t t-esc="state.halal.process"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #fd7e14!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-hourglass-half me-1" style="color:#fd7e14;"></i>Hampir Exp</div>
+                        <div class="fw-bold" style="font-size:24px;color:#fd7e14;"><t t-esc="state.halal.soon"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #dc3545!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-exclamation-circle me-1 text-danger"></i>Expired</div>
+                        <div class="fw-bold" style="font-size:24px;color:#dc3545;"><t t-esc="state.halal.expired"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #6f42c1!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-ban me-1" style="color:#6f42c1;"></i>Ditolak</div>
+                        <div class="fw-bold" style="font-size:24px;color:#6f42c1;"><t t-esc="state.halal.ditolak"/></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body" style="height:260px;">
+                        <canvas t-ref="chartHalal"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-0">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+                            <span class="text-muted" style="font-size:12px;">
+                                Filter: <span class="badge bg-secondary ms-1"><t t-esc="state.active_filter_halal"/></span>
+                            </span>
+                            <button t-if="state.active_filter_halal !== 'Semua Data'"
+                                    class="btn btn-sm btn-outline-danger"
+                                    t-on-click="() => this.resetFilter('halal')">
+                                <i class="fa fa-times me-1"></i>Reset
+                            </button>
+                        </div>
+                        <div class="table-responsive" style="max-height:220px;overflow-y:auto;">
+                            <table class="table table-striped table-hover mb-0" style="font-size:12px;">
+                                <thead class="table-light" style="position:sticky;top:0;z-index:1;">
+                                    <tr>
+                                        <th class="px-3 py-2">No. Registrasi</th>
+                                        <th class="px-3 py-2">Produk</th>
+                                        <th class="px-3 py-2">Klien</th>
+                                        <th class="px-3 py-2 text-center">Status</th>
+                                        <th class="px-3 py-2 text-center">Tgl Expired</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.table_halal" t-as="row" t-key="row.id">
+                                        <td class="px-3 py-2 fw-bold text-success"><t t-esc="row.name"/></td>
+                                        <td class="px-3 py-2"><t t-esc="row.product_name"/></td>
+                                        <td class="px-3 py-2"><t t-esc="row.client"/></td>
+                                        <td class="px-3 py-2 text-center">
+                                            <span t-attf-class="badge rounded-pill bg-{{row.state_color}}">
+                                                <t t-esc="row.state_label"/>
+                                            </span>
+                                        </td>
+                                        <td class="px-3 py-2 text-center"><t t-esc="row.tanggal_expired or '-'"/></td>
+                                    </tr>
+                                    <tr t-if="state.table_halal.length === 0">
+                                        <td colspan="5" class="text-center py-3 text-muted">Tidak ada data.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-3"/>
+
+        <!-- ══════════════ BRAND SECTION ══════════════ -->
+        <h6 class="text-uppercase fw-bold mb-2" style="letter-spacing:0.6px;color:#EF9F27;">
+            <i class="fa fa-tag me-1"></i>Brand / HAKI
+        </h6>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #6c757d!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-list me-1"></i>Total</div>
+                        <div class="fw-bold" style="font-size:24px;color:#6c757d;"><t t-esc="state.brand.total"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #198754!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-check-circle me-1 text-success"></i>Approved</div>
+                        <div class="fw-bold" style="font-size:24px;color:#198754;"><t t-esc="state.brand.approved"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #0d6efd!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-circle-o-notch me-1 text-primary"></i>Proses</div>
+                        <div class="fw-bold" style="font-size:24px;color:#0d6efd;"><t t-esc="state.brand.process"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #6c757d!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-pencil me-1"></i>Draft</div>
+                        <div class="fw-bold" style="font-size:24px;color:#6c757d;"><t t-esc="state.brand.draft"/></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-0 shadow-sm h-100" style="border-top:3px solid #dc3545!important;">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted" style="font-size:11px;"><i class="fa fa-times-circle me-1 text-danger"></i>Rejected</div>
+                        <div class="fw-bold" style="font-size:24px;color:#dc3545;"><t t-esc="state.brand.rejected"/></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body" style="height:260px;">
+                        <canvas t-ref="chartBrand"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-0">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+                            <span class="text-muted" style="font-size:12px;">
+                                Filter: <span class="badge bg-secondary ms-1"><t t-esc="state.active_filter_brand"/></span>
+                            </span>
+                            <button t-if="state.active_filter_brand !== 'Semua Data'"
+                                    class="btn btn-sm btn-outline-danger"
+                                    t-on-click="() => this.resetFilter('brand')">
+                                <i class="fa fa-times me-1"></i>Reset
+                            </button>
+                        </div>
+                        <div class="table-responsive" style="max-height:220px;overflow-y:auto;">
+                            <table class="table table-striped table-hover mb-0" style="font-size:12px;">
+                                <thead class="table-light" style="position:sticky;top:0;z-index:1;">
+                                    <tr>
+                                        <th class="px-3 py-2">No. Registrasi</th>
+                                        <th class="px-3 py-2">Brand</th>
+                                        <th class="px-3 py-2">Klien</th>
+                                        <th class="px-3 py-2 text-center">Status</th>
+                                        <th class="px-3 py-2 text-center">Brand Owner</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.table_brand" t-as="row" t-key="row.id">
+                                        <td class="px-3 py-2 fw-bold" style="color:#EF9F27;"><t t-esc="row.name"/></td>
+                                        <td class="px-3 py-2"><t t-esc="row.brand_name"/></td>
+                                        <td class="px-3 py-2"><t t-esc="row.client"/></td>
+                                        <td class="px-3 py-2 text-center">
+                                            <span t-attf-class="badge rounded-pill bg-{{row.state_color}}">
+                                                <t t-esc="row.state_label"/>
+                                            </span>
+                                        </td>
+                                        <td class="px-3 py-2 text-center"><t t-esc="row.brand_owner"/></td>
+                                    </tr>
+                                    <tr t-if="state.table_brand.length === 0">
+                                        <td colspan="5" class="text-center py-3 text-muted">Tidak ada data.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </t>
+</div>
+</t>
+</templates>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0). -->
+<odoo>
+
+    <!-- ====================================================================
+         REGISTRASI.PRODUK.LINE — STANDALONE FORM VIEW
+         (used as popup if needed from the product line tree)
+    ==================================================================== -->
+    <record id="view_registrasi_produk_line_form" model="ir.ui.view">
+        <field name="name">registrasi.produk.line.form</field>
+        <field name="model">registrasi.produk.line</field>
+        <field name="arch" type="xml">
+            <form string="Product Line Detail">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="product_name"/>
+                            <field name="description"/>
+                            <field name="netto"/>
+                        </group>
+                        <group>
+                            <field name="primary_packaging"/>
+                            <field name="secondary_packaging"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" placeholder="Additional notes…"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         REGISTRASI.PRODUK.LINE — TREE (for standalone reference)
+    ==================================================================== -->
+    <record id="view_registrasi_produk_line_tree" model="ir.ui.view">
+        <field name="name">registrasi.produk.line.tree</field>
+        <field name="model">registrasi.produk.line</field>
+        <field name="arch" type="xml">
+            <list string="Product Lines">
+                <field name="produk_id"/>
+                <field name="product_name"/>
+                <field name="description"/>
+                <field name="netto"/>
+                <field name="primary_packaging"/>
+                <field name="secondary_packaging"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+</odoo>

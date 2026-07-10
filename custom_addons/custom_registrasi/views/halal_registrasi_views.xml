@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ====================================================================
+         HALAL.REGISTRASI — FORM VIEW
+    ==================================================================== -->
+    <record id="view_halal_registrasi_form" model="ir.ui.view">
+        <field name="name">halal.registrasi.form</field>
+        <field name="model">halal.registrasi</field>
+        <field name="arch" type="xml">
+            <form string="Registrasi Halal">
+
+                <!-- ── Header & Status Bar ────────────────────────────── -->
+                <header>
+
+                    <!-- Draft → Pengajuan -->
+                    <button
+                        name="action_ajukan_dokumen"
+                        string="Ajukan Dokumen"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'draft'"
+                    />
+
+                    <!-- Pengajuan → Verifikasi Internal -->
+                    <button
+                        name="action_verifikasi_internal"
+                        string="Verifikasi Internal"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'pengajuan'"
+                    />
+
+                    <!-- Verifikasi → Submit ke Lembaga -->
+                    <button
+                        name="action_submit_ke_lembaga"
+                        string="Ajukan ke Lembaga Sertifikasi"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'verifikasi_internal'"
+                    />
+
+                    <!-- Submitted → Audit -->
+                    <button
+                        name="action_audit_halal"
+                        string="Proses Audit Halal"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'submitted_lembaga'"
+                    />
+
+                    <!-- Audit → Menunggu Keputusan -->
+                    <button
+                        name="action_menunggu_keputusan"
+                        string="Audit Selesai – Tunggu Keputusan"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'audit_halal'"
+                    />
+
+                    <!-- Menunggu Keputusan → Terbit -->
+                    <button
+                        name="action_terbitkan_sertifikat"
+                        string="🎉 Terbitkan Sertifikat Halal"
+                        type="object"
+                        class="btn-success"
+                        invisible="state != 'menunggu_keputusan'"
+                    />
+
+                    <!-- Tolak (tersedia di beberapa state) -->
+                    <button
+                        name="action_tolak"
+                        string="Tolak / Minta Revisi"
+                        type="object"
+                        class="btn-warning"
+                        invisible="state not in ('pengajuan', 'verifikasi_internal', 'submitted_lembaga', 'audit_halal', 'menunggu_keputusan')"
+                    />
+
+                    <!-- Setelah ditolak: kembali ke Draft -->
+                    <button
+                        name="action_reset_ke_draft"
+                        string="Perbaiki (Kembali ke Draft)"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state != 'ditolak'"
+                    />
+
+                    <!-- Buat Perpanjangan -->
+                    <button
+                        name="action_buat_perpanjangan"
+                        string="Buat Perpanjangan"
+                        type="object"
+                        class="btn-info"
+                        invisible="state not in ('sertifikat_terbit', 'kadaluarsa')"
+                    />
+
+                    <!-- Tandai Kadaluarsa (manual) -->
+                    <button
+                        name="action_tandai_kadaluarsa"
+                        string="Tandai Kadaluarsa"
+                        type="object"
+                        class="btn-danger"
+                        invisible="state != 'sertifikat_terbit'"
+                        confirm="Tandai sertifikat ini sebagai kadaluarsa?"
+                    />
+
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,pengajuan,verifikasi_internal,submitted_lembaga,audit_halal,menunggu_keputusan,sertifikat_terbit"
+                    />
+                </header>
+
+                <!-- ── Smart Buttons ──────────────────────────────────── -->
+                <div class="oe_button_box" name="button_box">
+                    <button
+                        type="object"
+                        name="action_buat_perpanjangan"
+                        class="oe_stat_button"
+                        icon="fa-refresh"
+                        invisible="state not in ('sertifikat_terbit', 'kadaluarsa')"
+                    >
+                        <div class="o_stat_info">
+                            <span class="o_stat_text">Perpanjangan</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- ── Banner Status ──────────────────────────────────── -->
+                <div class="alert alert-danger" role="alert"
+                     invisible="state != 'ditolak'">
+                    <strong>❌ Ditolak (Revisi ke-<field name="revision_counter" readonly="1"/>):</strong>
+                    <field name="catatan_penolakan" readonly="1"/>
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="state != 'kadaluarsa'">
+                    <strong>⚠️ Sertifikat Halal Ini Sudah Kadaluarsa.</strong>
+                    Segera buat perpanjangan untuk menjaga kepatuhan.
+                </div>
+                <div class="alert alert-success" role="alert"
+                     invisible="state != 'sertifikat_terbit'">
+                    <strong>✅ Sertifikat Aktif.</strong>
+                    No: <field name="nomor_sertifikat" readonly="1"/> —
+                    Sisa <field name="sisa_hari" readonly="1"/> hari
+                    (s.d. <field name="tanggal_expired" readonly="1"/>).
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="sisa_hari >= 30 or state != 'sertifikat_terbit'">
+                    <strong>⚠️ Sertifikat akan segera habis masa berlakunya!</strong>
+                    Pertimbangkan untuk mengajukan perpanjangan sekarang.
+                </div>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <!-- ── Informasi Utama ────────────────────────────── -->
+                    <group string="Informasi Registrasi">
+                        <group>
+                            <field name="client_id"
+                                   readonly="state != 'draft'"/>
+                            <field name="mou_id"
+                                   readonly="state not in ('draft',)"
+                                   domain="[('state','=','mou'),
+                                           ('nama_cust','=',client_id)]"/>
+                            <field name="product_name"
+                                   readonly="state != 'draft'"
+                                   placeholder="Akan Terisi otomatis dari MOU"/>
+                            <field name="halal_type"
+                                   readonly="state != 'draft'"/>
+                            <field name="jenis_produk"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="lembaga_sertifikasi"
+                                   readonly="state != 'draft'"/>
+                            <field name="lembaga_luar_negeri"
+                                   invisible="lembaga_sertifikasi != 'luar_negeri'"
+                                   readonly="state != 'draft'"/>
+                            <field name="is_renewal"/>
+                            <field name="parent_halal_id"
+                                   invisible="not is_renewal"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ── Tautan ke Modul Registrasi ─────────────────── -->
+                    <group string="Tautan ke Registrasi Produk / Brand"
+                           invisible="state == 'draft'">
+                        <group>
+                            <field name="produk_id"
+                                   readonly="state not in ('draft',)"/>
+                            <field name="brand_registration_id" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ── SLA & Tenggat ──────────────────────────────── -->
+                    <group string="SLA &amp; Tenggat"
+                           invisible="state == 'draft'">
+                        <group>
+                            <field name="sla_hari"
+                                   readonly="state != 'draft'"/>
+                            <field name="tanggal_pengajuan" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="target_selesai" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ── Data Sertifikat ────────────────────────────── -->
+                    <group string="Data Sertifikat Halal"
+                           invisible="state not in ('menunggu_keputusan', 'sertifikat_terbit', 'kadaluarsa')">
+                        <group>
+                            <field name="nomor_sertifikat"
+                                   readonly="state not in ('menunggu_keputusan',)"/>
+                            <field name="tanggal_terbit"
+                                   readonly="state not in ('menunggu_keputusan',)"/>
+                        </group>
+                        <group>
+                            <field name="tanggal_expired"
+                                   readonly="state not in ('menunggu_keputusan',)"/>
+                            <field name="sisa_hari" readonly="1"/>
+                            <field name="is_expired" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ── Verifikasi Internal ────────────────────────── -->
+                    <group string="Verifikasi Internal"
+                           invisible="state in ('draft', 'pengajuan')">
+                        <group>
+                            <field name="disetujui_regulatory" readonly="1"/>
+                            <field name="tanggal_verifikasi" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="catatan_verifikasi"
+                                   readonly="state not in ('pengajuan', 'verifikasi_internal')"
+                                   placeholder="Catatan verifikasi internal…"/>
+                        </group>
+                    </group>
+
+                    <!-- ── Catatan Penolakan ──────────────────────────── -->
+                    <group string="Catatan Penolakan / Revisi"
+                           invisible="state not in ('ditolak', 'pengajuan', 'verifikasi_internal', 'submitted_lembaga', 'audit_halal', 'menunggu_keputusan')">
+                        <field name="catatan_penolakan"
+                               nolabel="1"
+                               placeholder="Isi alasan penolakan atau catatan revisi…"
+                               readonly="state not in ('pengajuan', 'verifikasi_internal', 'submitted_lembaga', 'audit_halal', 'menunggu_keputusan')"/>
+                    </group>
+
+                    <notebook>
+
+                        <!-- ── Lini Produk ────────────────────────────── -->
+                        <page string="Lini Produk" name="lini_produk">
+                            <field name="lini_produk_ids"
+                                   readonly="state not in ('draft', 'pengajuan')">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="nama_produk"/>
+                                    <field name="merek"/>
+                                    <field name="varian"/>
+                                    <field name="netto"/>
+                                    <field name="kategori_bahan"/>
+                                    <field name="status_bahan" widget="badge"
+                                           decoration-success="status_bahan == 'halal'"
+                                           decoration-warning="status_bahan == 'syubhat'"
+                                           decoration-danger="status_bahan == 'haram'"/>
+                                    <field name="keterangan"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ── Dokumen Wajib ──────────────────────────── -->
+                        <page string="Dokumen Persyaratan" name="dokumen">
+                            <group string="1. Surat Permohonan">
+                                <field name="doc_surat_permohonan"
+                                       widget="binary"
+                                       filename="doc_surat_permohonan_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_surat_permohonan_fname" invisible="1"/>
+                            </group>
+                            <group string="2. Legalitas Usaha (NIB / SIUP / TDP)">
+                                <field name="doc_legalitas_usaha"
+                                       widget="binary"
+                                       filename="doc_legalitas_usaha_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_legalitas_usaha_fname" invisible="1"/>
+                            </group>
+                            <group string="3. Daftar Produk &amp; Bahan Baku">
+                                <field name="doc_list_produk"
+                                       widget="binary"
+                                       filename="doc_list_produk_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_list_produk_fname" invisible="1"/>
+                            </group>
+                            <group string="4. Diagram Alur Proses Produksi">
+                                <field name="doc_proses_produksi"
+                                       widget="binary"
+                                       filename="doc_proses_produksi_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_proses_produksi_fname" invisible="1"/>
+                            </group>
+                            <group string="5. Manual SJH / SHMS">
+                                <field name="doc_manual_shms"
+                                       widget="binary"
+                                       filename="doc_manual_shms_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_manual_shms_fname" invisible="1"/>
+                            </group>
+                            <group string="6. Sertifikat Halal Negara Asal (Import)"
+                                   invisible="halal_type != 'import'">
+                                <field name="doc_halal_cert_asal"
+                                       widget="binary"
+                                       filename="doc_halal_cert_asal_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_halal_cert_asal_fname" invisible="1"/>
+                            </group>
+                        </page>
+
+                        <!-- ── Dokumen Audit & Sertifikat Final ───────── -->
+                        <page string="Audit &amp; Sertifikat Final"
+                              invisible="state not in ('audit_halal', 'menunggu_keputusan', 'sertifikat_terbit', 'kadaluarsa')"
+                              name="audit_sertifikat">
+                            <group string="Laporan Hasil Audit">
+                                <field name="doc_hasil_audit"
+                                       widget="binary"
+                                       filename="doc_hasil_audit_fname"
+                                       readonly="state not in ('audit_halal', 'menunggu_keputusan')"/>
+                                <field name="doc_hasil_audit_fname" invisible="1"/>
+                            </group>
+                            <group string="Sertifikat Halal Final">
+                                <field name="doc_sertifikat_halal"
+                                       widget="binary"
+                                       filename="doc_sertifikat_halal_fname"
+                                       readonly="state not in ('menunggu_keputusan',)"/>
+                                <field name="doc_sertifikat_halal_fname" invisible="1"/>
+                            </group>
+                        </page>
+
+                        <!-- ── Riwayat Perpanjangan ───────────────────── -->
+                        <page string="Riwayat Perpanjangan"
+                              invisible="not renewal_ids"
+                              name="perpanjangan">
+                            <field name="renewal_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="tanggal_pengajuan"/>
+                                    <field name="nomor_sertifikat"/>
+                                    <field name="tanggal_terbit"/>
+                                    <field name="tanggal_expired"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'sertifikat_terbit'"
+                                           decoration-danger="state in ('ditolak', 'kadaluarsa')"
+                                           decoration-info="state not in ('sertifikat_terbit', 'ditolak', 'kadaluarsa', 'draft')"/>
+                                </list>
+                            </field>
+                        </page>
+
+                    </notebook>
+                </sheet>
+
+                <!-- Chatter -->
+                <chatter/>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         HALAL.REGISTRASI — TREE / LIST VIEW
+    ==================================================================== -->
+    <record id="view_halal_registrasi_tree" model="ir.ui.view">
+        <field name="name">halal.registrasi.tree</field>
+        <field name="model">halal.registrasi</field>
+        <field name="arch" type="xml">
+            <list string="Registrasi Halal"
+                  decoration-success="state == 'sertifikat_terbit' and not is_expired"
+                  decoration-danger="state in ('ditolak', 'kadaluarsa') or is_expired"
+                  decoration-warning="state == 'menunggu_keputusan' or (sisa_hari &lt; 30 and sisa_hari &gt;= 0 and state == 'sertifikat_terbit')"
+                  decoration-muted="state == 'draft'">
+                <field name="name"/>
+                <field name="product_name"/>
+                <field name="client_id"/>
+                <field name="halal_type" widget="badge"/>
+                <field name="jenis_produk"/>
+                <field name="lembaga_sertifikasi"/>
+                <field name="nomor_sertifikat" optional="show"/>
+                <field name="tanggal_terbit" optional="show"/>
+                <field name="tanggal_expired" optional="show"
+                       decoration-danger="tanggal_expired and tanggal_expired &lt; current_date"/>
+                <field name="sisa_hari" optional="show"
+                       decoration-danger="sisa_hari &lt; 0"
+                       decoration-warning="sisa_hari &lt; 30 and sisa_hari &gt;= 0"/>
+                <field name="revision_counter" optional="hide"/>
+                <field name="is_expired" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sertifikat_terbit'"
+                       decoration-danger="state in ('ditolak', 'kadaluarsa')"
+                       decoration-warning="state == 'menunggu_keputusan'"
+                       decoration-info="state in ('pengajuan', 'verifikasi_internal', 'submitted_lembaga', 'audit_halal')"
+                       decoration-muted="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         HALAL.REGISTRASI — KANBAN VIEW
+    ==================================================================== -->
+    <record id="view_halal_registrasi_kanban" model="ir.ui.view">
+        <field name="name">halal.registrasi.kanban</field>
+        <field name="model">halal.registrasi</field>
+        <field name="arch" type="xml">
+            <kanban
+                default_group_by="state"
+                class="o_kanban_small_column"
+                group_create="false">
+                
+                <field name="name"/>
+                <field name="product_name"/>
+                <field name="client_id"/>
+                <field name="halal_type"/>
+                <field name="state"/>
+                <field name="nomor_sertifikat"/>
+                <field name="tanggal_expired"/>
+                <field name="sisa_hari"/>
+                <field name="is_expired"/>
+                <field name="lembaga_sertifikasi"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="product_name"/>
+                                </strong>
+                                <div class="o_kanban_record_subtitle text-muted">
+                                    <field name="name"/>
+                                </div>
+                                <ul class="list-unstyled mt-1 mb-0">
+                                    <li>
+                                        <span class="fw-bold">Klien: </span>
+                                        <field name="client_id"/>
+                                    </li>
+                                    <li>
+                                        <span class="fw-bold">Lembaga: </span>
+                                        <field name="lembaga_sertifikasi"/>
+                                    </li>
+                                    <li t-if="record.nomor_sertifikat.raw_value">
+                                        <span class="fw-bold text-success">No. Sertifikat: </span>
+                                        <field name="nomor_sertifikat"/>
+                                    </li>
+                                    <li t-if="record.tanggal_expired.raw_value">
+                                        <span class="fw-bold">Exp: </span>
+                                        <field name="tanggal_expired"/>
+                                        <t t-if="record.sisa_hari.raw_value &lt; 30 and record.sisa_hari.raw_value &gt;= 0">
+                                            <span class="badge bg-warning text-dark ms-1">
+                                                <t t-esc="record.sisa_hari.raw_value"/> hari lagi
+                                            </span>
+                                        </t>
+                                        <t t-if="record.is_expired.raw_value">
+                                            <span class="badge bg-danger ms-1">Kadaluarsa</span>
+                                        </t>
+                                    </li>
+                                </ul>
+                                <div class="o_kanban_record_bottom mt-2">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="halal_type" widget="badge"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         HALAL.REGISTRASI — SEARCH VIEW
+    ==================================================================== -->
+    <!-- <record id="view_halal_registrasi_search" model="ir.ui.view">
+        <field name="name">halal.registrasi.search</field>
+        <field name="model">halal.registrasi</field>
+        <field name="arch" type="xml">
+            <search string="Cari Registrasi Halal">
+                <field name="name" string="No. Registrasi"/>
+                <field name="product_name"/>
+                <field name="client_id"/>
+                <field name="nomor_sertifikat"/>
+                <field name="produk_id"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Pengajuan" name="pengajuan"
+                        domain="[('state','=','pengajuan')]"/>
+                <filter string="Verifikasi Internal" name="verifikasi"
+                        domain="[('state','=','verifikasi_internal')]"/>
+                <filter string="Diajukan ke Lembaga" name="submitted"
+                        domain="[('state','=','submitted_lembaga')]"/>
+                <filter string="Audit Halal" name="audit"
+                        domain="[('state','=','audit_halal')]"/>
+                <filter string="Menunggu Keputusan" name="menunggu"
+                        domain="[('state','=','menunggu_keputusan')]"/>
+                <filter string="Sertifikat Aktif" name="aktif"
+                        domain="[('state','=','sertifikat_terbit'),('is_expired','=',False)]"/>
+                <filter string="Ditolak" name="ditolak"
+                        domain="[('state','=','ditolak')]"/>
+                <filter string="Kadaluarsa" name="kadaluarsa"
+                        domain="[('state','in',('kadaluarsa',)),('is_expired','=',True)]"/>
+                <separator/>
+                <filter string="Lokal" name="lokal"
+                        domain="[('halal_type','=','lokal')]"/>
+                <filter string="Import" name="import"
+                        domain="[('halal_type','=','import')]"/>
+                <separator/>
+                <filter string="Hampir Kadaluarsa (&lt;30 hari)" name="hampir_kadaluarsa"
+                        domain="[('sisa_hari','&lt;',30),('sisa_hari','&gt;=',0),('state','=','sertifikat_terbit')]"/>
+                <filter string="Perpanjangan" name="renewal"
+                        domain="[('is_renewal','=',True)]"/>
+                <group expand="0" string="Kelompokkan">
+                    <filter string="Status" name="group_state"
+                            context="{'group_by': 'state'}"/>
+                    <filter string="Tipe Halal" name="group_halal_type"
+                            context="{'group_by': 'halal_type'}"/>
+                    <filter string="Lembaga Sertifikasi" name="group_lembaga"
+                            context="{'group_by': 'lembaga_sertifikasi'}"/>
+                    <filter string="Klien" name="group_client"
+                            context="{'group_by': 'client_id'}"/>
+                    <filter string="Jenis Produk" name="group_jenis"
+                            context="{'group_by': 'jenis_produk'}"/>
+                </group>
+            </search>
+        </field>
+    </record> -->
+
+    <!-- ====================================================================
+         HALAL.REGISTRASI — ACTION
+    ==================================================================== -->
+    <record id="action_halal_registrasi" model="ir.actions.act_window">
+        <field name="name">Registrasi Halal</field>
+        <field name="res_model">halal.registrasi</field>
+        <field name="view_mode">list,kanban,form</field>
+        <!-- <field name="search_view_id" ref="view_halal_registrasi_search"/> -->
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Belum ada registrasi halal!
+            </p>
+            <p>
+                Buat registrasi halal baru untuk memulai proses sertifikasi.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Sertifikat Hampir Kadaluarsa -->
+    <record id="action_halal_hampir_kadaluarsa" model="ir.actions.act_window">
+        <field name="name">Sertifikat Hampir Kadaluarsa</field>
+        <field name="res_model">halal.registrasi</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('sisa_hari', '&lt;', 30), ('sisa_hari', '&gt;=', 0), ('state', '=', 'sertifikat_terbit')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tidak ada sertifikat yang hampir kadaluarsa.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Sertifikat Kadaluarsa -->
+    <record id="action_halal_kadaluarsa" model="ir.actions.act_window">
+        <field name="name">Sertifikat Kadaluarsa</field>
+        <field name="res_model">halal.registrasi</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_expired', '=', True)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tidak ada sertifikat yang kadaluarsa.
+            </p>
+        </field>
+    </record>
+
+</odoo>

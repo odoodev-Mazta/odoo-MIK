@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_registrasi_root" 
+        name="Registrasi BPOM" 
+        sequence="85" 
+        web_icon="custom_registrasi,static/description/icon.png" />
+
+    <!-- ═══ REPORTING (Parent) ═══ -->
+    <menuitem id="menu_reporting_registrasi"
+        name="Reporting"
+        sequence="10"
+        parent="menu_registrasi_root"/>
+
+    <menuitem id="menu_reporting_nie"
+        name="Report NIE"
+        sequence="10"
+        parent="menu_reporting_registrasi"
+        action="action_registrasi_produk"/>
+
+    <menuitem id="menu_reporting_halal"
+        name="Report Halal"
+        sequence="20"
+        parent="menu_reporting_registrasi"
+        action="action_halal_registrasi"/>
+
+    <menuitem id="menu_reporting_brand"
+        name="Report Brand"
+        sequence="30"
+        parent="menu_reporting_registrasi"
+        action="action_registrasi_brand"/>
+
+    <!-- ═══ BRAND REGISTRATION ═══ -->
+    <menuitem id="menu_registrasi_brand_section" 
+        name="Brand Registration" 
+        parent="menu_registrasi_root"
+        sequence="20" />
+
+    <menuitem id="menu_registrasi_brand_list" 
+        name="Brand / HAKI Registrations" 
+        parent="menu_registrasi_brand_section" 
+        action="action_registrasi_brand" 
+        sequence="10" />
+
+    <!-- ═══ PRODUCT NIE REGISTRATION ═══ -->
+    <menuitem id="menu_registrasi_produk_section" 
+        name="Product NIE Registration" 
+        parent="menu_registrasi_root" 
+        sequence="30" />
+
+    <menuitem id="menu_registrasi_produk_list" 
+        name="Product NIE Registrations" 
+        parent="menu_registrasi_produk_section" 
+        action="action_registrasi_produk" 
+        sequence="10" />
+
+    <record id="action_registrasi_produk_payment_pending" model="ir.actions.act_window">
+        <field name="name">Pending Payment Approvals</field>
+        <field name="res_model">registrasi.produk</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'payment_request')]</field>
+        <field name="context">{'search_default_payment_request': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No pending payment requests.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_registrasi_finance_payment" 
+        name="Pending Payments" 
+        parent="menu_registrasi_produk_section" 
+        action="action_registrasi_produk_payment_pending" 
+        sequence="20" />
+
+    <record id="action_registrasi_produk_bpom_review" model="ir.actions.act_window">
+        <field name="name">Active BPOM Reviews</field>
+        <field name="res_model">registrasi.produk</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('state', '=', 'bpom_review')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No products currently under BPOM review.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_registrasi_bpom_review" 
+        name="Active BPOM Reviews" 
+        parent="menu_registrasi_produk_section" 
+        action="action_registrasi_produk_bpom_review" 
+        sequence="30" />
+
+    <!-- ═══ HALAL REGISTRATION ═══ -->
+    <menuitem id="menu_registrasi_halal_section" 
+        name="Halal Registration" 
+        parent="menu_registrasi_root" 
+        sequence="40" />
+
+    <menuitem id="menu_registrasi_halal_list" 
+        name="Halal Registrations" 
+        parent="menu_registrasi_halal_section" 
+        action="action_halal_registrasi" 
+        sequence="10" />
+
+    <menuitem id="menu_halal_hampir_kadaluarsa" 
+        name="Certification Halal Expiring Soon" 
+        parent="menu_registrasi_halal_section" 
+        action="action_halal_hampir_kadaluarsa" 
+        sequence="20" />
+
+    <menuitem id="menu_halal_kadaluarsa" 
+        name="Certification Halal Expired" 
+        parent="menu_registrasi_halal_section" 
+        action="action_halal_kadaluarsa" 
+        sequence="30" />
+
+</odoo>

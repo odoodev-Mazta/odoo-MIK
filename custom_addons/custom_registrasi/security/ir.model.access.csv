@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_registrasi_produk,registrasi.produk,model_registrasi_produk,base.group_user,1,1,1,1
+access_registrasi_produk_line,registrasi.produk.line,model_registrasi_produk_line,base.group_user,1,1,1,1
+access_registrasi_brand,registrasi.brand,model_registrasi_brand,base.group_user,1,1,1,1
+access_halal_registrasi,halal.registrasi,model_halal_registrasi,base.group_user,1,1,1,1
+access_halal_registrasi_line,halal.registrasi.line,model_halal_registrasi_line,base.group_user,1,1,1,1
