@@ -1,15 +1,34 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <!-- ROOT MENU -->
+    <menuitem id="menu_design_root"
+              name="Design"
+              sequence="50"/>
 
-    <!--  ROOT MENU  -->
-    <menuitem id="menu_design_root" name="Design"/>
-    <!--  MENU  -->
-    <menuitem id="menu_main_design" name="Design" parent="menu_design_root" sequence="1"/>
-    <!--  SUBMENU(s) -->
-    <menuitem id="menu_dashboard_usulan_design"
+    <!-- Dashboard -->
+    <menuitem id="menu_design_dashboard"
               name="Dashboard"
-              parent="menu_main_design"
+              parent="menu_design_root"
               action="action_design_dashboard"
               sequence="1"/>
 
+    <!-- Parent submenu: Design -->
+    <menuitem id="menu_design_group"
+              name="Design"
+              parent="menu_design_root"
+              sequence="2"/>
+
+    <!-- Sub: Usulan (draft/progress/reject) -->
+    <menuitem id="menu_design_usulan"
+              name="Usulan"
+              parent="menu_design_group"
+              action="action_design_usulan"
+              sequence="1"/>
+
+    <!-- Sub: Approval (approval states + done) -->
+    <menuitem id="menu_design_approval"
+              name="Approval"
+              parent="menu_design_group"
+              action="action_design_approval"
+              sequence="2"/>
 </odoo>

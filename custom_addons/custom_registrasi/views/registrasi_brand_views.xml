@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0). -->
+<odoo>
+
+    <!-- ====================================================================
+         REGISTRASI.BRAND — FORM VIEW
+    ==================================================================== -->
+    <record id="view_registrasi_brand_form" model="ir.ui.view">
+        <field name="name">registrasi.brand.form</field>
+        <field name="model">registrasi.brand</field>
+        <field name="arch" type="xml">
+            <form string="Brand Registration">
+
+                <!-- Status Bar -->
+                <header>
+                    <!-- Draft → Sub-Company Activation -->
+                    <button
+                        name="action_proceed_to_activation"
+                        string="Proceed to Activation"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'draft'"/>
+                    <!-- Sub-Company Activation → Regulatory Submit -->
+                    <button
+                        name="action_submit_to_bpom"
+                        string="Submit to BPOM"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'sub_company_activation'"/>
+                    <!-- Regulatory Submit → BPOM Verification -->
+                    <button
+                        name="action_bpom_verifying"
+                        string="BPOM Verifying"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'regulatory_submit'"/>
+                    <!-- BPOM Verification → Approved -->
+                    <button
+                        name="action_approve"
+                        string="Approve (NIE Granted)"
+                        type="object"
+                        class="btn-success"
+                        invisible="state != 'bpom_verification'"/>
+                    <!-- BPOM Verification → back to Regulatory Submit -->
+                    <button
+                        name="action_reject_to_resubmit"
+                        string="Request Document Revision"
+                        type="object"
+                        class="btn-warning"
+                        invisible="state != 'bpom_verification'"/>
+                    <!-- BPOM Final Rejection -->
+                    <button
+                        name="action_mark_rejected"
+                        string="Mark as Rejected"
+                        type="object"
+                        class="btn-danger"
+                        invisible="state not in ('bpom_verification',)"/>
+                    <!-- Reset to Draft -->
+                    <button
+                        name="action_reset_to_draft"
+                        string="Reset to Draft"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state in ('draft', 'approved')"/>
+
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,sub_company_activation,regulatory_submit,bpom_verification,approved"
+                    />
+                </header>
+
+                <!-- Smart Buttons -->
+                <div class="oe_button_box" name="button_box">
+                    <button
+                        type="object"
+                        name="action_view_produk"
+                        class="oe_stat_button"
+                        icon="fa-list"
+                        invisible="produk_count == 0"
+                    >
+                        <field name="produk_count" widget="statinfo" string="Products"/>
+                    </button>
+                </div>
+
+                <sheet>
+                    <!-- Title / Banner for Rejected -->
+                    <div class="alert alert-danger" role="alert"
+                         invisible="state != 'rejected'">
+                        <strong>⛔ Rejected:</strong>
+                        <field name="rejection_reason" readonly="1"/>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <!-- ── Main Information ─────────────────────────────── -->
+                    <group string="Brand Information">
+                        <group>
+                            <field name="client_id"
+                                   readonly="state not in ('draft',)"/>
+                            <field name="mou_id"
+                                   readonly="state not in ('draft',)"
+                                   domain="[('state','=','mou'),
+                                           ('nama_cust','=',client_id)]"/>
+                            <field name="brand_name"
+                                   readonly="state not in ('draft',)"/>
+                            <field name="brand_owner"
+                                   readonly="state not in ('draft',)"/>
+                            <field name="distribution_by"
+                                   readonly="state not in ('draft',)"/>
+                        </group>
+                        <group>
+                            <field name="account_option"
+                                   readonly="state not in ('draft', 'sub_company_activation')"/>
+                            <field name="sub_company_type"
+                                   invisible="state not in ('sub_company_activation', 'regulatory_submit', 'bpom_verification', 'approved', 'rejected')"
+                                   readonly="state not in ('sub_company_activation',)"
+                                   required="state == 'sub_company_activation'"/>
+                            <field name="sla_submit_days"/>
+                            <field name="sla_verification_days"/>
+                        </group>
+                    </group>
+
+                    <!-- ── SLA / Deadlines ──────────────────────────────── -->
+                    <group string="SLA &amp; Deadlines"
+                           invisible="state in ('draft', 'sub_company_activation')">
+                        <group>
+                            <field name="submit_deadline"/>
+                        </group>
+                        <group>
+                            <field name="verification_deadline"/>
+                        </group>
+                    </group>
+
+                    <!-- ── Rejection / Revision Notes ───────────────────── -->
+                    <group string="Revision Notes"
+                           invisible="state not in ('bpom_verification', 'regulatory_submit', 'rejected')">
+                        <field name="rejection_reason"
+                               nolabel="1"
+                               placeholder="Enter BPOM revision / rejection reason…"
+                               readonly="state not in ('bpom_verification',)"/>
+                    </group>
+
+                    <!-- ── Required Documents ───────────────────────────── -->
+                    <notebook>
+                        <page string="Required Documents" name="documents">
+                            <group string="1. Electronic Brand License Agreement">
+                                <field name="doc_license_agreement"
+                                       widget="binary"
+                                       filename="doc_license_agreement_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_license_agreement_fname" invisible="1"/>
+                            </group>
+                            <group string="2. Surat Keterangan Penggunaan Merek (Client Signed)">
+                                <field name="doc_brand_statement"
+                                       widget="binary"
+                                       filename="doc_brand_statement_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_brand_statement_fname" invisible="1"/>
+                            </group>
+                            <group string="3. Sertifikat HAKI / Tanda Bukti HAKI">
+                                <field name="doc_haki_certificate"
+                                       widget="binary"
+                                       filename="doc_haki_certificate_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_haki_certificate_fname" invisible="1"/>
+                            </group>
+                            <group string="4. Surat Pernyataan Merek (MIK Director Signed)">
+                                <field name="doc_dir_statement"
+                                       widget="binary"
+                                       filename="doc_dir_statement_fname"
+                                       readonly="state not in ('draft',)"/>
+                                <field name="doc_dir_statement_fname" invisible="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <!-- Chatter -->
+                <chatter/>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         REGISTRASI.BRAND — TREE / LIST VIEW
+    ==================================================================== -->
+    <record id="view_registrasi_brand_tree" model="ir.ui.view">
+        <field name="name">registrasi.brand.tree</field>
+        <field name="model">registrasi.brand</field>
+        <field name="arch" type="xml">
+            <list string="Brand Registrations" decoration-success="state == 'approved'"
+                  decoration-danger="state == 'rejected'"
+                  decoration-warning="state == 'bpom_verification'"
+                  decoration-muted="state == 'draft'">
+                <field name="name"/>
+                <field name="brand_name"/>
+                <field name="brand_owner"/>
+                <field name="client_id"/>
+                <field name="mou_id"/>
+                <field name="account_option"/>
+                <field name="sub_company_type"/>
+                <field name="submit_deadline"
+                       decoration-danger="submit_deadline and submit_deadline &lt; current_date"
+                       optional="show"/>
+                <field name="sla_submit_days" optional="hide"/>
+                <field name="produk_count" string="# Products" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'rejected'"
+                       decoration-warning="state == 'bpom_verification'"
+                       decoration-info="state in ('sub_company_activation', 'regulatory_submit')"
+                       decoration-muted="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         REGISTRASI.BRAND — KANBAN VIEW
+    ==================================================================== -->
+    <record id="view_registrasi_brand_kanban" model="ir.ui.view">
+        <field name="name">registrasi.brand.kanban</field>
+        <field name="model">registrasi.brand</field>
+        <field name="arch" type="xml">
+            <kanban
+                default_group_by="state"
+                class="o_kanban_small_column"
+                group_create="false"
+            >
+                <field name="name"/>
+                <field name="brand_name"/>
+                <field name="brand_owner"/>
+                <field name="client_id"/>
+                <field name="mou_id"/>
+                <field name="state"/>
+                <field name="account_option"/>
+                <field name="submit_deadline"/>
+                <field name="produk_count"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click o_kanban_record_has_image_fill">
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="brand_name"/>
+                                </strong>
+                                <div class="o_kanban_record_subtitle text-muted">
+                                    <field name="name"/>
+                                </div>
+                                <ul class="list-unstyled mt-1 mb-0">
+                                    <li>
+                                        <span class="fw-bold">Owner: </span>
+                                        <field name="brand_owner"/>
+                                    </li>
+                                    <li>
+                                        <span class="fw-bold">Client: </span>
+                                        <field name="client_id"/>
+                                    </li>
+                                    <li t-if="record.mou_id.raw_value">
+                                        <span class="fw-bold">MoU: </span>
+                                        <field name="mou_id"/>
+                                    </li>
+                                    <li t-if="record.submit_deadline.raw_value">
+                                        <span class="fw-bold">Deadline: </span>
+                                        <field name="submit_deadline"/>
+                                    </li>
+                                </ul>
+                                <div class="o_kanban_record_bottom mt-2">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="account_option" widget="badge"/>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <span t-if="record.produk_count.raw_value > 0"
+                                              class="badge bg-info">
+                                            <t t-esc="record.produk_count.raw_value"/> Products
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+     REGISTRASI.BRAND — SEARCH VIEW
+    ==================================================================== -->
+    <record id="view_registrasi_brand_search" model="ir.ui.view">
+        <field name="name">registrasi.brand.search</field>
+        <field name="model">registrasi.brand</field>
+        <field name="arch" type="xml">
+            <search string="Search Brand Registrations">
+                <field name="name"/>
+                <field name="brand_name"/>
+                <field name="brand_owner"/>
+                <field name="client_id"/>
+                <field name="mou_id"/>
+                <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Sub-Company Activation" name="sub_company_activation"
+                        domain="[('state','=','sub_company_activation')]"/>
+                <filter string="Regulatory Submit" name="regulatory_submit"
+                        domain="[('state','=','regulatory_submit')]"/>
+                <filter string="BPOM Verification" name="bpom_verification"
+                        domain="[('state','=','bpom_verification')]"/>
+                <filter string="Approved" name="approved" domain="[('state','=','approved')]"/>
+                <filter string="Rejected" name="rejected" domain="[('state','=','rejected')]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ====================================================================
+         REGISTRASI.BRAND — ACTION
+    ==================================================================== -->
+    <record id="action_registrasi_brand" model="ir.actions.act_window">
+        <field name="name">Brand Registrations</field>
+        <field name="res_model">registrasi.brand</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_registrasi_brand_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Manage your brand registrations for BPOM and Halal certifications here.
+            </p>
+            <p>
+                Click "Create" to start a new registration.
+            </p>
+        </field>
+    </record>
+
+</odoo>

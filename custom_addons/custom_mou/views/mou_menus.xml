@@ -29,4 +29,12 @@
           action="action_mou_progress_container"
           parent="menu_setup_mou"
           sequence="2"/>
+      
+      <!-- Sub menu Tracking di bawah menu MOU -->
+    <menuitem
+         id="menu_mou_tracking"
+         name="Tracking"
+         parent="menu_mou_root"
+         action="action_mou_progress_container"
+         sequence="50"/>
 </odoo>

@@ -8,14 +8,9 @@
                 <sheet>
                     <div class="oe_title">
                         <label for="mou_id" string="No. MOU"/>
-                        <h1>
-                            <field name="mou_id" options="{'no_create': True}"/>
-                        </h1>
-                        <h2>
-                            <field name="pelanggan" readonly="1"/>
-                        </h2>
+                        <h1><field name="mou_id" options="{'no_create': True}"/></h1>
+                        <h2><field name="pelanggan" readonly="1"/></h2>
                     </div>
-
                     <notebook>
                         <page string="1. Biaya Registrasi" name="page_registrasi">
                             <group>
@@ -42,6 +37,7 @@
                             </group>
                         </page>
 
+                        <!-- TAB NIE (ganti dari tab lama) -->
                         <page string="3. NIE" name="page_nie">
                             <group>
                                 <group string="Jadwal">
@@ -52,9 +48,59 @@
                                     <field name="nie_nilai" widget="monetary"/>
                                 </group>
                             </group>
+                            <group string="Progress NIE">
+                                <group>
+                                    <field name="nie_count" string="Total NIE"/>
+                                    <field name="nie_done" string="Teregistrasi"/>
+                                    <field name="nie_progress" string="Progress (%)" widget="progressbar"/>
+                                    <field name="nie_status" string="Status Terkini"/>
+                                </group>
+                            </group>
                         </page>
 
-                        <page string="4. Pengadaan" name="page_pengadaan">
+                        <!-- TAB HALAL (baru) -->
+                        <page string="4. Halal" name="page_halal">
+                            <group>
+                                <group string="Jadwal">
+                                    <field name="halal_due_date"/>
+                                    <field name="halal_actual_date" string="Tanggal Selesai (Actual)"/>
+                                </group>
+                                <group string="Keuangan">
+                                    <field name="halal_nilai" widget="monetary"/>
+                                </group>
+                            </group>
+                            <group string="Progress Halal">
+                                <group>
+                                    <field name="halal_count" string="Total Halal"/>
+                                    <field name="halal_done" string="Teregistrasi"/>
+                                    <field name="halal_progress" string="Progress (%)" widget="progressbar"/>
+                                    <field name="halal_status" string="Status Terkini"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- TAB BRAND (baru) -->
+                        <page string="5. Brand / Merek" name="page_brand">
+                            <group>
+                                <group string="Jadwal">
+                                    <field name="brand_due_date"/>
+                                    <field name="brand_actual_date" string="Tanggal Selesai (Actual)"/>
+                                </group>
+                                <group string="Keuangan">
+                                    <field name="brand_nilai" widget="monetary"/>
+                                </group>
+                            </group>
+                            <group string="Progress Brand">
+                                <group>
+                                    <field name="brand_count" string="Total Brand"/>
+                                    <field name="brand_done" string="Teregistrasi"/>
+                                    <field name="brand_progress" string="Progress (%)" widget="progressbar"/>
+                                    <field name="brand_status" string="Status Terkini"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="6. Pengadaan" name="page_pengadaan">
                             <group>
                                 <group string="Jadwal">
                                     <field name="peng_due_date"/>
@@ -75,19 +121,29 @@
         <field name="name">mou.container.list</field>
         <field name="model">mou.container</field>
         <field name="arch" type="xml">
-            <list string="Progress Container">
+            <list string="Progress Tracking MOU">
                 <field name="mou_id" readonly="1"/>
                 <field name="pelanggan" readonly="1"/>
-
                 <field name="reg_due_date" optional="show"/>
                 <field name="reg_actual_date" optional="show"/>
-
                 <field name="dp_due_date" optional="show"/>
                 <field name="dp_actual_date" optional="show"/>
-
-                <field name="nie_due_date" optional="hide"/>
-                <field name="nie_actual_date" optional="hide"/>
-
+                <!-- NIE -->
+                <field name="nie_due_date" optional="show"/>
+                <field name="nie_actual_date" optional="show"/>
+                <field name="nie_progress" string="NIE %" optional="show" widget="progressbar"/>
+                <field name="nie_status" optional="show"/>
+                <!-- Halal -->
+                <field name="halal_due_date" optional="hide"/>
+                <field name="halal_actual_date" optional="hide"/>
+                <field name="halal_progress" string="Halal %" optional="hide" widget="progressbar"/>
+                <field name="halal_status" optional="hide"/>
+                <!-- Brand -->
+                <field name="brand_due_date" optional="hide"/>
+                <field name="brand_actual_date" optional="hide"/>
+                <field name="brand_progress" string="Brand %" optional="hide" widget="progressbar"/>
+                <field name="brand_status" optional="hide"/>
+                <!-- Pengadaan -->
                 <field name="peng_due_date" optional="hide"/>
                 <field name="peng_actual_date" optional="hide"/>
             </list>
@@ -95,17 +151,12 @@
     </record>
 
     <record id="action_mou_progress_container" model="ir.actions.act_window">
-        <field name="name">MOU Progress Container</field>
+        <field name="name">Tracking Progress MOU</field>
         <field name="res_model">mou.container</field>
         <field name="view_mode">list,form</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Belum ada data progres.
-            </p>
-            <p>
-                Data di sini akan ditarik secara otomatis oleh Dashboard Timeline.
-            </p>
+            <p class="o_view_nocontent_smiling_face">Belum ada data progres.</p>
+            <p>Data di sini akan ditarik secara otomatis dari modul Registrasi.</p>
         </field>
     </record>
-
 </odoo>
