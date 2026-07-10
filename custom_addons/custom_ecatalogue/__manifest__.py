@@ -13,6 +13,7 @@
         'views/draft_mou_views.xml',
         'views/ecatalogue_views.xml',
         'views/promo_views.xml',
+        'views/master_data_brand_views.xml',
         'views/ecatalogue_menus.xml',
     ],
     'assets':{

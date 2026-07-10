@@ -6,6 +6,7 @@
     <menuitem id="menu_main_ecatalogue" name="E-Catalogue" parent="menu_ecatalogue_root" sequence="1"/>
     <menuitem id="menu_promo_ecatalogue" name="Promo" parent="menu_ecatalogue_root" action="action_draft_mou" sequence="2"/>
     <menuitem id="menu_draft_mou_ecatalogue" name="Draft MOU" parent="menu_ecatalogue_root" sequence="3"/>
+    <menuitem id="menu_master_brand" name="Master Brand" parent="menu_ecatalogue_root" sequence="4"/>
     <!--  SUBMENU(s) ecatalogue -->
     <menuitem id="menu_ecatalogue_carousel"
               name="Product View"
@@ -32,4 +33,12 @@
               parent="menu_draft_mou_ecatalogue"
               action="action_confirmed_mou_view"
               sequence="2"/>
+
+    <!--  SUBMENU(s) Master Brand -->
+    <menuitem id="menu_brand_customer"
+              name="Brand Customer"
+              parent="menu_master_brand"
+              action="action_master_data_brand"
+              sequence="1"/>
+
 </odoo>
