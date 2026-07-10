@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="view_master_data_brand_tree" model="ir.ui.view">
+        <field name="name">master.data.brand.tree</field>
+        <field name="model">master.data.brand</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="partner_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_master_data_brand_form" model="ir.ui.view">
+        <field name="name">master.data.brand.form</field>
+        <field name="model">master.data.brand</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="partner_id"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Brand">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="brand"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_master_data_brand" model="ir.actions.act_window">
+        <field name="name">Master Data Brand</field>
+        <field name="res_model">master.data.brand</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>
