@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_stock_picking_form_delivery_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.form.delivery.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="mou_id"/>
+            </xpath>
+
+            <xpath expr="//page[@name='operations']" position="after">
+                <page string="Deliveries">
+                    <field name="delivery_line_ids">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="product_qty"/>
+                            <field name="uom_id"/>
+                            <field name="date_estimasi"/>
+                            <field name="jenis_product"/>
+                            <field name="kemasan"/>
+                            <field name="ukuran"/>
+                            <field name="product_hna"/>
+                            <field name="diskon"/>
+                            <field name="total_value"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
