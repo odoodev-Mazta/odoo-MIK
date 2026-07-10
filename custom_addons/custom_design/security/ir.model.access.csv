@@ -1,2 +1,9 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_design_usulan,design.usulan,model_design_usulan,base.group_user,1,1,1,1
+access_design_usulan_user,design.usulan user,model_design_usulan,base.group_user,1,1,1,0
+access_design_usulan_manager,design.usulan manager,model_design_usulan,base.group_system,1,1,1,1
+access_design_usulan_line_user,design.usulan.line user,model_design_usulan_line,base.group_user,1,1,1,0
+access_design_usulan_line_manager,design.usulan.line manager,model_design_usulan_line,base.group_system,1,1,1,1
+access_design_reject_wizard,design.reject.wizard all,model_design_reject_wizard,base.group_user,1,1,1,1
+access_design_revisi_line_user,design.revisi.line user,model_design_revisi_line,base.group_user,1,1,1,0
+access_design_revisi_line_manager,design.revisi.line manager,model_design_revisi_line,base.group_system,1,1,1,1
+access_design_approval_user,design.approval user,model_design_approval,base.group_user,1,1,1,0
