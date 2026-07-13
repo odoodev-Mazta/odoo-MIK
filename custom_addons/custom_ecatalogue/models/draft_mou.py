@@ -40,6 +40,19 @@ class DraftMaklon(models.Model):
         store=True,
     )
 
+    @api.onchange('nama_cust')
+    def _onchange_nama_cust(self):
+        if self.nama_cust:
+            self.alamat_cust = self.nama_cust.contact_address or ''
+            self.email_cust = self.nama_cust.email or ''
+            self.telp_cust = self.nama_cust.phone or self.nama_cust.mobile or ''
+            self.jabatan_cust = self.nama_cust.function or ''
+        else:
+            self.alamat_cust = False
+            self.email_cust = False
+            self.telp_cust = False
+            self.jabatan_cust = False
+
     def action_confirm_mou(self):
         for rec in self:
             if rec.draft_name and 'DM' in rec.draft_name:
