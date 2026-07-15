@@ -53,6 +53,7 @@ class MouSetupTransaction(models.Model):
     bp_nilai = fields.Monetary(string='Nilai Bayar BP', currency_field='currency_id')
 
     is_free = fields.Boolean(string="Free", readonly=False)
+    active = fields.Boolean(string="Active", default=True)
 
     @api.onchange('is_free')
     def _onchange_is_free(self):
