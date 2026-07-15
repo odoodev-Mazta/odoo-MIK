@@ -2,14 +2,11 @@ from odoo import models, fields, api
 
 
 KEMASAN_TYPE = [
-    ('bottle',  'Bottle'),
+    ('botol', 'Botol'),
     ('tube',    'Tube'),
     ('jar',     'Jar'),
     ('sachet',  'Sachet'),
-    ('pouch',   'Pouch'),
-    ('box',     'Box'),
-    ('can',     'Can'),
-    ('other',   'Lainnya'),
+    ('pump', 'Tube Pump'),
 ]
 
 
