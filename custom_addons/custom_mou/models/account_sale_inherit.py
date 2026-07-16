@@ -41,19 +41,24 @@ class SaleOrder(models.Model):
             if order.timeline_stage != 'bp' or not order.mou_id:
                 continue
 
-            invoices = self.env['account.move'].search([
+            dp_invoices = self.env['account.move'].search([
                 ('mou_id', '=', order.mou_id.id),
                 ('state', '=', 'posted'),
                 ('move_type', 'in', ('out_invoice', 'out_refund')),
+                ('timeline_stage', '=', 'dp'),
             ])
-            tertagih = sum(
-                inv.amount_total if inv.move_type == 'out_invoice' else -inv.amount_total
-                for inv in invoices
+
+            total_dp = sum(
+                inv.amount_total if inv.move_type == 'out_invoice'
+                else -inv.amount_total
+                for inv in dp_invoices
             )
 
-            order.bp_total_kontrak = order.mou_id.nilai_kontrak
-            order.bp_total_tertagih = tertagih
-            order.bp_outstanding_amount = order.mou_id.nilai_kontrak - tertagih
+            order.bp_total_kontrak = order.mou_id.nilai_kontrak or 0.0
+            order.bp_total_tertagih = total_dp
+            order.bp_outstanding_amount = (
+                    order.bp_total_kontrak - total_dp
+            )
     
     # @api.depends('mou_id')
     # def _compute_is_repeat_order(self):
@@ -111,16 +116,19 @@ class SaleOrder(models.Model):
 
             total_kontrak = mou.nilai_kontrak or 0.0
 
-            invoices = self.env['account.move'].search([
+            dp_invoices = self.env['account.move'].search([
                 ('mou_id', '=', mou.id),
                 ('state', '=', 'posted'),
                 ('move_type', 'in', ('out_invoice', 'out_refund')),
+                ('timeline_stage', '=', 'dp'),
             ])
-            tertagih = sum(
+
+            total_dp = sum(
                 inv.amount_total if inv.move_type == 'out_invoice' else -inv.amount_total
-                for inv in invoices
+                for inv in dp_invoices
             )
-            sisa_tunggakan = total_kontrak - tertagih
+
+            sisa_tunggakan = total_kontrak - total_dp
             if sisa_tunggakan <= 0:
                 self.order_line = [(5, 0, 0)]
                 return
