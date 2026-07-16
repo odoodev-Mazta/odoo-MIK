@@ -451,14 +451,14 @@ class RegistrasiProduk(models.Model):
     def action_submit_form_request(self):
         """Draft → Form Request (Approval)."""
         for rec in self:
-            if rec.category == 'import' and not rec.mou_id:
-                raise UserError(
-                    _('An MoU Reference is required for Import category before requesting approval.')
-                )
-            if not rec.product_line_ids:
-                raise UserError(
-                    _('Please add at least one product line before submitting.')
-                )
+            # if rec.category == 'import' and not rec.mou_id:
+            #     raise UserError(
+            #         _('An MoU Reference is required for Import category before requesting approval.')
+            #     )
+            # if not rec.product_line_ids:
+            #     raise UserError(
+            #         _('Please add at least one product line before submitting.')
+            #     )
             rec.write({'state': 'form_request'})
             rec.message_post(
                 body=_('Form Request submitted. Awaiting 3-tier approval.'),
@@ -575,11 +575,11 @@ class RegistrasiProduk(models.Model):
     def action_request_payment(self):
         """Submitted → Payment Request. PNBP document required."""
         for rec in self:
-            if not rec.doc_pnbp:
-                raise UserError(
-                    _('Please upload the PNBP (Penerimaan Negara Bukan Pajak) '
-                      'document before requesting payment.')
-                )
+            # if not rec.doc_pnbp:
+            #     raise UserError(
+            #         _('Please upload the PNBP (Penerimaan Negara Bukan Pajak) '
+            #           'document before requesting payment.')
+            #     )
             rec.write({'state': 'payment_request'})
             rec.message_post(
                 body=_('Payment request sent to Finance with attached PNBP document.'),
@@ -615,10 +615,10 @@ class RegistrasiProduk(models.Model):
         """Re-submit revised documents to BPOM (from bpom_review state).
         Increments confirmation_counter. Auto-fails at >3."""
         for rec in self:
-            if not rec.doc_bpom_revision:
-                raise UserError(
-                    _('Please upload the revised documents before re-submitting to BPOM.')
-                )
+            # if not rec.doc_bpom_revision:
+            #     raise UserError(
+            #         _('Please upload the revised documents before re-submitting to BPOM.')
+            #     )
             new_counter = rec.confirmation_counter + 1
             if new_counter > 3:
                 rec.write({'state': 'failed', 'confirmation_counter': new_counter})

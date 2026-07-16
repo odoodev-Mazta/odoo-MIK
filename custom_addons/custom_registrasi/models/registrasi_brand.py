@@ -241,11 +241,11 @@ class RegistrasiBrand(models.Model):
                 missing.append(_('Sertifikat HAKI / Tanda Bukti HAKI'))
             if not rec.doc_dir_statement:
                 missing.append(_('Surat Pernyataan Merek (MIK Director)'))
-            if missing:
-                raise UserError(
-                    _('Please upload all required documents before proceeding:\n- %s')
-                    % '\n- '.join(missing)
-                )
+            # if missing:
+            #     raise UserError(
+            #         _('Please upload all required documents before proceeding:\n- %s')
+            #         % '\n- '.join(missing)
+            #     )
             rec.write({'state': 'sub_company_activation'})
             rec.message_post(
                 body=_('Status changed to Sub-Company Activation.'),
