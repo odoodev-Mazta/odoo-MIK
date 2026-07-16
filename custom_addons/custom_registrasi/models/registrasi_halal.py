@@ -393,12 +393,12 @@ class HalalRegistrasi(models.Model):
     def action_ajukan_dokumen(self):
         """Draft → Pengajuan Dokumen: validasi dokumen wajib."""
         for rec in self:
-            kurang = rec._cek_dokumen_wajib()
-            if kurang:
-                raise UserError(
-                    _('Dokumen berikut wajib diunggah sebelum pengajuan:\n- %s')
-                    % '\n- '.join(kurang)
-                )
+            # kurang = rec._cek_dokumen_wajib()
+            # if kurang:
+            #     raise UserError(
+            #         _('Dokumen berikut wajib diunggah sebelum pengajuan:\n- %s')
+            #         % '\n- '.join(kurang)
+            #     )
             today = fields.Date.today()
             rec.write({
                 'state': 'pengajuan',
@@ -456,10 +456,10 @@ class HalalRegistrasi(models.Model):
     def action_menunggu_keputusan(self):
         """Audit Halal → Menunggu Keputusan."""
         for rec in self:
-            if not rec.doc_hasil_audit:
-                raise UserError(
-                    _('Unggah laporan hasil audit halal sebelum melanjutkan.')
-                )
+            # if not rec.doc_hasil_audit:
+            #     raise UserError(
+            #         _('Unggah laporan hasil audit halal sebelum melanjutkan.')
+            #     )
             rec.write({'state': 'menunggu_keputusan'})
             rec.message_post(
                 body=_('Audit selesai. Menunggu keputusan dari lembaga sertifikasi.'),
@@ -470,16 +470,16 @@ class HalalRegistrasi(models.Model):
     def action_terbitkan_sertifikat(self):
         """Menunggu Keputusan → Sertifikat Terbit."""
         for rec in self:
-            if not rec.nomor_sertifikat:
-                raise UserError(_('Nomor sertifikat halal wajib diisi.'))
-            if not rec.tanggal_terbit:
-                raise UserError(_('Tanggal terbit sertifikat wajib diisi.'))
-            if not rec.tanggal_expired:
-                raise UserError(_('Tanggal kadaluarsa sertifikat wajib diisi.'))
-            if not rec.doc_sertifikat_halal:
-                raise UserError(
-                    _('Unggah file sertifikat halal final sebelum menerbitkan.')
-                )
+            # if not rec.nomor_sertifikat:
+            #     raise UserError(_('Nomor sertifikat halal wajib diisi.'))
+            # if not rec.tanggal_terbit:
+            #     raise UserError(_('Tanggal terbit sertifikat wajib diisi.'))
+            # if not rec.tanggal_expired:
+            #     raise UserError(_('Tanggal kadaluarsa sertifikat wajib diisi.'))
+            # if not rec.doc_sertifikat_halal:
+            #     raise UserError(
+            #         _('Unggah file sertifikat halal final sebelum menerbitkan.')
+            #     )
             rec.write({'state': 'sertifikat_terbit'})
             # Sinkronisasi ke registrasi.produk jika tertaut
             if rec.produk_id:
