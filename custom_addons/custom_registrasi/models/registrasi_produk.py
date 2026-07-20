@@ -560,7 +560,7 @@ class RegistrasiProduk(models.Model):
             # Ambil semua nama produk untuk chatter
             product_names = "\n".join(
                 [
-                    f"- {line.product_name}: {line.official_product_name}"
+                    f"- {line.product_template_id.display_name}: {line.official_product_name}"
                     for line in rec.product_line_ids
                 ]
             )
