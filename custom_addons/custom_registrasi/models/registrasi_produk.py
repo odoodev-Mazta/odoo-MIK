@@ -682,17 +682,16 @@ class RegistrasiProduk(models.Model):
         for rec in self:
             for line in rec.product_line_ids:
 
-                if not line.nie_number:
+                if not line.product_template_id:
                     raise UserError(
-                        _('Please enter NIE number for %s')
-                        % line.product_name
+                        _("Please select Product first.")
                     )
 
-                product = line._create_or_link_product_template()
-
-                line.write({
-                    'product_template_id': product.id
-                })
+                if not line.nie_number:
+                    raise UserError(
+                        _("Please enter NIE Number for %s")
+                        % line.product_template_id.display_name
+                    )
 
             rec.write({
                 'state': 'nie_issued'

@@ -100,29 +100,29 @@ class RegistrasiProdukLine(models.Model):
         tracking=True,
     )
 
-    def _create_or_link_product_template(self):
-        self.ensure_one()
-
-        Product = self.env['product.template']
-
-        existing = Product.search(
-            [
-                ('default_code', '=', self.nie_number)
-            ],
-            limit=1
-        )
-
-        if existing:
-            return existing
-
-        return Product.create({
-            'name':
-                self.official_product_name
-                or self.product_name,
-
-            'default_code':
-                self.nie_number,
-
-            'type':
-                'consu',
-        })
+    # def _create_or_link_product_template(self):
+    #     self.ensure_one()
+    #
+    #     Product = self.env['product.template']
+    #
+    #     existing = Product.search(
+    #         [
+    #             ('default_code', '=', self.nie_number)
+    #         ],
+    #         limit=1
+    #     )
+    #
+    #     if existing:
+    #         return existing
+    #
+    #     return Product.create({
+    #         'name':
+    #             self.official_product_name
+    #             or self.product_name,
+    #
+    #         'default_code':
+    #             self.nie_number,
+    #
+    #         'type':
+    #             'consu',
+    #     })
