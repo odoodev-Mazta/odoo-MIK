@@ -14,7 +14,8 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="product_name"/>
+<!--                            <field name="product_name"/>-->
+                            <field name="product_template_id"/>
                             <field name="description"/>
                             <field name="netto"/>
                         </group>
@@ -40,7 +41,8 @@
         <field name="arch" type="xml">
             <list string="Product Lines">
                 <field name="produk_id"/>
-                <field name="product_name"/>
+                <field name="product_template_id"/>
+<!--                <field name="product_name"/>-->
                 <field name="description"/>
                 <field name="netto"/>
                 <field name="primary_packaging"/>

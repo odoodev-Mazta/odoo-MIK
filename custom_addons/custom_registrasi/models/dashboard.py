@@ -100,8 +100,9 @@ class RegistrasiDashboard(models.AbstractModel):
                     'line_id': line.id,
                     'name': r.name,
                     'product_name': (
-                            line.product_name
-                            or '-'
+                        line.product_template_id.name
+                        if line.product_template_id
+                        else '-'
                     ),
                     'official_name': (
                             line.official_product_name
@@ -127,7 +128,11 @@ class RegistrasiDashboard(models.AbstractModel):
             table_halal.append({
                 'id':              r.id,
                 'name':            r.name,
-                'product_name':    r.product_name or '-',
+                'product_name': ', '.join(
+                    r.product_line_ids.mapped(
+                        'product_template_id.name'
+                    )
+                ) or '-',
                 'client':          r.client_id.name if r.client_id else '-',
                 'state_label':     label,
                 'state_color':     color,

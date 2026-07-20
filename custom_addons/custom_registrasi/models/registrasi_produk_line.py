@@ -37,10 +37,11 @@ class RegistrasiProdukLine(models.Model):
             ('tube', 'Tube'),
             ('pot', 'Pot'),
             ('pump', 'Pump'),
-            ('bottle', 'Bottle'),
+            ('botol', 'Botol'),
             ('vial', 'Vial'),
             ('ampoule', 'Ampoule'),
             ('sachet', 'Sachet'),
+            ('jar', 'Jar'),
         ],
         string='Primary Packaging',
     )
@@ -54,11 +55,11 @@ class RegistrasiProdukLine(models.Model):
     notes = fields.Text(
         string='Notes',
     )
-    product_name = fields.Char(
-        string='Product Name (Request)',
-        required=True,
-        tracking=True,
-    )
+    # product_name = fields.Char(
+    #     string='Product Name (Request)',
+    #     required=True,
+    #     tracking=True,
+    # )
     official_product_name = fields.Char(
         string='Official Product Name (RO Drafted)',
         tracking=True,
@@ -94,9 +95,8 @@ class RegistrasiProdukLine(models.Model):
     )
     product_template_id = fields.Many2one(
         comodel_name='product.template',
-        string='Linked Product (Odoo Master)',
+        string='Product',
         copy=False,
-        readonly=True,
         tracking=True,
     )
 
