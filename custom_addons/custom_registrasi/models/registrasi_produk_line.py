@@ -19,10 +19,6 @@ class RegistrasiProdukLine(models.Model):
     )
 
     # ─── Product Details ────────────────────────────────────────────────────
-    product_name = fields.Char(
-        string='Product Name',
-        required=True,
-    )
     description = fields.Selection(
         selection=[
             ('formula_import', 'Formula Import'),
@@ -58,3 +54,75 @@ class RegistrasiProdukLine(models.Model):
     notes = fields.Text(
         string='Notes',
     )
+    product_name = fields.Char(
+        string='Product Name (Request)',
+        required=True,
+        tracking=True,
+    )
+    official_product_name = fields.Char(
+        string='Official Product Name (RO Drafted)',
+        tracking=True,
+        copy=False,
+    )
+    product_name_revision_count = fields.Integer(
+        string='Product Name Revision Count',
+        default=0,
+        copy=False,
+        tracking=True,
+    )
+    confirmation_counter = fields.Integer(
+        string='BPOM Confirmation Counter',
+        default=0,
+        copy=False,
+        tracking=True,
+    )
+
+    nie_number = fields.Char(
+        string='NIE Number',
+        copy=False,
+        tracking=True,
+    )
+    nie_issued_date = fields.Date(
+        string='NIE Issued Date',
+        copy=False,
+        tracking=True,
+    )
+    nie_expired_date = fields.Date(
+        string='NIE Expired Date',
+        copy=False,
+        tracking=True,
+    )
+    product_template_id = fields.Many2one(
+        comodel_name='product.template',
+        string='Linked Product (Odoo Master)',
+        copy=False,
+        readonly=True,
+        tracking=True,
+    )
+
+    def _create_or_link_product_template(self):
+        self.ensure_one()
+
+        Product = self.env['product.template']
+
+        existing = Product.search(
+            [
+                ('default_code', '=', self.nie_number)
+            ],
+            limit=1
+        )
+
+        if existing:
+            return existing
+
+        return Product.create({
+            'name':
+                self.official_product_name
+                or self.product_name,
+
+            'default_code':
+                self.nie_number,
+
+            'type':
+                'consu',
+        })

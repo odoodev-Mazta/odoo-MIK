@@ -106,7 +106,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr t-foreach="state.table_nie" t-as="row" t-key="row.id">
+                                    <tr t-foreach="state.table_nie" t-as="row" t-key="row.line_id">
                                         <td class="px-3 py-2 fw-bold text-primary"><t t-esc="row.name"/></td>
                                         <td class="px-3 py-2"><t t-esc="row.product_name"/></td>
                                         <td class="px-3 py-2"><t t-esc="row.client"/></td>
