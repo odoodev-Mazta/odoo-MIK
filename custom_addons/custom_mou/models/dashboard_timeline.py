@@ -61,11 +61,22 @@ class DashboardTimeline(models.Model):
             [('mou_id', '=', mou_id)]
         )
         for rec in brand_records:
-            nie_terbit = rec.produk_ids.filtered(
-                lambda p: p.state == 'nie_issued' and p.nie_issued_date
+            nie_terbit = rec.produk_ids.mapped(
+                'product_line_ids'
+            ).filtered(
+                lambda line: line.nie_number
+                             and line.nie_issued_date
             )
-            nie_issued_date  = nie_terbit[0].nie_issued_date  if nie_terbit else None
-            nie_expired_date = nie_terbit[0].nie_expired_date if nie_terbit else None
+            nie_issued_date = (
+                nie_terbit[0].nie_issued_date
+                if nie_terbit
+                else None
+            )
+            nie_expired_date = (
+                nie_terbit[0].nie_expired_date
+                if nie_terbit
+                else None
+            )
 
             result['brand'].append({
                 'name': rec.name,
@@ -94,21 +105,56 @@ class DashboardTimeline(models.Model):
             if rec.id in seen_ids:
                 continue
             seen_ids.add(rec.id)
-            result['nie'].append({
-                'name': rec.name,
-                'brand': rec.brand_registration_id.brand_name if rec.brand_registration_id else '-',
-                'product_name': rec.product_name,
-                'official_name': rec.official_product_name or '-',
-                'status': rec.state,
-                'status_label': self._format_reg_status('nie', rec.state),
-                'tgl': fields.Date.to_string(rec.submit_deadline) if rec.submit_deadline else None,
-                'tgl_terbit': fields.Date.to_string(rec.nie_issued_date) if rec.nie_issued_date else None,
-                'masa_berakhir': fields.Date.to_string(rec.nie_expired_date) if rec.nie_expired_date else None,
-                'nie_number': rec.nie_number or '-',
-                'is_done': rec.state == 'nie_issued',
-                'has_attachment': bool(rec.doc_pnbp or rec.halal_cert_attachment),
-                'category': rec.category or '-',
-            })
+
+            for line in rec.product_line_ids:
+                result['nie'].append({
+                    'name': rec.name,
+                    'brand': (
+                        rec.brand_registration_id.brand_name
+                        if rec.brand_registration_id
+                        else '-'
+                    ),
+                    # ambil dari line
+                    'product_name': line.product_name,
+                    'official_name': (
+                            line.official_product_name
+                            or '-'
+                    ),
+                    'status': rec.state,
+                    'status_label': self._format_reg_status(
+                        'nie',
+                        rec.state
+                    ),
+                    'tgl': (
+                        fields.Date.to_string(rec.submit_deadline)
+                        if rec.submit_deadline
+                        else None
+                    ),
+                    # NIE sekarang milik product line
+                    'tgl_terbit': (
+                        fields.Date.to_string(line.nie_issued_date)
+                        if line.nie_issued_date
+                        else None
+                    ),
+                    'masa_berakhir': (
+                        fields.Date.to_string(line.nie_expired_date)
+                        if line.nie_expired_date
+                        else None
+                    ),
+                    'nie_number': (
+                            line.nie_number
+                            or '-'
+                    ),
+                    'is_done': (
+                            rec.state == 'nie_issued'
+                            and bool(line.nie_number)
+                    ),
+                    'has_attachment': bool(
+                        rec.doc_pnbp
+                        or rec.halal_cert_attachment
+                    ),
+                    'category': rec.category or '-',
+                })
 
         # ── Halal ─────────────────────────────────────────────────────────
         halal_records = self.env['halal.registrasi'].search(
