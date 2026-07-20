@@ -18,22 +18,6 @@ class RegistrasiProduk(models.Model):
         default=lambda self: _('New'),
         tracking=True,
     )
-    product_name = fields.Char(
-        string='Product Name (Request)',
-        required=True,
-        tracking=True,
-    )
-    official_product_name = fields.Char(
-        string='Official Product Name (RO Drafted)',
-        tracking=True,
-        copy=False,
-    )
-    product_name_revision_count = fields.Integer(
-        string='Product Name Revision Count',
-        default=0,
-        copy=False,
-        tracking=True,
-    )
 
     # ─── Brand Link ─────────────────────────────────────────────────────────
     brand_registration_id = fields.Many2one(
@@ -41,9 +25,9 @@ class RegistrasiProduk(models.Model):
         string='Brand Registration',
         required=True,
         ondelete='cascade',
-        domain=[('state', '=', 'approved')],
         tracking=True,
         index=True,
+        domain=lambda self: self._get_available_brand_domain(),
     )
     client_id = fields.Many2one(
         comodel_name='res.partner',
@@ -65,12 +49,6 @@ class RegistrasiProduk(models.Model):
     )
 
     # ─── Confirmation Counter ───────────────────────────────────────────────
-    confirmation_counter = fields.Integer(
-        string='BPOM Confirmation Counter',
-        default=0,
-        copy=False,
-        tracking=True,
-    )
 
     # ─── State ──────────────────────────────────────────────────────────────
     state = fields.Selection(
@@ -214,28 +192,6 @@ class RegistrasiProduk(models.Model):
     )
 
     # ─── NIE Output ─────────────────────────────────────────────────────────
-    nie_number = fields.Char(
-        string='NIE Number',
-        copy=False,
-        tracking=True,
-    )
-    nie_issued_date = fields.Date(
-        string='NIE Issued Date',
-        copy=False,
-        tracking=True,
-    )
-    nie_expired_date = fields.Date(
-        string='NIE Expired Date',
-        copy=False,
-        tracking=True,
-    )
-    product_template_id = fields.Many2one(
-        comodel_name='product.template',
-        string='Linked Product (Odoo Master)',
-        copy=False,
-        readonly=True,
-        tracking=True,
-    )
 
     # ─── Multi-Approval Fields ──────────────────────────────────────────────
     approved_by_marketing = fields.Many2one(
@@ -299,6 +255,18 @@ class RegistrasiProduk(models.Model):
         copy=False,
         tracking=True,
     )
+
+    def _get_available_brand_domain(self):
+        issued_brand_ids = self.env['registrasi.produk'].search([
+            ('state', '=', 'nie_issued'),
+        ]).mapped(
+            'brand_registration_id'
+        ).ids
+
+        return [
+            ('state', '=', 'approved'),
+            ('id', 'not in', issued_brand_ids),
+        ]
 
     # ────────────────────────────────────────────────────────────────────────
     # Computes
@@ -375,25 +343,41 @@ class RegistrasiProduk(models.Model):
                 ) or _('New')
         return super().create(vals_list)
 
+    # def copy(self, default=None):
+    #     default = dict(default or {})
+    #     default['name'] = _('New')
+    #     default['state'] = 'draft'
+    #     default['confirmation_counter'] = 0
+    #     default['approved_by_marketing'] = False
+    #     default['approved_by_regulatory'] = False
+    #     default['approved_by_factory'] = False
+    #     return super().copy(default)
     def copy(self, default=None):
         default = dict(default or {})
         default['name'] = _('New')
         default['state'] = 'draft'
-        default['confirmation_counter'] = 0
-        default['approved_by_marketing'] = False
-        default['approved_by_regulatory'] = False
-        default['approved_by_factory'] = False
-        return super().copy(default)
+
+        new_record = super().copy(default)
+        for line in new_record.product_line_ids:
+            line.write({
+                'confirmation_counter': 0,
+                'product_name_revision_count': 0,
+                'product_template_id': False,
+            })
+
+        return new_record
 
     def write(self, vals):
-        """Auto-fail when confirmation counter exceeds 3."""
         res = super().write(vals)
+
         for rec in self:
-            if (
-                rec.confirmation_counter > 3
-                and rec.state not in ('failed', 'nie_issued')
-            ):
-                rec._action_auto_fail()
+            for line in rec.product_line_ids:
+                if (
+                        line.confirmation_counter > 3
+                        and rec.state not in ('failed', 'nie_issued')
+                ):
+                    rec._action_auto_fail()
+
         return res
 
     # ────────────────────────────────────────────────────────────────────────
@@ -411,7 +395,7 @@ class RegistrasiProduk(models.Model):
 
     def _action_auto_fail(self):
         self.ensure_one()
-        self.write({'state': 'failed'})        # ← GANTI dari self.state = 'failed'
+        self.write({'state': 'failed'})
         self.message_post(
             body=_(
                 'Registration automatically FAILED: BPOM confirmation counter '
@@ -549,8 +533,6 @@ class RegistrasiProduk(models.Model):
 
     def action_confirm_official_name_and_submit(self):
         for rec in self:
-            if not rec.official_product_name:
-                raise UserError(_('Please draft and set the Official Product Name.'))
             # if not rec.design_id:
             #     raise UserError(_('A Design Reference must be selected before submitting to BPOM.'))
             # # GANTI — design.usulan tidak punya state 'available'
@@ -559,13 +541,35 @@ class RegistrasiProduk(models.Model):
             #         _('The linked Design must be in "Selesai" status. Current: %s')
             #         % dict(rec.design_id._fields['state'].selection).get(rec.design_id.state, '')
             #     )
+            invalid_lines = rec.product_line_ids.filtered(
+                lambda line: not line.official_product_name
+            )
+
+            if invalid_lines:
+                raise UserError(
+                    _('All products must have Official Product Name.')
+                )
+
             today = fields.Date.today()
+
             rec.write({
                 'state': 'submitted',
                 'submit_deadline': today + timedelta(days=7),
             })
+
+            # Ambil semua nama produk untuk chatter
+            product_names = "\n".join(
+                [
+                    f"- {line.product_name}: {line.official_product_name}"
+                    for line in rec.product_line_ids
+                ]
+            )
+
             rec.message_post(
-                body=_('Product submitted to BPOM. Official name: "%s".') % rec.official_product_name,
+                body=_(
+                    'Product submitted to BPOM.\n\n'
+                    'Official Product Names:\n%s'
+                ) % product_names,
                 message_type='notification',
             )
         return True
@@ -619,109 +623,114 @@ class RegistrasiProduk(models.Model):
             #     raise UserError(
             #         _('Please upload the revised documents before re-submitting to BPOM.')
             #     )
-            new_counter = rec.confirmation_counter + 1
-            if new_counter > 3:
-                rec.write({'state': 'failed', 'confirmation_counter': new_counter})
-                rec.message_post(
-                    body=_(
-                        '❌ Registration FAILED: Maximum BPOM revision limit (3) exceeded.'
-                    ),
-                    message_type='notification',
-                    subtype_xmlid='mail.mt_comment',
+            for line in rec.product_line_ids:
+                new_counter = line.confirmation_counter + 1
+
+                if new_counter > 3:
+                    line.write({
+                        'confirmation_counter': new_counter
+                    })
+
+                    rec.write({
+                        'state': 'failed'
+                    })
+
+                    rec.message_post(
+                        body=_(
+                            '❌ Product %s failed: '
+                            'maximum BPOM revision exceeded.'
+                        ) % line.product_name
+                    )
+                else:
+                    line.write({
+                        'confirmation_counter': new_counter
+                    })
+
+            rec.message_post(
+                body=_(
+                    'Product revision submitted to BPOM.'
                 )
-            else:
-                rec.write({
-                    'confirmation_counter': new_counter,
-                    'bpom_review_deadline': fields.Date.today() + timedelta(days=14),
-                    'doc_bpom_revision': False,
-                })
-                rec.message_post(
-                    body=_(
-                        'Revised documents re-submitted to BPOM (revision #%d). '
-                        'New review deadline: %s'
-                    ) % (
-                        new_counter,
-                        (fields.Date.today() + timedelta(days=14)).strftime('%d %B %Y'),
-                    ),
-                    message_type='notification',
-                )
+            )
         return True
 
     def action_revise_product_name(self):
         """RO requests product name revision during BPOM Review.
         Max 2 name revisions."""
         for rec in self:
-            if rec.product_name_revision_count >= 2:
-                raise UserError(
-                    _('Product name can only be revised a maximum of 2 times '
-                      'based on BPOM verifier feedback.')
-                )
+            for line in rec.product_line_ids:
+
+                if line.product_name_revision_count >= 2:
+                    raise UserError(
+                        _('Product name revision maximum reached.')
+                    )
+
+                line.write({
+                    'product_name_revision_count':
+                        line.product_name_revision_count + 1,
+
+                    'official_product_name':
+                        False,
+                })
+
             rec.write({
-                'product_name_revision_count': rec.product_name_revision_count + 1,
-                'official_product_name': False,
-                'state': 'ro_drafting',
+                'state': 'ro_drafting'
             })
-            rec.message_post(
-                body=_(
-                    'Product name revision #%d initiated. '
-                    'RO must re-draft the official product name.'
-                ) % rec.product_name_revision_count,
-                message_type='notification',
-                subtype_xmlid='mail.mt_comment',
-            )
         return True
 
     def action_issue_nie(self):
         """BPOM Review → NIE Issued. Creates / links product.template."""
         for rec in self:
-            if not rec.nie_number:
-                raise UserError(
-                    _('Please enter the NIE Number before marking as NIE Issued.')
-                )
-            if not rec.nie_issued_date:
-                raise UserError(
-                    _('Please enter the NIE Issued Date.')
-                )
-            # Create or update product.template
-            product_tmpl = rec._create_or_link_product_template()
+            for line in rec.product_line_ids:
+
+                if not line.nie_number:
+                    raise UserError(
+                        _('Please enter NIE number for %s')
+                        % line.product_name
+                    )
+
+                product = line._create_or_link_product_template()
+
+                line.write({
+                    'product_template_id': product.id
+                })
+
             rec.write({
-                'state': 'nie_issued',
-                'product_template_id': product_tmpl.id,
+                'state': 'nie_issued'
             })
-            rec.message_post(
-                body=_(
-                    '🎉 NIE Issued! NIE Number: %s. Linked to product: %s'
-                ) % (rec.nie_number, product_tmpl.name),
-                message_type='notification',
-                subtype_xmlid='mail.mt_comment',
-            )
         return True
 
-    def _create_or_link_product_template(self):
-        """Create or link to product.template when NIE is issued."""
-        self.ensure_one()
-        ProductTemplate = self.env['product.template']
-        # Check if a product with this NIE already exists
-        existing = ProductTemplate.search(
-            [('default_code', '=', self.nie_number)], limit=1
-        )
-        if existing:
-            return existing
-        # Create new product template
-        vals = {
-            'name': self.official_product_name or self.product_name,
-            'default_code': self.nie_number,
-            'type': 'consu',
-            'description': _(
-                'Auto-created from BPOM NIE Registration: %s\n'
-                'NIE Number: %s\nIssued: %s'
-            ) % (
-                self.name,
-                self.nie_number,
-                self.nie_issued_date.strftime('%d %B %Y') if self.nie_issued_date else '',
-            ),
-        }
-        return ProductTemplate.create(vals)
+    # def _create_or_link_product_template(self):
+    #
+    #     ProductTemplate = self.env['product.template']
+    #
+    #     existing = ProductTemplate.search(
+    #         [
+    #             ('default_code', '=', self.nie_number)
+    #         ],
+    #         limit=1
+    #     )
+    #
+    #     if existing:
+    #         return existing
+    #
+    #     return ProductTemplate.create({
+    #
+    #         'name':
+    #             self.official_product_name
+    #             or self.product_name,
+    #
+    #         'default_code':
+    #             self.nie_number,
+    #
+    #         'type':
+    #             'consu',
+    #
+    #         'description':
+    #             _(
+    #                 'Created from NIE Registration %s'
+    #             ) % self.produk_id.name
+    #
+    #     })
 
     # ────────────────────────────────────────────────────────────────────────
     # Button: Reset to Draft

@@ -21,7 +21,7 @@ class RegistrasiDashboard(models.AbstractModel):
         ])])
         nie_issued  = NIE.search_count([('state', '=', 'nie_issued')])
         nie_failed  = NIE.search_count([('state', '=', 'failed')])
-        nie_expired = NIE.search_count([
+        nie_expired = self.env['registrasi.produk.line'].search_count([
             ('nie_expired_date', '!=', False),
             ('nie_expired_date', '<', today),
         ])
@@ -86,17 +86,39 @@ class RegistrasiDashboard(models.AbstractModel):
 
         # ── TABLE NIE ─────────────────────────────────────────────────────
         table_nie = []
+
         for r in NIE.search([]):
-            label, color = STATE_LABEL_NIE.get(r.state, (r.state, 'secondary'))
-            table_nie.append({
-                'id':           r.id,
-                'name':         r.name,
-                'product_name': r.product_name or '-',
-                'client':       r.client_id.name if r.client_id else '-',
-                'state_label':  label,
-                'state_color':  color,
-                'nie_number':   r.nie_number or '-',
-            })
+
+            label, color = STATE_LABEL_NIE.get(
+                r.state,
+                (r.state, 'secondary')
+            )
+
+            for line in r.product_line_ids:
+                table_nie.append({
+                    'id': r.id,
+                    'line_id': line.id,
+                    'name': r.name,
+                    'product_name': (
+                            line.product_name
+                            or '-'
+                    ),
+                    'official_name': (
+                            line.official_product_name
+                            or '-'
+                    ),
+                    'client': (
+                        r.client_id.name
+                        if r.client_id
+                        else '-'
+                    ),
+                    'state_label': label,
+                    'state_color': color,
+                    'nie_number': (
+                            line.nie_number
+                            or '-'
+                    ),
+                })
 
         # ── TABLE HALAL ───────────────────────────────────────────────────
         table_halal = []
