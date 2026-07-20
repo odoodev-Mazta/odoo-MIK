@@ -115,7 +115,11 @@ class DashboardTimeline(models.Model):
                         else '-'
                     ),
                     # ambil dari line
-                    'product_name': line.product_name,
+                    'product_name': (
+                        line.product_template_id.display_name
+                        if line.product_template_id
+                        else '-'
+                    ),
                     'official_name': (
                             line.official_product_name
                             or '-'
