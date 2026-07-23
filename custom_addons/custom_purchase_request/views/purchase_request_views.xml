@@ -51,13 +51,14 @@
                             <field name="pic_dept"/>
                             <field name="whatsapp_no"/>
                             <field name="estimated_date"/>
+                            <field name="is_bulk_purchase"/>
                         </group>
 
                         <group>
                             <field name="deliver_to"/>
                             <field name="usulan_dana_id"/>
-                            <field name="customer_id"/>
-                            <field name="mou_id" options="{'no_create': True}"/>
+                            <field name="customer_id" invisible="is_bulk_purchase"/>
+                            <field name="mou_id" options="{'no_create': True}" invisible="is_bulk_purchase"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </group>
                     </group>
@@ -115,6 +116,22 @@
                                     <field name="setup_item_id"/>
                                     <field name="description"/>
                                     <field name="item_qty"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Alokasi Bulk"
+                              invisible="not is_bulk_purchase">
+
+                            <field name="bulk_line_ids">
+                                <list editable="bottom">
+                                    <field name="mou_id"/>
+                                    <field name="customer_id" readonly="1"/>
+                                    <field name="product_id"/>
+                                    <field name="qty"/>
+                                    <field name="uom_id" readonly="1"/>
+                                    <field name="price_unit"/>
+                                    <field name="price_subtotal" readonly="1"/>
+                                    <field name="note"/>
                                 </list>
                             </field>
                         </page>

@@ -4,3 +4,4 @@ access_purchase_request_line_user,purchase.request.line.user,model_purchase_requ
 access_purchase_request_report_user,purchase.request.report.user,model_purchase_request_report,base.group_user,1,1,1,1
 access_purchase_request_timeline,purchase.request.timeline,model_purchase_request_timeline,base.group_user,1,1,1,1
 access_purchase_order_setup_line,purchase.order.setup.line,model_purchase_order_setup_line,base.group_user,1,1,1,1
+access_purchase_request_bulk_mou_line,purchase_request_bulk_mou_line,model_purchase_request_bulk_mou_line,base.group_user,1,1,1,1

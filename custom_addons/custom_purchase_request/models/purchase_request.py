@@ -188,6 +188,16 @@ class PurchaseRequest(models.Model):
         index=True,
     )
 
+    is_bulk_purchase = fields.Boolean(
+        string="Pembelian Gelondongan"
+    )
+
+    bulk_line_ids = fields.One2many(
+        'purchase.request.bulk.mou.line',
+        'purchase_request_id',
+        string='Bulk Allocation'
+    )
+
     # purchase_order_id = fields.Many2one(
     #     'purchase.order',
     #     string='Purchase Order',
@@ -480,3 +490,74 @@ class PurchaseRequestLine(models.Model):
                 line.price_subtotal = (
                         line.product_qty * line.price_unit
                 )
+
+class PurchaseRequestBulkMOULine(models.Model):
+    _name = 'purchase.request.bulk.mou.line'
+    _description = 'Purchase Request Bulk Allocation'
+
+    purchase_request_id = fields.Many2one(
+        'purchase.request',
+        required=True,
+        ondelete='cascade'
+    )
+
+    mou_id = fields.Many2one(
+        'draft.maklon',
+        string='No. MOU',
+        required=True
+    )
+
+    customer_id = fields.Many2one(
+        related='mou_id.nama_cust',
+        string='Customer',
+        store=True,
+        readonly=True
+    )
+
+    product_id = fields.Many2one(
+        'product.product',
+        string='Product',
+        required=True
+    )
+
+    qty = fields.Float(
+        string='Allocated Qty',
+        required=True,
+        default=1
+    )
+
+    uom_id = fields.Many2one(
+        'uom.uom',
+        string='UoM',
+        related='product_id.uom_id',
+        store=True,
+        readonly=True
+    )
+
+    note = fields.Char(
+        string='Remarks'
+    )
+
+    currency_id = fields.Many2one(
+        'res.currency',
+        related='purchase_request_id.currency_id',
+        store=True,
+        readonly=True,
+    )
+
+    price_unit = fields.Monetary(
+        string='Unit Price',
+        currency_field='currency_id',
+    )
+
+    price_subtotal = fields.Monetary(
+        string='Subtotal',
+        compute='_compute_subtotal',
+        store=True,
+        currency_field='currency_id',
+    )
+
+    @api.depends('qty', 'price_unit')
+    def _compute_subtotal(self):
+        for rec in self:
+            rec.price_subtotal = rec.qty * rec.price_unit
