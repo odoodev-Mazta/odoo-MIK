@@ -357,15 +357,16 @@ class DashboardTimeline(models.Model):
                 }
 
             # ── PR Data — di dalam loop mou ──────────────────────────────
-            pr_records = self.env['purchase.request'].search(
-                [('mou_id', '=', mou.id)]
-            )
+            pr_records = self.env['purchase.request'].search([
+                '|',
+                ('mou_id', '=', mou.id),
+                ('bulk_line_ids.mou_id', '=', mou.id),
+            ])
             pr_data = []
             for pr in pr_records:
                 # Cari PO terkait PR ini (via origin)
                 po = self.env['purchase.order'].search([
                     ('origin', 'like', pr.name),
-                    ('mou_id', '=', mou.id),
                 ], limit=1)
 
                 # Fallback: cari PO langsung via mou_id jika origin tidak cocok
@@ -374,42 +375,117 @@ class DashboardTimeline(models.Model):
                         ('mou_id', '=', mou.id),
                     ], limit=1)
 
-                # Stock picking terkait PO (receipt/done)
-                picking = None
-                picking_date = None
-                picking_name = None
-                if po:
-                    picking = self.env['stock.picking'].search([
-                        ('purchase_id', '=', po.id),
-                        ('state', '=', 'done'),
-                    ], limit=1)
-                    if picking:
-                        picking_name = picking.name
-                        picking_date = fields.Date.to_string(
-                            picking.date_done.date() if picking.date_done else None
-                        )
-
                 # Tentukan state PR yang sudah di-submit
                 pr_is_done = pr.state == 'pr'
 
+                # Stock picking terkait PO (receipt/done)
+                delivered = False
+                picking_name = None
+                picking_date = None
+                # =====================================================
+                # BULK PURCHASE
+                # =====================================================
+                if pr.is_bulk_purchase:
+
+                    bulk_lines = pr.bulk_line_ids.filtered(
+                        lambda l: l.mou_id.id == mou.id
+                    )
+
+                    products = bulk_lines.mapped('product_id.name')
+                    product_summary = ', '.join(products) if products else '-'
+
+                    amount = sum(bulk_lines.mapped('price_subtotal'))
+
+                    bulk_allocations = [{
+                        'mou_id': line.mou_id.id,
+                        'mou_name': line.mou_id.draft_name,
+                        'customer': line.customer_id.name,
+                        'product': line.product_id.name,
+                        'qty': line.qty,
+                        'uom': line.uom_id.name,
+                        'price_unit': line.price_unit,
+                        'subtotal': line.price_subtotal,
+                    } for line in bulk_lines]
+
+                    # ==========================
+                    # CEK RECEIPT BULK
+                    # ==========================
+                    if po:
+
+                        pickings = self.env['stock.picking'].search([
+                            ('purchase_id', '=', po.id),
+                            ('state', '=', 'done'),
+                        ])
+
+                        bulk_products = bulk_lines.mapped('product_id')
+
+                        for pick in pickings:
+
+                            received_products = pick.move_ids.mapped('product_id')
+
+                            # cukup salah satu produk bulk milik MOU ini diterima
+                            if any(prod in received_products for prod in bulk_products):
+                                delivered = True
+                                picking_name = pick.name
+                                picking_date = fields.Date.to_string(
+                                    pick.date_done.date() if pick.date_done else None
+                                )
+                                break
+
+                # =====================================================
+                # PR BIASA
+                # =====================================================
+                else:
+
+                    products = pr.request_line_ids.mapped('product_id.name')
+                    product_summary = ', '.join(products) if products else '-'
+
+                    amount = pr.total_amount
+                    bulk_allocations = []
+
+                    if po:
+
+                        picking = self.env['stock.picking'].search([
+                            ('purchase_id', '=', po.id),
+                            ('state', '=', 'done'),
+                        ], limit=1)
+
+                        if picking:
+                            delivered = True
+                            picking_name = picking.name
+                            picking_date = fields.Date.to_string(
+                                picking.date_done.date() if picking.date_done else None
+                            )
+
+                # =====================================================
+                # Append
+                # =====================================================
                 pr_data.append({
                     'id': pr.id,
                     'name': pr.name,
                     'state': pr.state,
-                    'state_label': dict(pr._fields['state'].selection).get(pr.state, pr.state),
-                    'date_usulan': fields.Date.to_string(pr.date_usulan) if pr.date_usulan else None,
-                    'product_summary': pr.product_summary or '-',
-                    'total_amount': pr.total_amount,
+                    'state_label': dict(pr._fields['state'].selection).get(
+                        pr.state, pr.state
+                    ),
+                    'purchase_type': 'bulk' if pr.is_bulk_purchase else 'normal',
+                    'date_usulan': fields.Date.to_string(pr.date_usulan)
+                    if pr.date_usulan else None,
+                    'product_summary': product_summary,
+                    'bulk_allocations': bulk_allocations,
+                    'total_amount': amount,
                     'is_urgent': pr.is_urgent,
                     'pr_is_done': pr_is_done,
+
                     # PO
                     'po_id': po.id if po else None,
                     'po_name': po.name if po else None,
-                    'po_date': fields.Date.to_string(po.date_order.date()) if po and po.date_order else None,
+                    'po_date': fields.Date.to_string(po.date_order.date())
+                    if po and po.date_order else None,
                     'po_state': po.state if po else None,
                     'po_is_done': po.state in ('purchase', 'done') if po else False,
+
                     # Delivered
-                    'delivered': bool(picking),
+                    'delivered': delivered,
                     'delivered_name': picking_name,
                     'delivered_date': picking_date,
                 })
