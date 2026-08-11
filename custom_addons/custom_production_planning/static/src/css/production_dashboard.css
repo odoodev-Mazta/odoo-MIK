@@ -1,0 +1,164 @@
+.o_production_dashboard {
+    background-color: #f8f9fa;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.o_production_dashboard > .d-flex {
+    flex: 0 0 auto;
+}
+
+
+/* =========================
+   DONUT ROW
+   ========================= */
+
+.production-donut-row {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.production-donut-card {
+    flex: 1 1 260px;
+    min-width: 240px;
+    border: none;
+}
+
+.production-donut-card .card-body {
+    padding: 12px 16px;
+}
+
+.production-donut-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.production-donut-card-body {
+    gap: 16px;
+}
+
+/* Chart.js needs an explicitly sized, positioned parent */
+.production-donut-canvas-wrap {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+    position: relative;
+}
+
+/* Legend - color explains the breakdown */
+.production-donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.production-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+}
+
+.production-legend-label {
+    color: #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.production-legend-value {
+    margin-left: auto;
+    font-weight: 600;
+    white-space: nowrap;
+    display: flex;
+    gap: 4px;
+}
+
+.production-legend-value .text-muted {
+    font-weight: 400;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+
+/* =========================
+   TABLE SECTION
+   ========================= */
+
+.production-dashboard-table {
+    flex: 1 1 auto;
+    min-height: 0;
+    border: none;
+}
+
+.production-dashboard-table .card-body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.production-dashboard-table-header {
+    flex: 0 0 auto;
+}
+
+.production-dashboard-table-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+
+/* Table */
+
+.production-dashboard-table-container table {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.production-dashboard-table-container thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: white;
+}
+
+.production-dashboard-table-container th {
+    background: white;
+    white-space: nowrap;
+}
+
+.production-dashboard-table-container td {
+    vertical-align: middle;
+}
+
+
+/* Progress */
+
+.production-dashboard-table-container .progress {
+    min-width: 100px;
+}
+
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .production-donut-card {
+        flex: 1 1 100%;
+    }
+}

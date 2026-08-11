@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_machine_schedule_list" model="ir.ui.view">
+        <field name="name">machine.schedule.list</field>
+        <field name="model">mrp.production.machine.schedule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="plan_id"/>
+                <field name="product_id"/>
+                <field name="operation_id"/>
+                <field name="machine_id"/>
+                <field name="workorder_id"/>
+                <field name="capacity_id"/>
+                <field name="planned_qty"/>
+                <field name="planned_start"/>
+                <field name="planned_end"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_machine_schedule_calendar" model="ir.ui.view">
+        <field name="name">machine.schedule.calendar</field>
+        <field name="model">mrp.production.machine.schedule</field>
+        <field name="arch" type="xml">
+            <calendar string="Machine Schedule" date_start="planned_start"
+                date_stop="planned_end" color="machine_id"
+                mode="month">
+
+                <field name="name"/>
+                <field name="product_id"/>
+                <field name="operation_id"/>
+                <field name="machine_id"/>
+                <field name="capacity_id"/>
+                <field name="planned_qty"/>
+                <field name="workorder_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_machine_schedule_gantt" model="ir.ui.view">
+        <field name="name">machine.schedule.gantt</field>
+        <field name="model">mrp.production.machine.schedule</field>
+        <field name="arch" type="xml">
+            <gantt
+                string="Machine Planning"
+                date_start="planned_start"
+                date_stop="planned_end"
+                default_group_by="machine_id"
+                color="state">
+
+                <field name="machine_id"/>
+                <field name="operation_id"/>
+                <field name="product_id"/>
+                <field name="planned_qty"/>
+                <field name="workorder_id"/>
+
+            </gantt>
+        </field>
+    </record>
+
+    <record id="action_machine_schedule" model="ir.actions.act_window">
+        <field name="name">Machine Schedule</field>
+        <field name="res_model">mrp.production.machine.schedule</field>
+        <field name="view_mode">gantt,calendar,list,form</field>
+    </record>
+
+</odoo>
