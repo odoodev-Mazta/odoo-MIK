@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id,perm_read,perm_write,perm_create,perm_unlink
+access_production_plan,production.plan,model_mrp_production_plan,,1,1,1,1
+access_production_plan_line,production.plan.line,model_mrp_production_plan_line,,1,1,1,1
+access_production_machine,production.machine,model_mrp_production_machine,,1,1,1,1
+access_production_machine_schedule,production.machine.schedule,model_mrp_production_machine_schedule,,1,1,1,1
+access_production_machine_capacity,production.machine.capacity,model_mrp_production_machine_capacity,,1,1,1,1
+access_production_material_shortage,mrp.production.material.shortage,model_mrp_production_material_shortage,,1,1,1,1
+access_production_dashboard,mrp.production.dashboard,model_mrp_production_dashboard,,1,0,0,0
