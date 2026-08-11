@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_production_quality"
+        name="Quality Control"
+        parent="mrp.menu_mrp_root"
+        sequence="40"
+    />
+
+    <menuitem
+        id="menu_qc_schedule"
+        name="QC Schedule"
+        parent="menu_production_quality"
+        action="action_qc_schedule"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_qc_template"
+        name="QC Template"
+        parent="menu_production_quality"
+        action="action_qc_template"
+        sequence="20"
+    />
+
+    <menuitem
+        id="menu_qc_parameter"
+        name="QC Parameter"
+        parent="menu_production_quality"
+        action="action_qc_parameter"
+        sequence="30"
+    />
+
+</odoo>

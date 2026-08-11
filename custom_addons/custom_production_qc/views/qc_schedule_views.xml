@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_qc_schedule_list" model="ir.ui.view">
+        <field name="name">production.qc.schedule.list</field>
+        <field name="model">production.qc.schedule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="product_id"/>
+<!--                <field name="machine_id"/>-->
+<!--                <field name="planned_start"/>-->
+<!--                <field name="planned_end"/>-->
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_qc_schedule_form" model="ir.ui.view">
+        <field name="name">production.qc.schedule.form</field>
+        <field name="model">production.qc.schedule</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button
+                        name="action_generate_checklist"
+                        type="object"
+                        string="Generate Checklist"
+                        class="btn-secondary"
+                        invisible="not qc_template_id or state != 'draft'"
+                    />
+
+<!--                    <button-->
+<!--                        name="action_start"-->
+<!--                        type="object"-->
+<!--                        string="Start QC"-->
+<!--                        class="btn-primary"-->
+<!--                        invisible="state != 'waiting'"-->
+<!--                    />-->
+
+                    <button
+                        name="action_check_all_result"
+                        type="object"
+                        string="Check Result"
+                        class="btn-info"
+                        invisible="state != 'progress'"
+                    />
+
+                    <button
+                        name="action_done"
+                        type="object"
+                        string="Finish QC"
+                        class="btn-success"
+                        invisible="state != 'progress'"
+                    />
+
+                    <button
+                        name="action_reset"
+                        type="object"
+                        string="Reset QC"
+                        class="btn-secondary"
+                        invisible="state not in ('done','failed')"
+                    />
+
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,waiting,progress,done,failed"
+                    />
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="production_id"/>
+                            <field name="workorder_id"/>
+                            <field name="product_id"/>
+                        </group>
+
+                        <group>
+                            <field name="operation_id"/>
+                            <field name="workcenter_id"/>
+                            <field name="qc_template_id"/>
+                        </group>
+                    </group>
+
+                    <group string="QC Summary">
+                        <group>
+                            <field name="pending_count"/>
+                        </group>
+                        <group>
+                            <field name="passed_count"/>
+                        </group>
+                        <group>
+                            <field name="failed_count"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="QC Checking">
+                            <field name="check_line_ids">
+                                <list editable="bottom">
+                                    <field name="parameter_id" readonly="1"/>
+                                    <field name="specification" readonly="1"/>
+                                    <field name="min_value" readonly="1"/>
+                                    <field name="max_value" readonly="1"/>
+                                    <field name="actual_value" readonly="qc_state != 'progress'"/>
+                                    <field name="status" readonly="1"/>
+                                    <field name="result"/>
+                                    <field name="remark"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_qc_schedule" model="ir.actions.act_window">
+        <field name="name">QC Schedule</field>
+        <field name="res_model">production.qc.schedule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>
