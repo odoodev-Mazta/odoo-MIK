@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_production_planning_root"
+        name="Production Planning"
+        parent="mrp.menu_mrp_root"
+        sequence="30"
+    />
+
+    <menuitem
+        id="menu_production_plan"
+        name="Planning"
+        parent="menu_production_planning_root"
+        action="action_production_plan"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_production_machine"
+        name="Production Machines"
+        parent="menu_production_planning_root"
+        action="action_production_machine"
+        sequence="20"
+    />
+
+    <menuitem
+        id="menu_machine_schedule"
+        name="Machine Schedule"
+        parent="menu_production_planning_root"
+        action="action_machine_schedule"
+        sequence="30"
+    />
+
+    <!--  DASHBOARD  -->
+    <menuitem
+        id="menu_production_dashboard"
+        name="Production Dashboard"
+        parent="menu_production_planning_root"
+        action="action_production_dashboard"
+        sequence="20"
+    />
+
+</odoo>

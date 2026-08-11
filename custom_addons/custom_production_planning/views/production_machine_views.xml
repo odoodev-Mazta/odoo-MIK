@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_production_machine_list" model="ir.ui.view">
+        <field name="name">mrp.production.machine.list</field>
+        <field name="model">mrp.production.machine</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="workcenter_id"/>
+                <field name="operator_count"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_production_machine_form" model="ir.ui.view">
+        <field name="name">mrp.production.machine.form</field>
+        <field name="model">mrp.production.machine</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="workcenter_id"/>
+                        </group>
+
+                        <group>
+                            <field name="operator_count"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+
+                    <group string="Today's Utilization">
+                        <field name="capacity_today" readonly="1"/>
+                        <field name="planned_qty" readonly="1"/>
+                        <field name="remaining_capacity" readonly="1"/>
+                        <field name="utilization"
+                               widget="progressbar" readonly="1"/>
+                        <field name="utilization_state"
+                               decoration-success="utilization_state=='available'"
+                               decoration-warning="utilization_state=='near'"
+                               decoration-danger="utilization_state=='over'"
+                        />
+
+                    </group>
+
+                    <group>
+                        <field name="note"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Capacity Configuration">
+                            <field name="capacity_ids">
+                                <list editable="bottom">
+                                    <field name="packaging_type"/>
+                                    <field name="package_size"/>
+                                    <field name="package_uom"/>
+                                    <field name="capacity_per_day"/>
+                                    <field name="uom_id"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Machine Schedule">
+                            <field name="schedule_ids" readonly="1">
+                                <list>
+                                    <field name="plan_id"/>
+                                    <field name="product_id"/>
+                                    <field name="planned_qty"/>
+                                    <field name="planned_start"/>
+                                    <field name="planned_end"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_production_machine" model="ir.actions.act_window">
+        <field name="name">Production Machines</field>
+        <field name="res_model">mrp.production.machine</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+</odoo>
