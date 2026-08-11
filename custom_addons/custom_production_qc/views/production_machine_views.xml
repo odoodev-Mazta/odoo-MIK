@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="view_production_machine_form_inherit_qc" model="ir.ui.view">
+        <field name="name">mrp.production.machine.form.inherit.qc</field>
+        <field name="model">mrp.production.machine</field>
+        <field name="inherit_id" ref="custom_production_planning.view_production_machine_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='active']" position="after">
+                <field name="need_qc"/>
+                <field name="qc_template_id" invisible="not need_qc"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

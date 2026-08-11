@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qc_template,access_qc_template,model_production_qc_template,base.group_user,1,1,1,1
+access_qc_parameter,access_qc_parameter,model_production_qc_parameter,base.group_user,1,1,1,1
+access_qc_schedule,access_qc_schedule,model_production_qc_schedule,base.group_user,1,1,1,1
+access_qc_check_line,access_qc_check_line,model_production_qc_check_line,base.group_user,1,1,1,1
