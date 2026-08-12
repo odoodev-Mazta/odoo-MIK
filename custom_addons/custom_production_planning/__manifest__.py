@@ -9,9 +9,11 @@
         "sale_management",
         "product",
         "mail",
+        "custom_mou",
     ],
 
     "data": [
+        "data/ir_sequence.xml",
         "security/ir.model.access.csv",
         "views/production_plan_views.xml",
         "views/production_machine_views.xml",

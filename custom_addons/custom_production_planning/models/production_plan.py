@@ -128,12 +128,21 @@ class ProductionPlan(models.Model):
         string="Material Shortage"
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("name", "New") == "New":
+                vals["name"] = (
+                        self.env["ir.sequence"].next_by_code(
+                            "mrp.production.plan"
+                        )
+                        or "New"
+                )
+        return super().create(vals_list)
+
     def action_approve(self):
-
         self.action_validate_planning()
-
         for plan in self:
-
             if plan.material_check_state != "available":
                 raise ValidationError(
                     "Please check material availability first."
@@ -789,3 +798,45 @@ class ProductionPlan(models.Model):
             "type": "ir.actions.client",
             "tag": "reload",
         }
+
+
+class DashboardTimeline(models.Model):
+    """
+    Inherit model dashboard.timeline.mou mengisi hook _get_production_data() yang di custom_mou masih kosong.
+    """
+    _inherit = "dashboard.timeline.mou"
+
+    def _get_production_data(self, mou_id):
+        plans = self.env["mrp.production.plan"].search([
+            ("sale_order_id.mou_id", "=", mou_id),
+        ])
+
+        result = []
+        for plan in plans:
+            mo_ids = plan.manufacturing_order_ids
+            mo_done = mo_ids.filtered(lambda m: m.state == "done")
+
+            result.append({
+                "id": plan.id,
+                "name": plan.name,
+                "product": plan.product_id.display_name,
+                "state": plan.state,
+                "state_label": dict(
+                    plan._fields["state"].selection
+                ).get(plan.state, plan.state),
+                "progress": round(plan.progress or 0.0, 1),
+                "is_done": plan.state == "done",
+                "is_cancelled": plan.state == "cancel",
+                "planned_start": (
+                    fields.Date.to_string(plan.planned_start)
+                    if plan.planned_start else None
+                ),
+                "planned_end": (
+                    fields.Date.to_string(plan.planned_end)
+                    if plan.planned_end else None
+                ),
+                "mo_count": len(mo_ids),
+                "mo_done": len(mo_done),
+            })
+
+        return result
