@@ -280,6 +280,26 @@ class DashboardTimeline(models.Model):
             })
         return result
 
+        # ─── Hook: Progress Produksi (di-override oleh custom_production_planning) ──
+
+        def _get_production_data(self, mou_id):
+            """
+            Placeholder.
+            Modul custom_production_planning akan meng-override method ini
+            lewat _inherit = 'dashboard.timeline.mou' untuk mengisi data asli.
+            """
+            return []
+
+        # ─── Hook: Progress QC (di-override oleh custom_production_qc) ──────────
+
+        def _get_qc_data(self, mou_id):
+            """
+            Placeholder.
+            Modul custom_production_qc akan meng-override method ini
+            lewat _inherit = 'dashboard.timeline.mou' untuk mengisi data asli.
+            """
+            return []
+
     # ─── Main Method ────────────────────────────────────────────────────────
 
     @api.model
@@ -492,6 +512,8 @@ class DashboardTimeline(models.Model):
 
             delivery_data = self._get_delivery_data(mou.id)
             sale_order_data = self._get_sale_order_data(mou.id)
+            production_data = self._get_production_data(mou.id)
+            qc_data = self._get_qc_data(mou.id)
 
             timeline_list.append({
                 'id': mou.id,
@@ -508,6 +530,8 @@ class DashboardTimeline(models.Model):
                 'pr_data': pr_data,
                 'delivery_data': delivery_data,
                 'sale_orders': sale_order_data,
+                'production_data': production_data,
+                'qc_data': qc_data,
             })
 
         return timeline_list

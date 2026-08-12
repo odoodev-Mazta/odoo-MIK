@@ -784,6 +784,148 @@
 
                                     </t>
 
+                                    <!-- ═══ KOLOM PRODUKSI: Accordion Production Plan ═══ -->
+                                    <t t-elif="stage.code === 'produksi'">
+
+                                        <div style="font-size:10px;color:#adb5bd;text-transform:uppercase;letter-spacing:0.6px;font-weight:500;margin-bottom:6px;">
+                                            <i class="fa fa-list me-1"></i>Sub Produksi
+                                        </div>
+
+                                        <!-- Accordion: Production Plan -->
+                                        <div style="border:0.5px solid #dee2e6;border-left:2px solid #2563eb;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'produksi_plan')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-cogs" style="color:#2563eb;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Production Plan</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary_produksi and stage.sub_summary_produksi.total > 0 ? '#dbeafe' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary_produksi and stage.sub_summary_produksi.total > 0 ? '#1e3a8a' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary_produksi and stage.sub_summary_produksi.total > 0 ? '#2563eb' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary_produksi and stage.sub_summary_produksi.total > 0">
+                                                            <t t-esc="stage.sub_summary_produksi.done"/>/<t t-esc="stage.sub_summary_produksi.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'produksi_plan') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'produksi_plan')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_produksi and stage.sub_produksi.plans.length > 0">
+                                                        <t t-foreach="stage.sub_produksi.plans" t-as="plan" t-key="plan.label">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#2563eb;opacity:0.3;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{plan.is_done ? '#2563eb' : '#fff'}};border:1.5px solid #2563eb;"></div>
+                                                                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                                                                    <span t-attf-style="font-size:11px;font-weight:500;color:{{plan.is_done ? '#212529' : '#6c757d'}};">
+                                                                        <t t-esc="plan.label"/> — <t t-esc="plan.product"/>
+                                                                    </span>
+                                                                    <span t-attf-style="
+                                                                        font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500;
+                                                                        background:{{plan.is_cancelled ? '#f8d7da' : (plan.is_done ? '#d1e7dd' : '#f8f9fa')}};
+                                                                        color:{{plan.is_cancelled ? '#842029' : (plan.is_done ? '#0a3622' : '#6c757d')}};
+                                                                        border:0.5px solid {{plan.is_cancelled ? '#dc3545' : (plan.is_done ? '#198754' : '#dee2e6')}};
+                                                                    ">
+                                                                        <t t-esc="plan.state_label"/>
+                                                                    </span>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#495057;margin-top:3px;">
+                                                                    <i class="fa fa-wrench me-1"></i>Work Order: <t t-esc="plan.mo_done"/>/<t t-esc="plan.mo_count"/>
+                                                                    <span style="margin-left:6px;color:#2563eb;font-weight:500;"><t t-esc="plan.progress"/>%</span>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="plan.date"/>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada production plan
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                    </t>
+
+                                    <!-- ═══ KOLOM QC: Accordion QC Schedule ═══ -->
+                                    <t t-elif="stage.code === 'qc'">
+
+                                        <div style="font-size:10px;color:#adb5bd;text-transform:uppercase;letter-spacing:0.6px;font-weight:500;margin-bottom:6px;">
+                                            <i class="fa fa-list me-1"></i>Sub QC
+                                        </div>
+
+                                        <!-- Accordion: QC Schedule -->
+                                        <div style="border:0.5px solid #dee2e6;border-left:2px solid #7c3aed;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'qc_schedule')">
+                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                    <i class="fa fa-check-square-o" style="color:#7c3aed;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">QC Schedule</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary_qc and stage.sub_summary_qc.failed > 0 ? '#f8d7da' : (stage.sub_summary_qc and stage.sub_summary_qc.total > 0 ? '#ede9fe' : '#f8f9fa')}};
+                                                        color:{{stage.sub_summary_qc and stage.sub_summary_qc.failed > 0 ? '#842029' : (stage.sub_summary_qc and stage.sub_summary_qc.total > 0 ? '#4c1d95' : '#6c757d')}};
+                                                        border:0.5px solid {{stage.sub_summary_qc and stage.sub_summary_qc.failed > 0 ? '#dc3545' : (stage.sub_summary_qc and stage.sub_summary_qc.total > 0 ? '#7c3aed' : '#dee2e6')}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary_qc and stage.sub_summary_qc.total > 0">
+                                                            <t t-esc="stage.sub_summary_qc.done"/>/<t t-esc="stage.sub_summary_qc.total"/>
+                                                            <t t-if="stage.sub_summary_qc.failed > 0"> ⚠<t t-esc="stage.sub_summary_qc.failed"/></t>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'qc_schedule') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'qc_schedule')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_qc and stage.sub_qc.schedules.length > 0">
+                                                        <t t-foreach="stage.sub_qc.schedules" t-as="sched" t-key="sched.label">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#7c3aed;opacity:0.3;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{sched.is_failed ? '#dc3545' : (sched.is_done ? '#7c3aed' : '#fff')}};border:1.5px solid {{sched.is_failed ? '#dc3545' : '#7c3aed'}};"></div>
+                                                                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                                                                    <span t-attf-style="font-size:11px;font-weight:500;color:{{sched.is_done or sched.is_failed ? '#212529' : '#6c757d'}};">
+                                                                        <t t-esc="sched.label"/> (<t t-esc="sched.production"/>)
+                                                                    </span>
+                                                                    <span t-attf-style="
+                                                                        font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500;
+                                                                        background:{{sched.is_failed ? '#f8d7da' : (sched.is_done ? '#ede9fe' : '#f8f9fa')}};
+                                                                        color:{{sched.is_failed ? '#842029' : (sched.is_done ? '#4c1d95' : '#6c757d')}};
+                                                                        border:0.5px solid {{sched.is_failed ? '#dc3545' : (sched.is_done ? '#7c3aed' : '#dee2e6')}};
+                                                                    ">
+                                                                        <t t-esc="sched.state_label"/>
+                                                                    </span>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#495057;margin-top:3px;">
+                                                                    <i class="fa fa-check me-1" style="color:#198754;"></i><t t-esc="sched.passed_count"/>
+                                                                    <i class="fa fa-times me-1" style="margin-left:6px;color:#dc3545;"></i><t t-esc="sched.failed_count"/>
+                                                                    <i class="fa fa-clock-o me-1" style="margin-left:6px;color:#adb5bd;"></i><t t-esc="sched.pending_count"/>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="sched.date"/>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada QC schedule
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                    </t>
+
                                     <!-- ═══ KOLOM DELIVERY: Accordion Pengiriman ═══ -->
                                     <t t-elif="stage.code === 'delivery'">
 
