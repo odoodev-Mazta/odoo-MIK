@@ -555,11 +555,70 @@ export class TimelineDashboard extends Component {
                 },
             };
 
-            // ── Stage 6–9: Placeholder siap sambung ──────────────────────
-            // stages.find(s => s.code === 'produksi').details.push({ ... })
-            // stages.find(s => s.code === 'qc').details.push({ ... })
-            // stages.find(s => s.code === 'bp').details.push({ ... })
-            // stages.find(s => s.code === 'delivery').details.push({ ... })
+            // ── Stage 6: Produksi ─────────────────────────────────────────
+            const produksiStage = stages.find(s => s.code === 'produksi');
+            produksiStage.sub_produksi = { plans: [] };
+            produksiStage.sub_summary_produksi = { total: 0, done: 0 };
+
+            (mou.production_data || []).forEach(p => {
+                produksiStage.details.push({
+                    label: `${p.name} — ${p.product}`,
+                    date: p.is_done
+                        ? `Selesai${p.planned_end ? ': ' + this.formatDate(p.planned_end) : ''}`
+                        : `Target: ${p.planned_end ? this.formatDate(p.planned_end) : '-'}`,
+                    is_done: p.is_done,
+                    is_cancelled: p.is_cancelled,
+                });
+
+                produksiStage.sub_produksi.plans.push({
+                    label: p.name,
+                    product: p.product,
+                    state_label: p.state_label,
+                    progress: p.progress,
+                    mo_count: p.mo_count,
+                    mo_done: p.mo_done,
+                    is_done: p.is_done,
+                    is_cancelled: p.is_cancelled,
+                    date: p.planned_start
+                        ? `${this.formatDate(p.planned_start)} — ${p.planned_end ? this.formatDate(p.planned_end) : '-'}`
+                        : '-',
+                });
+
+                produksiStage.sub_summary_produksi.total++;
+                if (p.is_done) produksiStage.sub_summary_produksi.done++;
+            });
+
+            // ── Stage 7: QC ───────────────────────────────────────────────
+            const qcStage = stages.find(s => s.code === 'qc');
+            qcStage.sub_qc = { schedules: [] };
+            qcStage.sub_summary_qc = { total: 0, done: 0, failed: 0 };
+
+            (mou.qc_data || []).forEach(q => {
+                qcStage.details.push({
+                    label: `${q.name} (${q.production})`,
+                    date: q.inspection_date
+                        ? `Diperiksa: ${this.formatDate(q.inspection_date)}`
+                        : '-',
+                    is_done: q.is_done,
+                    is_failed: q.is_failed,
+                });
+
+                qcStage.sub_qc.schedules.push({
+                    label: q.name,
+                    production: q.production,
+                    state_label: q.state_label,
+                    passed_count: q.passed_count,
+                    failed_count: q.failed_count,
+                    pending_count: q.pending_count,
+                    is_done: q.is_done,
+                    is_failed: q.is_failed,
+                    date: q.inspection_date ? this.formatDate(q.inspection_date) : '-',
+                });
+
+                qcStage.sub_summary_qc.total++;
+                if (q.is_done) qcStage.sub_summary_qc.done++;
+                if (q.is_failed) qcStage.sub_summary_qc.failed++;
+            });
 
             // ── Hitung status tiap stage ──────────────────────────────────
             stages.forEach((stage, i) => {
