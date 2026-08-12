@@ -9,6 +9,7 @@
         "mail",
         "mrp",
         "custom_production_planning",
+        "custom_mou",
     ],
 
     "data": [

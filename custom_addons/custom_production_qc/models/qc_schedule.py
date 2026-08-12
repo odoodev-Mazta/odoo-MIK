@@ -210,3 +210,38 @@ class QCSchedule(models.Model):
                 rec.action_generate_checklist()
 
         return records
+
+
+class DashboardTimeline(models.Model):
+    """
+    Inherit model dashboard.timeline.mou mengisi hook _get_qc_data() yang di custom_mou masih kosong.
+    """
+    _inherit = "dashboard.timeline.mou"
+
+    def _get_qc_data(self, mou_id):
+        schedules = self.env["production.qc.schedule"].search([
+            ("production_id.production_plan_id.sale_order_id.mou_id", "=", mou_id),
+        ])
+
+        result = []
+        for sched in schedules:
+            result.append({
+                "id": sched.id,
+                "name": sched.name,
+                "production": sched.production_id.name,
+                "state": sched.state,
+                "state_label": dict(
+                    sched._fields["state"].selection
+                ).get(sched.state, sched.state),
+                "is_done": sched.state == "done",
+                "is_failed": sched.state == "failed",
+                "passed_count": sched.passed_count,
+                "failed_count": sched.failed_count,
+                "pending_count": sched.pending_count,
+                "inspection_date": (
+                    fields.Datetime.to_string(sched.inspection_date)
+                    if sched.inspection_date else None
+                ),
+            })
+
+        return result
