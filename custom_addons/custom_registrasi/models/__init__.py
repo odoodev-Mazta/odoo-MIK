@@ -4,3 +4,4 @@ from . import registrasi_produk_line
 from . import registrasi_halal
 from . import registrasi_halal_line
 from . import dashboard
+from . import design_usulan

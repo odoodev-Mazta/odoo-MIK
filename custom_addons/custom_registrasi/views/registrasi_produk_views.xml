@@ -204,7 +204,7 @@
                     </group>
 
                     <!-- ── Design ─────────────────────────────────────── -->
-                    <!-- <group string="Design &amp; Artwork">
+                    <group string="Design &amp; Artwork">
                         <group>
                             <field name="design_id"
                                    readonly="state not in ('draft', 'ro_drafting', 'submitted')"/>
@@ -214,7 +214,7 @@
                         <group>
                             <field name="design_sla_days"/>
                         </group>
-                    </group> -->
+                    </group>
 
                     <!-- ── Deadlines / SLA ────────────────────────────── -->
                     <group string="SLA &amp; Deadlines"

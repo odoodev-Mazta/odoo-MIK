@@ -241,6 +241,7 @@ class RegistrasiBrand(models.Model):
                 missing.append(_('Sertifikat HAKI / Tanda Bukti HAKI'))
             if not rec.doc_dir_statement:
                 missing.append(_('Surat Pernyataan Merek (MIK Director)'))
+            # activate error
             # if missing:
             #     raise UserError(
             #         _('Please upload all required documents before proceeding:\n- %s')

@@ -25,7 +25,7 @@
         'mail',
         'product',
         'custom_mou',
-        # 'custom_design',
+        'custom_design',
         'custom_ecatalogue',
     ],
     'data': [
@@ -38,6 +38,7 @@
         'views/halal_registrasi_views.xml',
         'views/menu_views.xml',
         'views/dashboard_views.xml',
+        'views/design_usulan_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
