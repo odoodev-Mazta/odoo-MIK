@@ -81,13 +81,13 @@ class RegistrasiProduk(models.Model):
     )
 
     # # ─── Module Integration: custom_design ──────────────────────────────────
-    # design_id = fields.Many2one(
-    #     comodel_name='design.usulan',          
-    #     string='Design Reference',
-    #     tracking=True,
-    #     domain=[('state', '=', 'done')],   
-    #     help='Design artwork. Must be finished before submitting to BPOM.',
-    # )
+    design_id = fields.Many2one(
+        comodel_name='design.usulan',
+        string='Design Reference',
+        tracking=True,
+        domain=[('state', '=', 'done')],
+        help='Design artwork. Must be finished before submitting to BPOM.',
+    )
 
     design_sla_type = fields.Selection(
         selection=[
@@ -435,6 +435,7 @@ class RegistrasiProduk(models.Model):
     def action_submit_form_request(self):
         """Draft → Form Request (Approval)."""
         for rec in self:
+            # activate error
             # if rec.category == 'import' and not rec.mou_id:
             #     raise UserError(
             #         _('An MoU Reference is required for Import category before requesting approval.')
@@ -533,14 +534,14 @@ class RegistrasiProduk(models.Model):
 
     def action_confirm_official_name_and_submit(self):
         for rec in self:
-            # if not rec.design_id:
-            #     raise UserError(_('A Design Reference must be selected before submitting to BPOM.'))
+            if not rec.design_id:
+                raise UserError(_('A Design Reference must be selected before submitting to BPOM.'))
             # # GANTI — design.usulan tidak punya state 'available'
-            # if rec.design_id.state != 'done':
-            #     raise UserError(
-            #         _('The linked Design must be in "Selesai" status. Current: %s')
-            #         % dict(rec.design_id._fields['state'].selection).get(rec.design_id.state, '')
-            #     )
+            if rec.design_id.state != 'done':
+                raise UserError(
+                    _('The linked Design must be in "Selesai" status. Current: %s')
+                    % dict(rec.design_id._fields['state'].selection).get(rec.design_id.state, '')
+                )
             invalid_lines = rec.product_line_ids.filtered(
                 lambda line: not line.official_product_name
             )
