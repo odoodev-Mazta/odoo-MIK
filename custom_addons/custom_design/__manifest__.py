@@ -14,7 +14,7 @@
         'base',
         'mail',
         'web_enterprise',
-        'custom_registrasi',
+        # 'custom_registrasi',
         'custom_ecatalogue',
     ],
     'data': [
