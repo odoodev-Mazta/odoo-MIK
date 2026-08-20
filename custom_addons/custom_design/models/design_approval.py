@@ -204,8 +204,6 @@ class DesignApproval(models.Model):
             rec.usulan_id.write({
                 'state': 'done',
                 'date_done': fields.Date.context_today(rec),
-                'attachment_form': rec.attachment_form,
-                'attachment_form_fname': rec.attachment_form_fname,
             })
             rec.message_post(
                 body=_('✅ Form Design Final diupload. Status: Done.')
