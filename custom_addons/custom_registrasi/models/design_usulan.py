@@ -1,6 +1,4 @@
-from importlib.resources import _
-
-from odoo import models,fields,api
+from odoo import models, fields, api, _
 
 class DesignUsulanInherit(models.Model):
     """Inherit dari design.usulan (custom_design)"""
