@@ -37,7 +37,7 @@ class HalalRegistrasi(models.Model):
     )
     brand_name = fields.Char(
         string='Nama Brand',
-        required=True,
+        required=False,
         tracking=True,
     )
     client_id = fields.Many2one(
@@ -470,31 +470,50 @@ class HalalRegistrasi(models.Model):
     def action_terbitkan_sertifikat(self):
         """Menunggu Keputusan → Sertifikat Terbit."""
         for rec in self:
-            # if not rec.nomor_sertifikat:
-            #     raise UserError(_('Nomor sertifikat halal wajib diisi.'))
-            # if not rec.tanggal_terbit:
-            #     raise UserError(_('Tanggal terbit sertifikat wajib diisi.'))
-            # if not rec.tanggal_expired:
-            #     raise UserError(_('Tanggal kadaluarsa sertifikat wajib diisi.'))
-            # if not rec.doc_sertifikat_halal:
-            #     raise UserError(
-            #         _('Unggah file sertifikat halal final sebelum menerbitkan.')
-            #     )
-            rec.write({'state': 'sertifikat_terbit'})
+            # Validasi data sertifikat
+            if not rec.nomor_sertifikat:
+                raise UserError(
+                    _('Nomor sertifikat halal wajib diisi sebelum menerbitkan sertifikat.')
+                )
+
+            if not rec.tanggal_terbit:
+                raise UserError(
+                    _('Tanggal terbit sertifikat wajib diisi sebelum menerbitkan sertifikat.')
+                )
+
+            if not rec.tanggal_expired:
+                raise UserError(
+                    _('Tanggal kadaluarsa sertifikat wajib diisi sebelum menerbitkan sertifikat.')
+                )
+
+            if not rec.doc_sertifikat_halal:
+                raise UserError(
+                    _('Unggah file sertifikat halal final sebelum menerbitkan sertifikat.')
+                )
+
+            rec.write({
+                'state': 'sertifikat_terbit',
+            })
+
             # Sinkronisasi ke registrasi.produk jika tertaut
             if rec.produk_id:
                 rec.produk_id.write({
                     'halal_cert_attachment': rec.doc_sertifikat_halal,
                     'halal_type': rec.halal_type,
                 })
+
             rec.message_post(
-                body=_('✅ Sertifikat Halal berhasil diterbitkan! No: %s. '
-                       'Berlaku hingga: %s.')
-                % (rec.nomor_sertifikat,
-                   rec.tanggal_expired.strftime('%d %B %Y')),
+                body=_(
+                    '✅ Sertifikat Halal berhasil diterbitkan! '
+                    'No: %s. Berlaku hingga: %s.'
+                ) % (
+                         rec.nomor_sertifikat,
+                         rec.tanggal_expired.strftime('%d %B %Y'),
+                     ),
                 message_type='notification',
                 subtype_xmlid='mail.mt_comment',
             )
+
         return True
 
     def action_tolak(self):
