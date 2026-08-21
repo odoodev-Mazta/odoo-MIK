@@ -124,19 +124,25 @@ class RegistrasiDashboard(models.AbstractModel):
         # ── TABLE HALAL ───────────────────────────────────────────────────
         table_halal = []
         for r in HAL.search([]):
-            label, color = STATE_LABEL_HALAL.get(r.state, (r.state, 'secondary'))
+            label, color = STATE_LABEL_HALAL.get(
+                r.state,
+                (r.state, 'secondary')
+            )
+
             table_halal.append({
-                'id':              r.id,
-                'name':            r.name,
+                'id': r.id,
+                'name': r.name,
                 'product_name': ', '.join(
-                    r.product_line_ids.mapped(
-                        'product_template_id.name'
-                    )
+                    r.lini_produk_ids.mapped('nama_produk')
                 ) or '-',
-                'client':          r.client_id.name if r.client_id else '-',
-                'state_label':     label,
-                'state_color':     color,
-                'tanggal_expired': str(r.tanggal_expired) if r.tanggal_expired else '-',
+                'client': r.client_id.name if r.client_id else '-',
+                'state_label': label,
+                'state_color': color,
+                'tanggal_expired': (
+                    str(r.tanggal_expired)
+                    if r.tanggal_expired
+                    else '-'
+                ),
             })
 
         # ── TABLE BRAND ───────────────────────────────────────────────────
