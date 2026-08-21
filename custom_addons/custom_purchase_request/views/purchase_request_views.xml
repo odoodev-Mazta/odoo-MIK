@@ -32,7 +32,10 @@
                 <header>
                     <button name="action_submit" string="PR" type="object"
                             class="btn-primary" invisible="state != 'draft'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,pr"/>
+                    <button name="action_cancel" string="Cancel PR"
+                            type="object" class="btn-danger"
+                            invisible="state not in ('draft', 'pr')" confirm="Apakah Anda yakin ingin membatalkan Purchase Request ini?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,pr,cancelled"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon"

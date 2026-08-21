@@ -77,27 +77,43 @@ class PurchaseRequestTimeline(models.Model):
             progress = int(done_count / len(stages) * 100)
             completed = done_count == len(stages)
 
+            if pr.state == 'cancelled':
+                progress = 0
+                dashboard_status = 'Cancelled'
+            elif completed:
+                dashboard_status = 'Complete'
+            else:
+                dashboard_status = 'On Progress'
+
             result.append({
                 'id': pr.id,
                 'pr_no': pr.name,
+                'state': pr.state,  # TAMBAHKAN INI
+
                 'department': pr.department_id.name if pr.department_id else '-',
                 'department_id': pr.department_id.id if pr.department_id else False,
+
                 'vendor': ' / '.join(
                     filter(None, [
                         pr.recommended_vendor_1,
                         pr.recommended_vendor_2,
                     ])
                 ) or '-',
+
                 'product_summary': pr.product_summary or '-',
                 'total_qty': pr.total_qty,
                 'total_amount': pr.total_amount,
                 'currency_symbol': pr.currency_id.symbol if pr.currency_id else 'Rp',
-                'deadline': pr.estimated_date.strftime('%d-%m-%Y') if pr.estimated_date else '-',
+                'deadline': pr.estimated_date.strftime('%d-%m-%Y')
+                    if pr.estimated_date else '-',
                 'is_urgent': pr.is_urgent,
-                'status': 'Complete' if completed else 'On Progress',
+
+                'status': dashboard_status,
+
                 'progress': progress,
                 'stages': stages,
-                'pr_date': pr.create_date.strftime('%d-%m-%Y') if pr.create_date else '-',
+                'pr_date': pr.create_date.strftime('%d-%m-%Y')
+                    if pr.create_date else '-',
                 'po_name': po.name if po else '-',
                 'ud_name': ud.name if ud else '-',
                 'bd_name': bd.name if bd and bd.name else '-',

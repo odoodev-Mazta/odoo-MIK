@@ -61,9 +61,18 @@ export class PurchaseRequestTimelineDashboard extends Component {
         const total = all.length;
         const complete = all.filter(p => p.status === 'Complete').length;
         const onProgress = all.filter(p => p.status === 'On Progress').length;
+        const cancelled = all.filter(p => p.state === 'cancelled').length;
         const urgent = all.filter(p => p.is_urgent).length;
         const withPO = all.filter(p => p.po_name !== '-').length;
-        return { total, complete, onProgress, urgent, withPO };
+
+        return {
+            total,
+            complete,
+            onProgress,
+            cancelled,
+            urgent,
+            withPO,
+        };
     }
 }
 

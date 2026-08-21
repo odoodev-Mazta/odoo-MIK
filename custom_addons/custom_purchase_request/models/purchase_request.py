@@ -105,6 +105,7 @@ class PurchaseRequest(models.Model):
     state = fields.Selection([
         ('draft', 'Draft'),
         ('pr', 'Purchase Request'),
+        ('cancelled', 'Cancelled'),
     ], default='draft', tracking=True)
 
     is_urgent = fields.Boolean(
@@ -189,7 +190,7 @@ class PurchaseRequest(models.Model):
     )
 
     is_bulk_purchase = fields.Boolean(
-        string="Pembelian Gelondongan"
+        string="Pembelian Bulk"
     )
 
     bulk_line_ids = fields.One2many(
@@ -307,6 +308,10 @@ class PurchaseRequest(models.Model):
     def action_submit(self):
         for rec in self:
             rec.state = 'pr'
+
+    def action_cancel(self):
+        for rec in self:
+            rec.state = 'cancelled'
 
     @api.model_create_multi
     def create(self, vals_list):
