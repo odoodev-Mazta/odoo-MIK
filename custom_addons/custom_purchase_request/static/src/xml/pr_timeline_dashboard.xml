@@ -57,6 +57,26 @@
                 <div class="o_pr_chart_lbl"><t t-esc="pctP"/>%</div>
             </div>
             <div class="o_pr_chart_card">
+                <t t-set="pctCancelled"
+                   t-value="chartStats.total ? Math.round(chartStats.cancelled / chartStats.total * 100) : 0"/>
+
+                <div class="o_pr_donut"
+                     t-attf-style="--pct:{{ pctCancelled }}; --color:#E24B4A;">
+                    <div class="o_pr_donut_inner">
+                        <span class="o_pr_donut_num">
+                            <t t-esc="chartStats.cancelled"/>
+                        </span>
+                        <span class="o_pr_donut_lbl">
+                            Cancelled
+                        </span>
+                    </div>
+                </div>
+
+                <div class="o_pr_chart_lbl">
+                    <t t-esc="pctCancelled"/>%
+                </div>
+            </div>
+            <div class="o_pr_chart_card">
                 <t t-set="pctU" t-value="chartStats.total ? Math.round(chartStats.urgent / chartStats.total * 100) : 0"/>
                 <div class="o_pr_donut" t-attf-style="--pct:{{ pctU }}; --color:#E24B4A;">
                     <div class="o_pr_donut_inner">
