@@ -23,5 +23,15 @@
             <field name="company_id" eval="False"/>
         </record>
 
+        <!-- Sequence: halal.registrasi -->
+        <record id="seq_halal_registrasi" model="ir.sequence">
+            <field name="name">Halal Registration Sequence</field>
+            <field name="code">halal.registrasi</field>
+            <field name="prefix">REG/HALAL/%(range_year)s/</field>
+            <field name="padding">4</field>
+            <field name="use_date_range">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
     </data>
 </odoo>
