@@ -58,6 +58,9 @@
                             invisible="state != 'plan_payment' or plan_payment_id" class="btn-primary"/>
                     <button name="action_reject" string="Reject" type="object" class="btn-danger"
                             invisible="state not in ('waiting_head', 'waiting_coo', 'waiting_ceo', 'waiting_finance')"/>
+                    <button name="action_reject_tax" string="Reject Tax"
+                        type="object" class="btn-danger"
+                        invisible="state != 'check_tax'"/>
                     <button name="action_cancel" type="object" string="Cancel Usulan"
                             class="btn-danger"
                             invisible="state == 'cancel'"
@@ -91,6 +94,8 @@
 
                         <group string="Dokumen Pendukung">
                             <field name="attachment_ids" widget="many2many_binary" string="Lampiran"/>
+                            <field name="tax_reject_reason" invisible="state != 'check_tax'"
+                                placeholder="Masukkan alasan reject dari Tax..."/>
                         </group>
 
                         <group string="Mode Termin Pembayaran">
