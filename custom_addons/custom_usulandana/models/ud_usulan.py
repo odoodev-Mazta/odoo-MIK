@@ -144,6 +144,19 @@ class UsulanUsulanDana(models.Model):
         store=True
     )
 
+    tax_reject_reason = fields.Text(
+        string='Alasan Reject Tax',
+        readonly=False,
+        copy=False,
+        tracking=True
+    )
+
+    tax_reject = fields.Boolean(
+        string='Pernah direject Tax',
+        default=False,
+        copy=False
+    )
+
     active = fields.Boolean(default=True)
 
     @api.depends('header_schedule_ids', 'header_schedule_ids.date_payment')
@@ -585,6 +598,25 @@ class UsulanUsulanDana(models.Model):
     def action_reject(self):
         for record in self:
             record.state = 'reject'
+
+    def action_reject_tax(self):
+        for record in self:
+
+            if not record.tax_reject_reason:
+                raise exceptions.UserError(
+                    "Silakan isi Alasan Reject Tax terlebih dahulu."
+                )
+
+            tax_records = self.env['usulan.dana.tax'].search([
+                ('usulan_dana_id', '=', record.id)
+            ])
+
+            # Hapus data Check Tax
+            if tax_records:
+                tax_records.unlink()
+
+            # Kembalikan ke Head Dept
+            record.state = 'waiting_head'
 
     def action_rilis(self):
         for record in self:
