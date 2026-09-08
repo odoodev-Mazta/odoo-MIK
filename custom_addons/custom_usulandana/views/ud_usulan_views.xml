@@ -59,8 +59,8 @@
                     <button name="action_reject" string="Reject" type="object" class="btn-danger"
                             invisible="state not in ('waiting_head', 'waiting_coo', 'waiting_ceo', 'waiting_finance')"/>
                     <button name="action_reject_tax" string="Reject Tax"
-                        type="object" class="btn-danger"
-                        invisible="state != 'check_tax'"/>
+                            type="object" class="btn-danger"
+                            invisible="state != 'check_tax'" groups="custom_usulandana.group_finance"/>
                     <button name="action_cancel" type="object" string="Cancel Usulan"
                             class="btn-danger"
                             invisible="state == 'cancel'"
@@ -137,6 +137,7 @@
                                     <field name="product_id"/>
                                     <field name="setup_item_id"/>
                                     <field name="account_id" options="{'no_open': True}"/>
+                                    <field name="is_ppn_exempt"/>
                                     <field name="keterangan"/>
                                     <field name="mou_id"/>
                                     <field name="quantity"/>

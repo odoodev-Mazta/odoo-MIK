@@ -213,7 +213,10 @@ class UsulanUsulanDana(models.Model):
 
     @api.onchange('is_ppn')
     def _onchange_is_ppn(self):
-        """ Menyuntikkan atau mencabut PPN 11% di semua baris item saat toggle diklik """
+        """
+        Menambahkan atau menghapus PPN 11%
+        sesuai dengan status header dan line.
+        """
         tax_11 = self.env['account.tax'].search([
             ('type_tax_use', '=', 'purchase'),
             ('name', 'ilike', '11%'),
@@ -221,17 +224,23 @@ class UsulanUsulanDana(models.Model):
         ], limit=1)
 
         if self.is_ppn and not tax_11:
-            from odoo import exceptions
             raise exceptions.UserError(
                 "Pajak PPN 11% tidak ditemukan di sistem! "
-                "Pastikan di master data Accounting (Taxes) ada pajak Pembelian bernama '11%' untuk perusahaan ini."
+                "Pastikan pajak Pembelian 11% sudah tersedia."
             )
 
         for line in self.line_ids:
-            if self.is_ppn and tax_11:
-                line.tax_ids = tax_11
+            # Jika PPN aktif
+            # DAN item bukan pengecualian
+            if (
+                self.is_ppn
+                and tax_11
+                and not line.is_ppn_exempt
+            ):
+                line.tax_ids = [(6, 0, tax_11.ids)]
+
             else:
-                line.tax_ids = False
+                line.tax_ids = [(5, 0, 0)]
 
     def _compute_is_my_approval(self):
         for record in self:
@@ -600,22 +609,31 @@ class UsulanUsulanDana(models.Model):
             record.state = 'reject'
 
     def action_reject_tax(self):
+        if not self.env.user.has_group(
+            'custom_usulandana.group_finance'
+        ):
+            raise exceptions.AccessError(
+                "Hanya Finance yg bisa Reject Tax."
+            )
+
         for record in self:
+            if record.state != 'check_tax':
+                raise exceptions.UserError(
+                    "Usulan Dana ini tidak sedang dalam proses Check Tax."
+                )
 
             if not record.tax_reject_reason:
                 raise exceptions.UserError(
-                    "Silakan isi Alasan Reject Tax terlebih dahulu."
+                    "Silahkan isi Alasan Reject Tax terlebih dahulu."
                 )
 
             tax_records = self.env['usulan.dana.tax'].search([
                 ('usulan_dana_id', '=', record.id)
             ])
 
-            # Hapus data Check Tax
             if tax_records:
                 tax_records.unlink()
 
-            # Kembalikan ke Head Dept
             record.state = 'waiting_head'
 
     def action_rilis(self):
@@ -708,6 +726,12 @@ class UsulanUsulanDanaLine(models.Model):
         store=True,
         readonly=True
     )
+    is_ppn_exempt = fields.Boolean(
+        string='Tidak Kena PPN',
+        default=False,
+        help='Item ini tidak dikenakan PPN meskipun PPN 11% pada Usulan Dana aktif.'
+    )
+    
     quantity = fields.Float(string='Qty', default=1.0)
 
     # Currency per Line
@@ -790,7 +814,7 @@ class UsulanUsulanDanaLine(models.Model):
             else:
                 line.payment_summary = f"{count}x Termin"
 
-    @api.depends('usulan_id.is_ppn')
+    @api.depends('usulan_id.is_ppn', 'is_ppn_exempt')
     def _compute_tax_ids(self):
         tax_11 = self.env['account.tax'].search([
             ('type_tax_use', '=', 'purchase'),
@@ -799,13 +823,16 @@ class UsulanUsulanDanaLine(models.Model):
         ], limit=1)
 
         for line in self:
-            if line.usulan_id.is_ppn:
+            if(
+                line.usulan_id.is_ppn
+                and not line.is_ppn_exempt
+            ):
                 if tax_11:
                     line.tax_ids = [(6, 0, tax_11.ids)]
                 else:
-                    from odoo import exceptions
                     raise exceptions.UserError(
-                        "Pajak dengan nama mengandung '11%' untuk Pembelian tidak ditemukan di master data Accounting!")
+                        "Pajak PPN 11% untuk Pembelian tidak ditemukan!"
+                    )
             else:
                 line.tax_ids = [(5, 0, 0)]
 
@@ -833,35 +860,51 @@ class UsulanUsulanDanaLine(models.Model):
                 line.today_rate = float_round(1.0 / rate, precision_digits=4) if rate else 1.0
 
     @api.depends('quantity', 'price_unit', 'discount', 'today_rate',
-                 'usulan_id.is_ppn', 'currency_id')
+                 'usulan_id.is_ppn', 'is_ppn_exempt', 'currency_id')
     def _compute_subtotal(self):
         idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
 
         for line in self:
-            # 1. Harga kotor & diskon (dalam currency line)
+            # 1. Nilai Kotor
             total_awal = line.quantity * line.price_unit
-            diskon_nominal = total_awal * (line.discount / 100.0)
+            diskon_nominal = total_awal * (
+                line.discount / 100.0
+            )
 
             line.price_raw = total_awal
             line.discount_amount = diskon_nominal
 
-            # 2. DPP (dalam currency line)
+            #  2. DPP
             dpp = total_awal - diskon_nominal
+
             line.price_subtotal = dpp
 
-            # 3. PPN (dalam currency line)
-            ppn = dpp * 0.11 if line.usulan_id.is_ppn else 0.0
+            # 3. PPN
+            if(
+                line.usulan_id.is_ppn
+                and not line.is_ppn_exempt
+            ):
+                ppn = dpp * 0.11
+            else:
+                ppn = 0.0
+
             line.ppn_amount = ppn
 
-            # 4. Subtotal dalam currency line (sebelum konversi)
+            # 4. Grand Total
             gt_raw = dpp + ppn
 
             # 5. Konversi ke IDR
-            if line.currency_id and line.currency_id != idr:
-                rate = line.today_rate if line.today_rate else 1.0
+            if (
+                line.currency_id
+                and line.currency_id != idr
+            ):
+                rate = line.today_rate or 1.0
                 gt_idr = gt_raw * rate
+
             else:
                 gt_idr = gt_raw
+
+
             line.grand_total = gt_idr
             line.grand_total_currency = gt_idr
 
