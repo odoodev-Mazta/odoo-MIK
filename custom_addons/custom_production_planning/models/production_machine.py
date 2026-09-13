@@ -117,35 +117,17 @@ class ProductionMachine(models.Model):
         for machine in self:
 
             schedules = Schedule.search([
-                (
-                    "machine_id",
-                    "=",
-                    machine.id
-                ),
-                (
-                    "planned_start",
-                    "<=",
-                    today
-                ),
-                (
-                    "planned_end",
-                    ">=",
-                    today
-                ),
-                (
-                    "state",
-                    "!=",
-                    "done"
-                ),
+                ("machine_id", "=", machine.id),
+                ("planned_start", "<=", today),
+                ("planned_end", ">=", today),
+                ("state", "!=", "done"),
             ])
 
             planned_qty = sum(
-                schedules.mapped(
-                    "planned_qty"
-                )
+                schedules.mapped("planned_qty")
             )
 
-            # cari kapasitas aktif
+            # Cari kapasitas aktif
             capacity = 0
 
             if machine.capacity_ids:
@@ -159,12 +141,20 @@ class ProductionMachine(models.Model):
 
             if capacity:
                 utilization = (
-                              planned_qty /
-                              capacity
+                                planned_qty / capacity
                               ) * 100
+
+            # Hitung sisa kapasitas
+            remaining_capacity = max(
+                capacity - planned_qty,
+                0
+            )
+
             machine.planned_qty = planned_qty
             machine.capacity_today = capacity
+            machine.remaining_capacity = remaining_capacity
             machine.utilization = utilization
+
             if utilization > 100:
                 machine.utilization_state = "over"
             elif utilization >= 90:
