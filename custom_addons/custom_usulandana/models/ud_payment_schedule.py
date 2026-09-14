@@ -40,6 +40,13 @@ class UsulanPaymentSchedule(models.Model):
     actual_payment_date = fields.Date(string='Realisasi Bayar')
     vendor_bill_id = fields.Many2one('account.move', string='Vendor Bill Terkait', readonly=True)
 
+    payment_id = fields.Many2one(
+        'account.payment',
+        string='Pembayaran Bank',
+        readonly=True,
+        copy=False
+    )
+
     @api.depends('line_id', 'plan_payment_id')
     def _compute_currency_id(self):
         idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
