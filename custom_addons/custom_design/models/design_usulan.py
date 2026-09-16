@@ -153,11 +153,31 @@ class DesignUsulan(models.Model):
             rec.state = 'progress'
             rec.message_post(body=_('Form design disubmit. Status: On Progress.'))
 
+    def action_reset_to_draft(self):
+        for rec in self:
+            approvals = self.env['design.approval'].sudo().search([
+                ('usulan_id', '=', rec.id),
+            ])
+
+            if approvals:
+                approvals.unlink()
+
+            rec.write({
+                'state': 'draft',
+                'approval_id': False,
+            })
+
+            rec.message_post(body=_(
+                'Design di-reset ke Draft. '
+                'Record approval sebelumnya telah dihapus.'
+            ))
+
     def action_submit_to_approval(self):
-        """On Progress → buat design.approval → state approval_marketing"""
         for rec in self:
             if not rec.product_line_ids:
-                raise UserError(_('Harap isi minimal satu produk sebelum mengajukan approval.'))
+                raise UserError(_(
+                    'Harap isi minimal satu produk sebelum mengajukan approval.'
+                ))
 
             # Cek apakah sudah ada approval aktif
             existing = self.env['design.approval'].search([
@@ -165,7 +185,9 @@ class DesignUsulan(models.Model):
                 ('state', 'not in', ['done', 'reject']),
             ], limit=1)
 
-            if not existing:
+            if existing:
+                rec.approval_id = existing.id
+            else:
                 approval = self.env['design.approval'].create({
                     'usulan_id': rec.id,
                     'date': fields.Date.context_today(rec),
@@ -174,7 +196,9 @@ class DesignUsulan(models.Model):
                 rec.approval_id = approval.id
 
             rec.state = 'approval_marketing'
-            rec.message_post(body=_('Diajukan ke Approval Manager Marketing.'))
+            rec.message_post(body=_(
+                'Diajukan ke Approval Manager Marketing.'
+            ))
 
     def action_revisi_design(self):
         """Revisi — catat riwayat, reset state ke On Progress."""
@@ -205,7 +229,7 @@ class DesignUsulan(models.Model):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Approval Design',
-            'res_model': 'design.approval', 
+            'res_model': 'design.approval',
             'view_mode': 'form',
             'res_id': self.approval_id.id,
             'target': 'current',

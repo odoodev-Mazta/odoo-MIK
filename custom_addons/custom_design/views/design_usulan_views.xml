@@ -20,6 +20,12 @@
                             class="btn-primary"
                             invisible="state != 'draft'"/>
 
+                    <button name="action_reset_to_draft"
+                            string="Set to Draft"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state not in ('progress', 'approval_marketing', 'approval_client', 'approval_ro', 'upload_form', 'reject')"/>
+
                     <!-- On Progress → Ajukan ke Approval -->
                     <button name="action_submit_to_approval"
                             string="Ajukan ke Approval"
