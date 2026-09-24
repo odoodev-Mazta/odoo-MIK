@@ -157,7 +157,18 @@ class UsulanUsulanDana(models.Model):
         copy=False
     )
 
+    can_edit_lines = fields.Boolean(
+        string='Can Edit Lines',
+        compute='_compute_can_edit_lines',
+    )
+
     active = fields.Boolean(default=True)
+
+    @api.depends_context('uid')
+    def _compute_can_edit_lines(self):
+        can_edit = self.env.user.has_group('custom_usulandana.group_finance')
+        for record in self:
+            record.can_edit_lines = can_edit
 
     @api.depends('header_schedule_ids', 'header_schedule_ids.date_payment')
     def _compute_header_payment_summary(self):

@@ -131,9 +131,12 @@
                         </page>
 
                         <page string="Item Details" name="item_details">
-                            <field name="line_ids" readonly="state != 'draft'">
+                            <field name="can_edit_lines" invisible="1"/>
+
+                            <field name="line_ids"
+                                   readonly="state != 'draft' and not can_edit_lines">
                                 <list editable="bottom">
-<!--                                    <field name="item_name"/>-->
+                                    <!--                                    <field name="item_name"/>-->
                                     <field name="product_id"/>
                                     <field name="setup_item_id"/>
                                     <field name="account_id" options="{'no_open': True}"/>
@@ -154,21 +157,41 @@
                                     <field name="grand_total" readonly="1" force_save="1"/>
                                     <field name="grand_total_currency" readonly="1" force_save="1"/>
                                     <field name="payment_summary" readonly="1" force_save="1"/>
-                                    <button name="action_open_payment_wizard" type="object" string="Set Termin" icon="fa-calendar" class="btn-secondary"/>
+                                    <button name="action_open_payment_wizard"
+                                            type="object"
+                                            string="Set Termin"
+                                            icon="fa-calendar"
+                                            class="btn-secondary"/>
                                     <field name="ppn_amount" column_invisible="1"/>
                                 </list>
                             </field>
 
-                            <group class="oe_subtotal_footer oe_right" colspan="2" name="usulan_total">
-                                <field name="is_ppn" widget="boolean_toggle" string="PPN"/>
-                                <field name="amount_invoice_raw" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                <field name="amount_discount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                <field name="amount_dpp" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                <field name="amount_ppn" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <group class="oe_subtotal_footer oe_right"
+                                   colspan="2"
+                                   name="usulan_total">
+                                <field name="is_ppn"
+                                       widget="boolean_toggle"
+                                       string="PPN"/>
+                                <field name="amount_invoice_raw"
+                                       widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"/>
+                                <field name="amount_discount"
+                                       widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"/>
+                                <field name="amount_dpp"
+                                       widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"/>
+                                <field name="amount_ppn"
+                                       widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"/>
                                 <div class="oe_subtotal_footer_separator oe_inline">
                                     <label for="amount_total"/>
                                 </div>
-                                <field name="amount_total" nolabel="1" class="oe_subtotal_footer_separator" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                <field name="amount_total"
+                                       nolabel="1"
+                                       class="oe_subtotal_footer_separator"
+                                       widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"/>
                             </group>
 
                             <div class="clearfix"/>
