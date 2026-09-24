@@ -14,6 +14,12 @@ class MrpProduction(models.Model):
         string="Production Plan Line",
     )
 
+    production_plan_product_line_id = fields.Many2one(
+        "mrp.production.plan.product.line",
+        string="Production Plan Product",
+        ondelete="set null",
+    )
+
     def action_open_production_plan(self):
         self.ensure_one()
 
