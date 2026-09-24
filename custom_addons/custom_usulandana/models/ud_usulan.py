@@ -211,36 +211,40 @@ class UsulanUsulanDana(models.Model):
 
         self.line_ids = [(5, 0, 0)] + new_lines
 
+    def _apply_ppn_to_lines(self):
+        for record in self:
+            tax_11 = self.env['account.tax'].search([
+                ('type_tax_use', '=', 'purchase'),
+                ('name', 'ilike', '11%'),
+                ('company_id', '=', record.company_id.id or self.env.company.id),
+            ], limit=1)
+
+            if record.is_ppn and not tax_11:
+                raise exceptions.UserError(
+                    "Pajak PPN 11% tidak ditemukan di sistem!\n"
+                    "Pastikan pajak Pembelian 11% sudah tersedia."
+                )
+
+            for line in record.line_ids:
+                if record.is_ppn:
+                    if line.is_ppn_exempt:
+                        line.tax_ids = [(5, 0, 0)]
+                    else:
+                        line.tax_ids = [(6, 0, tax_11.ids)]
+                else:
+                    line.tax_ids = [(5, 0, 0)]
+
     @api.onchange('is_ppn')
     def _onchange_is_ppn(self):
-        """
-        Menambahkan atau menghapus PPN 11%
-        sesuai dengan status header dan line.
-        """
-        tax_11 = self.env['account.tax'].search([
-            ('type_tax_use', '=', 'purchase'),
-            ('name', 'ilike', '11%'),
-            ('company_id', '=', self.env.company.id)
-        ], limit=1)
+        self._apply_ppn_to_lines()
 
-        if self.is_ppn and not tax_11:
-            raise exceptions.UserError(
-                "Pajak PPN 11% tidak ditemukan di sistem! "
-                "Pastikan pajak Pembelian 11% sudah tersedia."
-            )
+    def write(self, vals):
+        res = super().write(vals)
 
-        for line in self.line_ids:
-            # Jika PPN aktif
-            # DAN item bukan pengecualian
-            if (
-                self.is_ppn
-                and tax_11
-                and not line.is_ppn_exempt
-            ):
-                line.tax_ids = [(6, 0, tax_11.ids)]
+        if 'is_ppn' in vals:
+            self._apply_ppn_to_lines()
 
-            else:
-                line.tax_ids = [(5, 0, 0)]
+        return res
 
     def _compute_is_my_approval(self):
         for record in self:
@@ -778,9 +782,9 @@ class UsulanUsulanDanaLine(models.Model):
         'account.tax',
         string='Pajak',
         domain="[('type_tax_use', '=', 'purchase')]",
-        compute='_compute_tax_ids',
-        store=True,
-        readonly=False
+        # compute='_compute_tax_ids',
+        # store=True,
+        # readonly=False
     )
     price_raw = fields.Monetary(string='Nilai Kotor', compute='_compute_subtotal', store=True,
                                 currency_field='currency_id')
@@ -814,27 +818,27 @@ class UsulanUsulanDanaLine(models.Model):
             else:
                 line.payment_summary = f"{count}x Termin"
 
-    @api.depends('usulan_id.is_ppn', 'is_ppn_exempt')
-    def _compute_tax_ids(self):
-        tax_11 = self.env['account.tax'].search([
-            ('type_tax_use', '=', 'purchase'),
-            ('name', 'ilike', '11%'),
-            ('company_id', '=', self.env.company.id)
-        ], limit=1)
-
-        for line in self:
-            if(
-                line.usulan_id.is_ppn
-                and not line.is_ppn_exempt
-            ):
-                if tax_11:
-                    line.tax_ids = [(6, 0, tax_11.ids)]
-                else:
-                    raise exceptions.UserError(
-                        "Pajak PPN 11% untuk Pembelian tidak ditemukan!"
-                    )
-            else:
-                line.tax_ids = [(5, 0, 0)]
+    # @api.depends('usulan_id.is_ppn', 'is_ppn_exempt')
+    # def _compute_tax_ids(self):
+    #     tax_11 = self.env['account.tax'].search([
+    #         ('type_tax_use', '=', 'purchase'),
+    #         ('name', 'ilike', '11%'),
+    #         ('company_id', '=', self.env.company.id)
+    #     ], limit=1)
+    #
+    #     for line in self:
+    #         if(
+    #             line.usulan_id.is_ppn
+    #             and not line.is_ppn_exempt
+    #         ):
+    #             if tax_11:
+    #                 line.tax_ids = [(6, 0, tax_11.ids)]
+    #             else:
+    #                 raise exceptions.UserError(
+    #                     "Pajak PPN 11% untuk Pembelian tidak ditemukan!"
+    #                 )
+    #         else:
+    #             line.tax_ids = [(5, 0, 0)]
 
     @api.depends()
     def _compute_idr_currency_id(self):
@@ -859,54 +863,151 @@ class UsulanUsulanDanaLine(models.Model):
                 rate = line.currency_id.rate
                 line.today_rate = float_round(1.0 / rate, precision_digits=4) if rate else 1.0
 
-    @api.depends('quantity', 'price_unit', 'discount', 'today_rate',
-                 'usulan_id.is_ppn', 'is_ppn_exempt', 'currency_id')
+    @api.onchange('is_ppn_exempt')
+    def _onchange_is_ppn_exempt(self):
+        for line in self:
+
+            if line.is_ppn_exempt:
+                line.tax_ids = [(5, 0, 0)]
+
+            elif line.usulan_id and line.usulan_id.is_ppn:
+                tax_11 = self.env['account.tax'].search([
+                    ('type_tax_use', '=', 'purchase'),
+                    ('name', 'ilike', '11%'),
+                    ('company_id', '=', line.usulan_id.company_id.id or self.env.company.id),
+                ], limit=1)
+
+                if not tax_11:
+                    raise exceptions.UserError(
+                        "Pajak PPN 11% tidak ditemukan di sistem!"
+                    )
+
+                line.tax_ids = [(6, 0, tax_11.ids)]
+
+    @api.depends(
+        'quantity',
+        'price_unit',
+        'discount',
+        'today_rate',
+        'currency_id',
+        'tax_ids',
+        'tax_ids.amount',
+        'tax_ids.amount_type',
+        'tax_ids.price_include',
+        'is_ppn_exempt',
+        'product_id',
+        'usulan_id.vendor_id',
+    )
     def _compute_subtotal(self):
-        idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
+        idr = self.env['res.currency'].search([
+            ('name', '=', 'IDR')
+        ], limit=1)
 
         for line in self:
-            # 1. Nilai Kotor
+            # 1. NILAI KOTOR
             total_awal = line.quantity * line.price_unit
+
             diskon_nominal = total_awal * (
-                line.discount / 100.0
+                    line.discount / 100.0
             )
 
             line.price_raw = total_awal
             line.discount_amount = diskon_nominal
 
-            #  2. DPP
+            # 2. DPP / SUBTOTAL
             dpp = total_awal - diskon_nominal
-
             line.price_subtotal = dpp
 
-            # 3. PPN
-            if(
-                line.usulan_id.is_ppn
-                and not line.is_ppn_exempt
-            ):
-                ppn = dpp * 0.11
-            else:
-                ppn = 0.0
+            # 3. HITUNG PAJAK BERDASARKAN tax_ids
+            ppn = 0.0
+
+            if not line.is_ppn_exempt and line.tax_ids:
+                taxes = line.tax_ids.filtered(
+                    lambda tax: tax.type_tax_use == 'purchase'
+                )
+
+                if taxes:
+                    tax_result = taxes.compute_all(
+                        dpp,
+                        currency=line.currency_id,
+                        quantity=1.0,
+                        product=line.product_id,
+                        partner=line.usulan_id.vendor_id,
+                    )
+
+                    ppn = sum(
+                        tax_line['amount']
+                        for tax_line in tax_result['taxes']
+                    )
 
             line.ppn_amount = ppn
 
-            # 4. Grand Total
+            # 4. GRAND TOTAL
             gt_raw = dpp + ppn
 
-            # 5. Konversi ke IDR
+            # 5. KONVERSI KE IDR
             if (
-                line.currency_id
-                and line.currency_id != idr
+                    line.currency_id
+                    and line.currency_id != idr
             ):
                 rate = line.today_rate or 1.0
                 gt_idr = gt_raw * rate
-
             else:
                 gt_idr = gt_raw
 
-
             line.grand_total = gt_idr
-            line.grand_total_currency = gt_idr
+
+            # Nilai Grand Total dalam currency line
+            line.grand_total_currency = gt_raw
+
+    # @api.depends('quantity', 'price_unit', 'discount', 'today_rate',
+    #              'usulan_id.is_ppn', 'is_ppn_exempt', 'currency_id')
+    # def _compute_subtotal(self):
+    #     idr = self.env['res.currency'].search([('name', '=', 'IDR')], limit=1)
+    #
+    #     for line in self:
+    #         # 1. Nilai Kotor
+    #         total_awal = line.quantity * line.price_unit
+    #         diskon_nominal = total_awal * (
+    #             line.discount / 100.0
+    #         )
+    #
+    #         line.price_raw = total_awal
+    #         line.discount_amount = diskon_nominal
+    #
+    #         #  2. DPP
+    #         dpp = total_awal - diskon_nominal
+    #
+    #         line.price_subtotal = dpp
+    #
+    #         # 3. PPN
+    #         if(
+    #             line.usulan_id.is_ppn
+    #             and not line.is_ppn_exempt
+    #         ):
+    #             ppn = dpp * 0.11
+    #         else:
+    #             ppn = 0.0
+    #
+    #         line.ppn_amount = ppn
+    #
+    #         # 4. Grand Total
+    #         gt_raw = dpp + ppn
+    #
+    #         # 5. Konversi ke IDR
+    #         if (
+    #             line.currency_id
+    #             and line.currency_id != idr
+    #         ):
+    #             rate = line.today_rate or 1.0
+    #             gt_idr = gt_raw * rate
+    #
+    #         else:
+    #             gt_idr = gt_raw
+    #
+    #
+    #         line.grand_total = gt_idr
+    #         line.grand_total_currency = gt_idr
 
     def action_open_payment_wizard(self):
         self.ensure_one()

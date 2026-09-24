@@ -160,7 +160,7 @@
                             </field>
 
                             <group class="oe_subtotal_footer oe_right" colspan="2" name="usulan_total">
-                                <field name="is_ppn" widget="boolean_toggle" string="PPN(11%)"/>
+                                <field name="is_ppn" widget="boolean_toggle" string="PPN"/>
                                 <field name="amount_invoice_raw" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="amount_discount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 <field name="amount_dpp" widget="monetary" options="{'currency_field': 'currency_id'}"/>
