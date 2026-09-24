@@ -5,6 +5,7 @@
     'summary': 'Custom Marketing Sequence on Sales Order',
     'depends': [
         'sale_management',
+        'custom_production_planning',
     ],
     'data': [
         'views/sale_order_views.xml',
