@@ -20,7 +20,9 @@
         "views/production_machine_schedule_views.xml",
         "views/mrp_production_views.xml",
         "views/production_dashboard_views.xml",
+        "views/production_plan_product_line_views.xml",
         "views/production_plan_menus.xml",
+        "wizard/production_plan_split_wizard_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

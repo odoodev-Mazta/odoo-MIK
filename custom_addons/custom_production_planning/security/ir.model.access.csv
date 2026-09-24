@@ -6,3 +6,5 @@ access_production_machine_schedule,production.machine.schedule,model_mrp_product
 access_production_machine_capacity,production.machine.capacity,model_mrp_production_machine_capacity,,1,1,1,1
 access_production_material_shortage,mrp.production.material.shortage,model_mrp_production_material_shortage,,1,1,1,1
 access_production_dashboard,mrp.production.dashboard,model_mrp_production_dashboard,,1,0,0,0
+access_production_product_plan_line,mrp.production.plan.product.line,model_mrp_production_plan_product_line,,1,1,1,1
+access_production_plan_split_wizard,mrp.production.plan.split.wizard,model_mrp_production_plan_split_wizard,,1,1,1,1

@@ -7,6 +7,7 @@
             <list>
                 <field name="name"/>
                 <field name="sale_order_id"/>
+                <field name="production_po_number"/>
                 <field name="customer_id"/>
                 <field name="planned_start"/>
                 <field name="planned_end"/>
@@ -26,7 +27,7 @@
                         type="object"
                         string="Check Capacity"
                         class="btn-primary"
-                        invisible="state != 'draft'"
+                        invisible="state in ('done', 'cancel')"
                     />
 
                     <button
@@ -41,63 +42,120 @@
                         name="action_create_mo"
                         type="object"
                         string="Create MO"
-                        class="btn-success"
-                        invisible="state != 'approved'"
+                        class="btn-primary"
+                        invisible="state not in ('approved', 'running') or not has_pending_mo"
                     />
 
-                    <button name="action_load_operations" type="object"
-                        string="Load Operations" class="btn-secondary"
+                    <button
+                        name="action_load_operations"
+                        type="object"
+                        string="Load Operations"
+                        class="btn-secondary"
                         invisible="state != 'draft'"
                     />
 
-                    <button name="action_reschedule" type="object"
-                        string="Reschedule" class="btn-secondary"
+                    <button
+                        name="action_reschedule"
+                        type="object"
+                        string="Reschedule"
+                        class="btn-secondary"
+                        invisible="state not in ('planned','approved','running')"
+                    />
+
+                    <button
+                        name="action_check_machine_availability"
+                        type="object"
+                        string="Check Machine Availability"
+                        class="btn-info"
+                        invisible="state != 'draft'"
+                    />
+
+                    <button
+                        name="action_reset_planning"
+                        type="object"
+                        string="Reset Planning"
                         invisible="state not in ('planned','approved')"
                     />
 
-                    <button name="action_check_machine_availability" type="object"
-                        string="Check Machine Availability" class="btn-info"
-                        invisible="state != 'draft'"
-                    />
-
-                    <button name="action_reset_planning" type="object"
-                        string="Reset Planning" invisible="state not in ('planned','approved')"
-                    />
-
-                    <button name="action_validate_planning" type="object"
-                        string="Validate Planning" class="btn-info"
+                    <button
+                        name="action_validate_planning"
+                        type="object"
+                        string="Validate Planning"
+                        class="btn-info"
                         invisible="state != 'planned'"
                     />
 
-                    <button name="action_check_material" type="object"
-                            string="Check Material Availability" class="btn-info"
-                        />
+                    <button
+                        name="action_check_material"
+                        type="object"
+                        string="Check Material Availability"
+                        class="btn-info"
+                    />
 
-                    <field name="state" widget="statusbar"
-                           statusbar_visible="draft,planned,approved,running,done"
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,planned,approved,running,done"
                     />
                 </header>
 
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+
+                    </div>
+
                     <group>
                         <group>
                             <field name="name"/>
                             <field name="sale_order_id"/>
+                            <field name="production_po_number"/>
+                            <field
+                                name="production_type"
+                                widget="badge"
+                            />
+                            <field
+                                name="has_pending_mo"
+                                string="Pending MO?"
+                            />
                             <field name="customer_id"/>
+                            <field
+                                name="is_child_plan"
+                                invisible="1"
+                            />
+
+                            <field
+                                name="has_child_production"
+                                invisible="1"
+                            />
+
+                            <div
+                                class="alert alert-info"
+                                role="alert"
+                                invisible="not is_child_plan"
+                            >
+                                <strong>Partial Production</strong>
+                            </div>
+
+                            <div
+                                class="alert alert-warning"
+                                role="alert"
+                                invisible="not has_child_production"
+                            >
+                                <strong>Production sudah di-split</strong>
+                            </div>
                         </group>
 
-                        <group>
-                            <field name="product_id"/>
-                            <field name="product_qty"/>
-                            <field name="product_uom_id"/>
-                        </group>
+<!--                        <group>-->
+<!--                            <field name="product_id"/>-->
+<!--                            <field name="product_qty"/>-->
+<!--                            <field name="product_uom_id"/>-->
+<!--                        </group>-->
+                    </group>
 
-                        <group>
-                            <field name="planned_start"/>
-                            <field name="planned_end"/>
-                            <field name="progress"
-                                   widget="progressbar"/>
-                        </group>
+                    <group string="Planning Period">
+                        <field name="planned_start" string="Planning Start"/>
+                        <field name="planned_end" string="Planning End"/>
+                        <field name="progress" widget="progressbar"/>
                     </group>
 
                     <group>
@@ -105,46 +163,118 @@
                     </group>
 
                     <notebook>
+                        <page string="Products">
+                            <field name="product_line_ids">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="product_qty" string="Total Qty"/>
+                                    <field name="production_qty" string="Production Qty" readonly="1"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="production_start"/>
+                                    <field name="production_end"/>
+                                    <field name="child_allocated_qty"/>
+                                    <field name="remaining_qty"/>
+                                    <field name="production_type"/>
+
+                                    <!-- MO -->
+                                    <field name="create_mo" string="Create MO"/>
+                                    <field
+                                        name="has_mo"
+                                        string="MO Created"
+                                        readonly="1"
+                                    />
+
+                                    <field
+                                        name="progress"
+                                        widget="progressbar"
+                                    />
+
+                                    <!-- Buka daftar Partial Production -->
+                                    <button
+                                        name="action_view_child_productions"
+                                        type="object"
+                                        string="Partial Productions"
+                                        icon="fa-code-fork"
+                                        invisible="not child_product_line_ids"
+                                    />
+
+                                    <!-- Split Production -->
+                                    <button
+                                        name="action_open_split_wizard"
+                                        type="object"
+                                        string="Split"
+                                        icon="fa-scissors"
+                                        invisible="parent_product_line_id or remaining_qty &lt;= 0"
+                                    />
+                                </list>
+                            </field>
+                        </page>
+
                         <page string="Operations">
                             <field name="line_ids">
                                 <list editable="bottom">
-                                    <field name="sequence"/>
-                                    <field name="operation_id" readonly="1"/>
-                                    <field name="workcenter_id" readonly="1"/>
+                                    <field
+                                        name="product_id"
+                                        readonly="1"
+                                    />
+
+                                    <field
+                                        name="operation_id"
+                                        readonly="1"
+                                    />
+
+                                    <field
+                                        name="workcenter_id"
+                                        readonly="1"
+                                    />
+
                                     <field name="machine_id"/>
                                     <field name="capacity_id"/>
-                                    <field name="capacity_warning"
-                                           decoration-danger="capacity_warning"/>
+                                    <field
+                                        name="capacity_warning"
+                                        decoration-danger="capacity_warning"
+                                    />
                                     <field name="workorder_id"/>
                                     <field name="state"/>
                                 </list>
                             </field>
                         </page>
+
                         <page string="Material Availability">
                             <field name="material_shortage_ids" readonly="1">
                                 <list>
-                                    <field name="product_id"/>
+                                    <field
+                                        name="product_line_id"
+                                        string="Production Product"
+                                    />
+                                    <field
+                                        name="product_id"
+                                        string="Material"
+                                    />
                                     <field name="required_qty"/>
                                     <field name="available_qty"/>
                                     <field name="shortage_qty"/>
                                 </list>
                             </field>
                         </page>
+
                         <page string="Machine Schedule">
-                            <field name="machine_schedule_ids" readonly="1">
+                            <field
+                                name="machine_schedule_ids"
+                                readonly="1"
+                            >
                                 <list>
+                                    <field name="product_id" string="Product"/>
                                     <field name="operation_id"/>
                                     <field name="machine_id"/>
                                     <field name="workorder_id"/>
-                                    <field name="product_id"/>
                                     <field name="capacity_id"/>
                                     <field name="planned_qty"/>
-                                    <field name="planned_start"/>
-                                    <field name="planned_end"/>
                                     <field name="state"/>
                                 </list>
                             </field>
                         </page>
+
                         <page string="Manufacturing Orders">
                             <field name="manufacturing_order_ids">
                                 <list>
@@ -155,8 +285,27 @@
                                 </list>
                             </field>
                         </page>
+
+
+<!--                        <page-->
+<!--                            string="Partial Production"-->
+<!--                            invisible="parent_plan_id"-->
+<!--                        >-->
+<!--                            <field name="child_plan_ids">-->
+<!--                                <list>-->
+<!--                                    <field name="production_number"/>-->
+<!--                                    <field name="production_po_number"/>-->
+<!--                                    <field name="product_id"/>-->
+<!--                                    <field name="product_qty"/>-->
+<!--                                    <field name="planned_start"/>-->
+<!--                                    <field name="planned_end"/>-->
+<!--                                    <field name="state"/>-->
+<!--                                </list>-->
+<!--                            </field>-->
+<!--                        </page>-->
                     </notebook>
                 </sheet>
+
                 <chatter/>
             </form>
         </field>
