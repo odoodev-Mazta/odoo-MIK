@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_production_plan_product_line_form" model="ir.ui.view">
+        <field name="name">mrp.production.plan.product.line.form</field>
+        <field name="model">mrp.production.plan.product.line</field>
+        <field name="arch" type="xml">
+            <form string="Production Product">
+                <header>
+                    <button
+                        name="action_open_split_wizard"
+                        type="object"
+                        string="Partial Production"
+                        class="btn-secondary"
+                        invisible="
+                            parent_product_line_id
+                            or remaining_qty &lt;= 0
+                        "
+                    />
+                </header>
+
+                <sheet>
+                    <group>
+                        <group string="Production">
+                            <field name="plan_id"/>
+                            <field name="production_number"/>
+                            <field name="product_id"/>
+                            <field name="product_qty"/>
+                            <field name="production_qty" readonly="1"/>
+                            <field name="product_uom_id"/>
+                            <field name="production_start"/>
+                            <field name="production_end"/>
+                        </group>
+
+                        <group string="Status">
+                            <field name="production_type"/>
+                            <field name="parent_product_line_id"/>
+                            <field name="child_allocated_qty"/>
+                            <field name="remaining_qty"/>
+                            <field name="progress" widget="progressbar"/>
+                        </group>
+                    </group>
+
+                    <separator string="Operations"/>
+                    <field name="operation_line_ids">
+                        <list editable="bottom">
+                            <field name="sequence"/>
+                            <field name="operation_id"/>
+                            <field name="workcenter_id"/>
+                            <field name="machine_id"/>
+                            <field name="capacity_id"/>
+                            <field name="capacity_per_day"/>
+                            <field name="planned_start" readonly="1"/>
+                            <field name="planned_end" readonly="1"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+
+                    <separator
+                        string="Partial Productions"
+                        invisible="not child_product_line_ids"
+                    />
+
+                    <field name="child_product_line_ids"
+                        invisible="not child_product_line_ids">
+                        <list>
+                            <field name="production_number"/>
+                            <field name="product_id"/>
+                            <field name="product_qty" string="Total Qty"/>
+                            <field name="production_qty" string="Production Qty"/>
+                            <field name="production_start"/>
+                            <field name="production_end"/>
+                            <field name="production_type"/>
+                            <field name="progress"/>
+                        </list>
+                    </field>
+
+                    <separator string="Manufacturing Orders"/>
+                    <field name="manufacturing_order_ids">
+                        <list>
+                            <field name="name"/>
+                            <field name="product_id"/>
+                            <field name="product_qty"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_production_plan_product_line_list" model="ir.ui.view">
+        <field name="name">mrp.production.plan.product.line.list</field>
+        <field name="model">mrp.production.plan.product.line</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="production_number"/>
+                <field name="product_id"/>
+                <field name="product_qty"/>
+                <field name="product_uom_id"/>
+                <field name="production_start"/>
+                <field name="production_end"/>
+                <field name="child_allocated_qty"/>
+                <field name="remaining_qty"/>
+                <field name="production_type"/>
+                <field name="progress" widget="progressbar"/>
+
+                <button
+                    name="action_open_split_wizard"
+                    type="object"
+                    string="Partial Production"
+                    icon="fa-code-fork"
+                    invisible="parent_product_line_id or remaining_qty &lt;= 0"/>
+            </list>
+        </field>
+    </record>
+
+</odoo>

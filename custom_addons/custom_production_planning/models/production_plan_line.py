@@ -10,10 +10,26 @@ class ProductionPlanLine(models.Model):
         default=10,
     )
 
-    plan_id = fields.Many2one(
-        "mrp.production.plan",
+    product_id = fields.Many2one(
+        "product.product",
+        related="product_line_id.product_id",
+        store=True,
+        readonly=True,
+        string="Product",
+    )
+
+    product_line_id = fields.Many2one(
+        "mrp.production.plan.product.line",
+        string="Product Line",
         required=True,
         ondelete="cascade",
+    )
+
+    plan_id = fields.Many2one(
+        "mrp.production.plan",
+        related="product_line_id.plan_id",
+        store=True,
+        readonly=True,
     )
 
     # Diambil dari BOM Operation
@@ -54,11 +70,15 @@ class ProductionPlanLine(models.Model):
     )
 
     planned_start = fields.Datetime(
-        string="Production Start",
+        string="Earliest Scheduled Date",
+        compute="_compute_planned_dates",
+        store=True,
     )
 
     planned_end = fields.Datetime(
-        string="Production End",
+        string="Latest Scheduled Date",
+        compute="_compute_planned_dates",
+        store=True,
     )
 
     schedule_ids = fields.One2many(
@@ -86,6 +106,23 @@ class ProductionPlanLine(models.Model):
     capacity_warning = fields.Char(
         compute="_compute_capacity_warning"
     )
+
+    @api.depends(
+        "schedule_ids.planned_start",
+        "schedule_ids.planned_end",
+    )
+    def _compute_planned_dates(self):
+        for line in self:
+            if line.schedule_ids:
+                line.planned_start = min(
+                    line.schedule_ids.mapped("planned_start")
+                )
+                line.planned_end = max(
+                    line.schedule_ids.mapped("planned_end")
+                )
+            else:
+                line.planned_start = False
+                line.planned_end = False
 
     @api.onchange("operation_id")
     def _onchange_operation(self):

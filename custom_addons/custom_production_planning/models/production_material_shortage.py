@@ -10,6 +10,13 @@ class ProductionMaterialShortage(models.Model):
         ondelete="cascade"
     )
 
+    product_line_id = fields.Many2one(
+        "mrp.production.plan.product.line",
+        string="Product Line",
+        required=True,
+        ondelete="cascade",
+    )
+
     product_id = fields.Many2one(
         "product.product",
         string="Material"
