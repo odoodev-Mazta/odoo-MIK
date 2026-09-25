@@ -14,6 +14,7 @@ export class TimelineDashboard extends Component {
             selected_so_id: null,
             active_stage_index: 0,
             accordion_open: {},
+            search_pelanggan: "",
         });
 
         onWillStart(async () => {
@@ -159,9 +160,37 @@ export class TimelineDashboard extends Component {
     // computed properties pelanggan dan mou
 
     get uniquePelanggan() {
-        const seen = new Set(); 
+        const seen = new Set();
+
+        const search = this.state.search_pelanggan
+            .trim()
+            .toLowerCase();
+
         return this.state.all_mou.filter(m => {
-            if (seen.has(m.pelanggan)) return false;
+            if (seen.has(m.pelanggan)) {
+                return false;
+            }
+
+            // Kalau tidak ada search → tampilkan semua pelanggan
+            if (search) {
+                const matchPelanggan = (m.pelanggan || '')
+                    .toLowerCase()
+                    .includes(search);
+
+                const matchMou = (m.no_mou || '')
+                    .toLowerCase()
+                    .includes(search);
+
+                const matchSo = (m.sale_orders || []).some(so =>
+                    (so.name || '').toLowerCase().includes(search)
+                );
+
+                // Tidak cocok dengan customer, MOU, maupun SO
+                if (!matchPelanggan && !matchMou && !matchSo) {
+                    return false;
+                }
+            }
+
             seen.add(m.pelanggan);
             return true;
         });
@@ -735,6 +764,49 @@ export class TimelineDashboard extends Component {
     }
 
     // ─── UI Interaction ───────────────────────────────────────────────────────
+    onSearchPelanggan(ev) {
+        const search = ev.target.value.trim().toLowerCase();
+
+        this.state.search_pelanggan = ev.target.value;
+
+        if (!search) {
+            return;
+        }
+
+        // 1. Prioritas: cari nomor MOU
+        let foundMou = this.state.all_mou.find(m =>
+            (m.no_mou || '').toLowerCase().includes(search)
+        );
+
+        // 2. Kalau tidak ketemu, cari nomor SO
+        if (!foundMou) {
+            foundMou = this.state.all_mou.find(m =>
+                (m.sale_orders || []).some(so =>
+                    (so.name || '').toLowerCase().includes(search)
+                )
+            );
+        }
+
+        // 3. Kalau tidak ketemu, cari nama pelanggan
+        if (!foundMou) {
+            foundMou = this.state.all_mou.find(m =>
+                (m.pelanggan || '').toLowerCase().includes(search)
+            );
+        }
+
+        if (
+            foundMou &&
+            this.state.selected_mou?.id !== foundMou.id
+        ) {
+            this.state.selected_mou = foundMou;
+            this.state.selected_so_id = null;
+            this.autoSelectActiveStage();
+        }
+    }
+
+    clearSearchPelanggan() {
+        this.state.search_pelanggan = "";
+    }
 
     onChangePelanggan(ev) {
         const pelanggan = ev.target.value;
