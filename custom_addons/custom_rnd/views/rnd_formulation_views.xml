@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="view_rnd_formulation_list" model="ir.ui.view">
+        <field name="name">rnd.formulation.list</field>
+        <field name="model">rnd.formulation</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="responsible_id"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rnd_formulation_form" model="ir.ui.view">
+        <field name="name">rnd.formulation.form</field>
+        <field name="model">rnd.formulation</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"
+                                   placeholder="Formulation Name"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="customer_id"/>
+                        </group>
+
+                        <group>
+                            <field name="responsible_id"/>
+                            <field name="state" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Formula Trials">
+                            <field name="trial_line_ids">
+                                <list editable="bottom"
+                                    decoration-success="state == 'approved'"
+                                    decoration-danger="state == 'rejected'"
+                                    decoration-warning="state == 'testing'">
+                                    <field name="version"/>
+                                    <field name="trial_date"/>
+                                    <field name="test_summary"/>
+                                    <field name="state"/>
+                                    <field name="attachment_ids" widget="many2many_binary"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+
+    <record id="action_research_development" model="ir.actions.act_window">
+        <field name="name">RnD</field>
+        <field name="res_model">rnd.formulation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

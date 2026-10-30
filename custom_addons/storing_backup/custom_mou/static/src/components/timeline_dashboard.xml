@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <t t-name="custom_mou.TimelineTemplate" owl="1">
+        <div class="o_dashboard_container p-4 bg-light w-100 h-100 d-flex flex-column overflow-hidden">
+
+            <t t-if="state.selected_mou">
+
+                <div class="card shadow-sm border-0 mb-4 flex-shrink-0">
+                    <div class="card-body d-flex align-items-center justify-content-between p-4">
+
+                        <div class="d-flex flex-column gap-2" style="width: 300px; border-right: 2px solid #eee; padding-right: 20px;">
+                            <div>
+                                <label class="text-muted small fw-bold mb-1">Pelanggan</label>
+                                <select class="form-select fw-bold border-primary" t-on-change="onChangeSelection">
+                                    <option t-foreach="state.all_mou" t-as="mou" t-key="'p_'+mou.id"
+                                            t-att-value="mou.id" t-att-selected="mou.id === state.selected_mou.id">
+                                        <t t-esc="mou.pelanggan"/>
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-muted small fw-bold mb-1">No. MOU</label>
+                                <select class="form-select bg-light" t-on-change="onChangeSelection">
+                                    <option t-foreach="state.all_mou" t-as="mou" t-key="'n_'+mou.id"
+                                            t-att-value="mou.id" t-att-selected="mou.id === state.selected_mou.id">
+                                        <t t-esc="mou.no_mou"/>
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow-1 px-5">
+                            <div class="d-flex justify-content-between align-items-end mb-2">
+                                <h5 class="mb-0 fw-bold text-dark">Status Penyelesaian</h5>
+                                <h3 class="mb-0 fw-bold text-success"><t t-esc="state.selected_mou.progress"/>%</h3>
+                            </div>
+                            <div class="progress shadow-sm" style="height: 25px; border-radius: 15px; background-color: #e9ecef;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                     role="progressbar"
+                                     t-attf-style="width: {{ state.selected_mou.progress }}%;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-danger bg-opacity-10 text-black p-3 rounded-3 text-center ms-3 shadow-sm border border-danger" style="min-width: 180px;">
+                            <div class="text-uppercase fw-bold small mb-1"><i class="fa fa-calendar me-1"></i> DEADLINE</div>
+                            <h4 class="mb-0 fw-bold"><t t-esc="state.selected_mou.deadline"/></h4>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="flex-grow-1 overflow-hidden d-flex flex-column pt-2">
+                    <div class="d-flex flex-nowrap h-100 gap-3 px-1">
+
+                        <t t-foreach="state.selected_mou.stages" t-as="stage" t-key="stage.name">
+                            <div t-attf-class="flex-grow-1 d-flex flex-column rounded-3 shadow-sm border-top border-4 border-{{ stage.color }}"
+                                 style="width: 11%; min-width: 160px; background: white; transition: transform 0.2s;">
+
+                                <div class="p-3 text-center border-bottom">
+                                    <div t-attf-class="badge rounded-pill mb-2 bg-{{ stage.color }} bg-opacity-10 text-{{ stage.color }} px-3 py-1 fw-bolder" style="font-size: 0.7rem;">
+                                        <i t-attf-class="fa {{ stage.status === 'done' ? 'fa-check' : (stage.status === 'process' ? 'fa-refresh fa-spin' : 'fa-pause') }} me-1"></i>
+                                        <t t-esc="stage.status.toUpperCase()"/>
+                                    </div>
+                                    <h6 class="fw-bolder text-dark mb-0" style="font-size: 0.9rem; letter-spacing: -0.2px;">
+                                        <t t-esc="stage.name"/>
+                                    </h6>
+                                </div>
+
+                                <div class="p-3 flex-grow-1 overflow-auto bg-light bg-opacity-25">
+                                    <t t-if="stage.details.length > 0">
+                                        <div class="position-relative ps-3 border-start ms-2 mt-2" style="border-color: #dee2e6 !important; border-width: 2px !important;">
+
+                                            <t t-foreach="stage.details" t-as="detail" t-key="detail.label">
+                                                <div class="position-relative mb-4">
+                                                    <div t-attf-class="position-absolute rounded-circle shadow-sm bg-{{ detail.is_done ? stage.color : 'white' }}"
+                                                         style="width: 12px; height: 12px; left: -22.5px; top: 4px; border: 2px solid #fff; outline: 1px solid #dee2e6;"></div>
+
+                                                    <div t-attf-class="fw-bold {{ detail.is_done ? 'text-dark' : 'text-muted' }}" style="font-size: 0.8rem; line-height: 1.2;">
+                                                        <t t-esc="detail.label"/>
+                                                    </div>
+                                                    <div class="text-secondary small mt-1" style="font-size: 0.7rem;">
+                                                        <i class="fa fa-calendar-o me-1"></i> <t t-esc="detail.date"/>
+                                                    </div>
+
+                                                    <t t-if="detail.attachment_name">
+                                                        <div class="mt-2">
+                                                            <span class="badge bg-white text-primary border border-primary fw-normal p-1 shadow-xs" style="font-size: 0.65rem;">
+                                                                <i class="fa fa-paperclip me-1"></i> <t t-esc="detail.attachment_name"/>
+                                                            </span>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+
+                                        </div>
+                                    </t>
+
+                                    <t t-else="">
+                                        <div class="text-center text-muted opacity-25 mt-5">
+                                            <i class="fa fa-hourglass-start fs-2 d-block mb-2"></i>
+                                            <span style="font-size: 0.7rem;">Waiting</span>
+                                        </div>
+                                    </t>
+                                </div>
+
+                            </div>
+                        </t>
+
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

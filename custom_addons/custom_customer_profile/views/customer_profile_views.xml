@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="view_customer_profile_tree" model="ir.ui.view">
+        <field name="name">customer.profile.tree</field>
+        <field name="model">customer.profile</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="customer_level" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_customer_profile_form" model="ir.ui.view">
+        <field name="name">customer.profile.form</field>
+        <field name="model">customer.profile</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button
+                        name="action_generate_recommendation"
+                        string="Generate Recommendation"
+                        type="object"
+                        class="btn-primary"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field
+                                name="customer_level"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Recommendation">
+                            <field name="recommendation_line_ids">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="list_price"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_customer_profile" model="ir.actions.act_window">
+        <field name="name">Customer Profile</field>
+        <field name="res_model">customer.profile</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

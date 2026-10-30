@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- SEQUENCE UTAMA -->
+    <record id="seq_rnd_formula" model="ir.sequence">
+        <field name="name">Sequence Formulasi RnD</field>
+        <field name="code">rnd.formula</field>
+        <field name="prefix">FRM/%(year)s/</field>
+        <field name="padding">4</field>
+    </record>
+
+    <!-- SEARCH VIEW (Odoo 19: hapus expand="0" string="Group By") -->
+    <record id="view_rnd_formula_search" model="ir.ui.view">
+        <field name="name">rnd.formula.search</field>
+        <field name="model">rnd.formula</field>
+        <field name="arch" type="xml">
+            <search string="Cari Formulasi">
+                <field name="name" string="Nomor Formulasi"/>
+                <field name="product_target_name" string="Nama Produk Target"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Pengujian" name="in_progress" domain="[('state', '=', 'in_progress')]"/>
+                <filter string="Selesai (PAS)" name="done" domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <!-- Odoo 19: group tanpa expand dan string -->
+                <group>
+                    <filter name="result_status_group" string="Status Hasil" context="{'group_by': 'result_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- FORM VIEW UNTUK POPUP TRIAL -->
+    <record id="view_rnd_formula_trial_form" model="ir.ui.view">
+        <field name="name">rnd.formula.trial.form</field>
+        <field name="model">rnd.formula.trial</field>
+        <field name="arch" type="xml">
+            <form string="Detail Trial Lab">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="trial_number" readonly="1"/>
+                            <field name="total_qty" readonly="1" help="Total quantity berdasarkan takaran bahan"/>
+                        </group>
+                        <group>
+                            <field name="target_qty" readonly="1"/>
+                            <field name="result_status" widget="badge"
+                                   decoration-warning="result_status == 'under'"
+                                   decoration-success="result_status == 'pass'"
+                                   decoration-danger="result_status == 'over'"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Input Takaran Bahan" name="ingredients">
+                            <field name="line_ids" nolabel="1" mode="list">
+                                <!-- Odoo 19: tree → list -->
+                                <list editable="bottom">
+                                    <field name="ingredient_name" width="70%" placeholder="Nama bahan"/>
+                                    <field name="qty" width="30%" placeholder="Jumlah"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Catatan Evaluasi" name="notes">
+                            <field name="notes" placeholder="Masukkan catatan hasil uji laboratorium..." nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- FORM VIEW UTAMA FORMULASI -->
+    <record id="view_rnd_formula_form" model="ir.ui.view">
+        <field name="name">rnd.formula.form</field>
+        <field name="model">rnd.formula</field>
+        <field name="arch" type="xml">
+            <form string="Formulasi RnD">
+                <header>
+                    <button name="action_set_in_progress" type="object"
+                            string="Mulai Pengujian" class="oe_highlight"
+                            invisible="state != 'draft'"/>
+                    <button name="action_set_done" type="object"
+                            string="Tandai Selesai (PAS)" class="btn-success"
+                            invisible="state != 'in_progress' or result_status != 'pass'"/>
+                    <button name="action_set_draft" type="object"
+                            string="Reset ke Draft"
+                            invisible="state not in ('done', 'cancel')"/>
+
+                    <!-- Status hasil keseluruhan -->
+                    <field name="result_status" widget="badge"
+                           decoration-warning="result_status == 'under'"
+                           decoration-success="result_status == 'pass'"
+                           decoration-danger="result_status == 'over'"
+                           invisible="state == 'draft'"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <!-- SMART BUTTON → daftar trial -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(action_rnd_formula_trial)d" type="action"
+                                class="oe_stat_button" icon="fa-flask"
+                                context="{'default_formula_id': active_id, 'search_default_formula_id': active_id}">
+                            <field name="trial_count" string="Percobaan" widget="statinfo"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="product_target_name" placeholder="Nama produk target"/>
+                            <field name="target_qty" placeholder="Target kuantitas"/>
+                        </group>
+                        <group>
+                            <field name="uom_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Percobaan Lab (Trials)" name="trials">
+                            <field name="trial_ids" mode="list">
+                                <!-- Odoo 19: tree → list -->
+                                <list string="Daftar Trial" editable="top">
+                                    <field name="trial_number"/>
+                                    <field name="total_qty" sum="Total"/>
+                                    <field name="target_qty"/>
+                                    <field name="result_status" widget="badge"
+                                           decoration-warning="result_status == 'under'"
+                                           decoration-success="result_status == 'pass'"
+                                           decoration-danger="result_status == 'over'"/>
+                                    <field name="notes" optional="hide"/>
+                                    <button name="action_duplicate_trial" type="object"
+                                            string="Copy Trial" icon="fa-copy" class="btn-primary"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- LIST VIEW UTAMA (Odoo 19: tree → list) -->
+    <record id="view_rnd_formula_list" model="ir.ui.view">
+        <field name="name">rnd.formula.list</field>
+        <field name="model">rnd.formula</field>
+        <field name="arch" type="xml">
+            <list string="Daftar Formulasi">
+                <field name="name" string="Nomor Formulasi"/>
+                <field name="product_target_name" string="Produk Target"/>
+                <field name="target_qty" string="Target Qty"/>
+                <field name="uom_id" string="Satuan"/>
+                <field name="trial_count" string="Jumlah Trial" widget="badge"
+                       decoration-info="trial_count > 0"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-success="state == 'done'"/>
+                <field name="create_date" string="Dibuat" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ACTION UNTUK MENU UTAMA -->
+    <record id="action_rnd_formula" model="ir.actions.act_window">
+        <field name="name">Formulasi RnD</field>
+        <field name="res_model">rnd.formula</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_state': 'draft'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Buat formulasi uji coba laboratorium baru!
+            </p>
+        </field>
+    </record>
+
+    <!-- ACTION UNTUK TRIAL (dipanggil dari smart button) -->
+    <record id="action_rnd_formula_trial" model="ir.actions.act_window">
+        <field name="name">Daftar Percobaan</field>
+        <field name="res_model">rnd.formula.trial</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('formula_id', '=', active_id)]</field>
+        <field name="context">{'default_formula_id': active_id}</field>
+    </record>
+
+    <!-- MENU STRUCTURE -->
+    <menuitem id="menu_rnd_root" name="RnD Formulation" sequence="10"/>
+    <menuitem id="menu_rnd_formula" name="Formulasi" parent="menu_rnd_root"
+              action="action_rnd_formula" sequence="10"/>
+
+</odoo>

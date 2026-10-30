@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!--  ROOT MENU  -->
+    <menuitem id="menu_agreement_root" name="Agreement"/>
+    <!--  MENU  -->
+    <menuitem id="menu_main_agreement_template" name="Agreement" parent="menu_agreement_root" sequence="1"/>
+    <!--  SUBMENU(s) -->
+    <menuitem id="menu_template"
+              name="Template"
+              parent="menu_main_agreement_template"
+              action="action_template"
+              sequence="1"/>
+
+</odoo>

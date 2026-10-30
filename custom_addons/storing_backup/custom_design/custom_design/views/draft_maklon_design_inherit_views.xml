@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Inherit form Draft MOU — tambah button_box + smart button Usulan Design -->
+    <record id="view_draft_maklon_design_inherit" model="ir.ui.view">
+        <field name="name">draft.maklon.form.design.inherit</field>
+        <field name="model">draft.maklon</field>
+        <field name="inherit_id" ref="custom_ecatalogue.view_draft_mou_form"/>
+        <field name="arch" type="xml">
+            <!-- Sisipkan button_box sebelum div oe_title -->
+            <xpath expr="//sheet/div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button class="oe_stat_button"
+                            name="action_view_design_usulan"
+                            type="object"
+                            icon="fa-paint-brush"
+                            invisible="design_usulan_count == 0">
+                        <field name="design_usulan_count"
+                               widget="statinfo"
+                               string="Usulan Design"/>
+                    </button>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

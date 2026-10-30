@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sale_custom.MaztaOrderDashboardTemplate">
+        <div class="container-fluid mt-4 pb-5" style="overflow-y: auto; height: calc(100vh - 100px);">
+            <!-- Header -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm p-4 bg-white border-0">
+                        <h2 class="text-primary fw-bold">Master Sales &amp; Mazta Sub-Menu Dashboard</h2>
+                        <p class="text-muted mb-0">Rekapitulasi lengkap beserta persentase volume data dari seluruh sub-menu operasional.</p>
+                    </div>
+                </div>
+            </div>
+
+            <t t-if="state.loading">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"/>
+                    <p class="text-muted mt-2">Menghimpun data dari seluruh sub-menu...</p>
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- Grafik Rekapitulasi Utama -->
+                <div class="row mb-4">
+                    <div class="col-md-7 mb-3">
+                        <div class="card border-0 shadow-sm p-3 bg-white h-100">
+                            <h5 class="fw-bold text-secondary mb-3">Grafik Akumulasi Nilai per Sub-Menu</h5>
+                            <div style="position: relative; height: 260px;"><canvas t-ref="overviewBar"/></div>
+                        </div>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <div class="card border-0 shadow-sm p-3 bg-white h-100">
+                            <h5 class="fw-bold text-secondary mb-3">Proporsi Volume Data &amp; Persentase</h5>
+                            <div style="position: relative; height: 260px;"><canvas t-ref="overviewPie"/></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. SUB-MENU: SALE QUOTATIONS -->
+                <div class="card border-0 shadow-sm p-4 bg-white mb-4">
+                    <h4 class="fw-bold text-warning mb-3">1. Sub-Menu: Sale Quotations (<t t-esc="state.quotations.length"/> data)</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr><th>No. Quotation</th><th>Pelanggan</th><th>Salesperson</th><th>Status</th><th class="text-end">Total</th></tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.quotations.length === 0"><tr><td colspan="5" class="text-center text-muted">Tidak ada data quotation.</td></tr></t>
+                                <t t-foreach="state.quotations" t-as="q" t-key="q.id">
+                                    <tr>
+                                        <td><strong><t t-esc="q.name"/></strong></td>
+                                        <td><t t-esc="q.partner_id ? q.partner_id[1] : '-'"/></td>
+                                        <td><t t-esc="q.user_id ? q.user_id[1] : '-'"/></td>
+                                        <td><span class="badge bg-warning text-dark"><t t-esc="q.state"/></span></td>
+                                        <td class="text-end fw-semibold"><t t-esc="q.amount_total"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. SUB-MENU: SALES ORDERS -->
+                <div class="card border-0 shadow-sm p-4 bg-white mb-4">
+                    <h4 class="fw-bold text-primary mb-3">2. Sub-Menu: Sales Orders (<t t-esc="state.orders.length"/> data)</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr><th>No. Order</th><th>Pelanggan</th><th>Salesperson</th><th>Status</th><th class="text-end">Total</th></tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.orders.length === 0"><tr><td colspan="5" class="text-center text-muted">Tidak ada data order.</td></tr></t>
+                                <t t-foreach="state.orders" t-as="o" t-key="o.id">
+                                    <tr>
+                                        <td><strong><t t-esc="o.name"/></strong></td>
+                                        <td><t t-esc="o.partner_id ? o.partner_id[1] : '-'"/></td>
+                                        <td><t t-esc="o.user_id ? o.user_id[1] : '-'"/></td>
+                                        <td><span class="badge bg-primary"><t t-esc="o.state"/></span></td>
+                                        <td class="text-end fw-semibold"><t t-esc="o.amount_total"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. SUB-MENU: TO INVOICE -->
+                <div class="card border-0 shadow-sm p-4 bg-white mb-4">
+                    <h4 class="fw-bold text-danger mb-3">3. Sub-Menu: To Invoice (<t t-esc="state.toInvoice.length"/> data)</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr><th>No. Invoice</th><th>Pelanggan</th><th>Status Pembayaran</th><th class="text-end">Total Tagihan</th></tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.toInvoice.length === 0"><tr><td colspan="4" class="text-center text-muted">Tidak ada tagihan.</td></tr></t>
+                                <t t-foreach="state.toInvoice" t-as="inv" t-key="inv.id">
+                                    <tr>
+                                        <td><strong><t t-esc="inv.name"/></strong></td>
+                                        <td><t t-esc="inv.partner_id ? inv.partner_id[1] : '-'"/></td>
+                                        <td><span class="badge bg-danger"><t t-esc="inv.payment_state"/></span></td>
+                                        <td class="text-end fw-semibold"><t t-esc="inv.amount_total"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. SUB-MENU: PRODUCTS -->
+                <div class="card border-0 shadow-sm p-4 bg-white mb-4">
+                    <h4 class="fw-bold text-info mb-3">4. Sub-Menu: Products (<t t-esc="state.products.length"/> data)</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr><th>Nama Produk</th><th class="text-end">Harga Jual</th></tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.products.length === 0"><tr><td colspan="2" class="text-center text-muted">Tidak ada data produk.</td></tr></t>
+                                <t t-foreach="state.products" t-as="p" t-key="p.id">
+                                    <tr>
+                                        <td><strong><t t-esc="p.name"/></strong></td>
+                                        <td class="text-end fw-semibold"><t t-esc="p.lst_price"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 5. SUB-MENU: MAZTA ORDERS -->
+                <div class="card border-0 shadow-sm p-4 bg-white mb-4">
+                    <h4 class="fw-bold text-success mb-3" style="color: #6f42c1 !important;">5. Sub-Menu: Mazta Orders (<t t-esc="state.maztaOrders.length"/> data)</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr><th>No. Mazta Order</th><th>Pelanggan</th><th>Responsible</th><th>Status</th><th class="text-end">Total</th></tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.maztaOrders.length === 0"><tr><td colspan="5" class="text-center text-muted">Tidak ada data mazta order.</td></tr></t>
+                                <t t-foreach="state.maztaOrders" t-as="mo" t-key="mo.id">
+                                    <tr>
+                                        <td><strong style="color: #6f42c1;"><t t-esc="mo.name"/></strong></td>
+                                        <td><t t-esc="mo.partner_id ? mo.partner_id[1] : '-'"/></td>
+                                        <td><t t-esc="mo.user_id ? mo.user_id[1] : '-'"/></td>
+                                        <td><span class="badge bg-secondary"><t t-esc="mo.state"/></span></td>
+                                        <td class="text-end fw-semibold"><t t-esc="mo.amount_total"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

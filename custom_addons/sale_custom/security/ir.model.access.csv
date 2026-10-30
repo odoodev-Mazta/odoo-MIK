@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mazta_order,access_mazta_order,model_mazta_order,base.group_user,1,1,1,1
+access_mazta_order_line,access_mazta_order_line,model_mazta_order_line,base.group_user,1,1,1,1
+access_mazta_order_search_wizard,access_mazta_order_search_wizard,model_mazta_order_search_wizard,base.group_user,1,1,1,1

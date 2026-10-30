@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- WIZARD SEARCH VIEW & FORM -->
+    <record id="view_mazta_order_search_wizard_form" model="ir.ui.view">
+        <field name="name">mazta.order.search.wizard.form</field>
+        <field name="model">mazta.order.search.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cari Berdasarkan Kolom Mazta Orders">
+                <sheet>
+                    <group col="2">
+                        <field name="name" placeholder="Contoh: MO00009..."/>
+                        <field name="date_order"/>
+                        <field name="partner_id" options="{'no_create': True}" string="Customer"/>
+                        <field name="user_id" options="{'no_create': True}" string="Salesperson"/>
+                        <field name="state" string="Status"/>
+                    </group>
+                    <group string="Rentang Total (Amount)" col="2">
+                        <field name="min_amount"/>
+                        <field name="max_amount"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_search_mazta_orders" string="Cari Data" type="object" class="btn-primary"/>
+                    <button string="Tutup" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACTION WINDOW WIZARD -->
+    <record id="action_mazta_order_search_wizard" model="ir.actions.act_window">
+        <field name="name">Cari Berdasarkan Kolom</field>
+        <field name="res_model">mazta.order.search.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- MENUITEM WIZARD -->
+    <menuitem id="menu_mazta_order_search_wizard"
+              name="Search (Filter Kolom)"
+              parent="menu_mazta_root" 
+              action="action_mazta_order_search_wizard"
+              sequence="20"/>
+</odoo>

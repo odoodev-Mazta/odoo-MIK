@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="rnd_lab.RndDashboardTemplate">
+        <div class="container-fluid mt-4 pb-5" style="overflow-y: auto; height: calc(100vh - 100px);">
+            <!-- Header Dashboard
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm p-4 bg-white border-0">
+                        <h2 class="text-primary fw-bold">Dashboard Analisis RnD Formulation Lab</h2>
+                        <p class="text-muted mb-0">Ringkasan performa formulasi produk dan evaluasi hasil percobaan laboratorium.</p>
+                    </div>
+                </div>
+            </div> -->
+
+            <!-- Indicator Loading -->
+            <t t-if="state.loading">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"/>
+                    <p class="text-muted mt-2">Memuat data analisis RnD...</p>
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- Section Summary Cards (KPI) -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm p-3 bg-white text-center">
+                            <span class="text-muted fw-semibold">Total Formulasi</span>
+                            <h3 class="fw-bold text-primary mb-0"><t t-esc="state.formulas.length"/></h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm p-3 bg-white text-center">
+                            <span class="text-muted fw-semibold">Total Pengujian (Trials)</span>
+                            <h3 class="fw-bold text-info mb-0"><t t-esc="state.trials.length"/></h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm p-3 bg-white text-center">
+                            <span class="text-muted fw-semibold">Pengujian Status PAS</span>
+                            <h3 class="fw-bold text-success mb-0"><t t-esc="state.passCount"/></h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm p-3 bg-white text-center">
+                            <span class="text-muted fw-semibold">Tingkat Keberhasilan</span>
+                            <h3 class="fw-bold text-warning mb-0"><t t-esc="state.successRate"/>%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Grafik / Chart.js -->
+                <div class="row mb-4">
+                    <div class="col-md-7 mb-3">
+                        <div class="card border-0 shadow-sm p-3 bg-white h-100">
+                            <h5 class="fw-bold text-secondary mb-3">Sebaran Status Pengujian Lab</h5>
+                            <div style="position: relative; height: 260px;"><canvas t-ref="statusChart"/></div>
+                        </div>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <div class="card border-0 shadow-sm p-3 bg-white h-100">
+                            <h5 class="fw-bold text-secondary mb-3">Proporsi Formulasi Berdasarkan Status</h5>
+                            <div style="position: relative; height: 260px;">
+                                <canvas t-ref="statePieChart"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Table: Ringkasan Trial Terbaru -->
+                <div class="card border-0 shadow-sm p-4 bg-white mb-4">
+                    <h4 class="fw-bold text-primary mb-3">Daftar Pengujian Laboratorium Terbaru (<t t-esc="state.trials.length"/> data)</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No. Trial</th>
+                                    <th>Formulasi Induk</th>
+                                    <th>Target Takaran</th>
+                                    <th>Total Input Takaran</th>
+                                    <th class="text-center">Status Hasil</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.trials.length === 0">
+                                    <tr><td colspan="5" class="text-center text-muted">Belum ada data pengujian laboratorium.</td></tr>
+                                </t>
+                                <t t-foreach="state.trials" t-as="t" t-key="t.id">
+                                    <tr>
+                                        <td><strong><t t-esc="t.trial_number"/></strong></td>
+                                        <td><t t-esc="t.formula_id ? t.formula_id[1] : '-'"/></td>
+                                        <td><t t-esc="t.target_qty"/></td>
+                                        <td><t t-esc="t.total_qty"/></td>
+                                        <td class="text-center">
+                                            <span t-if="t.result_status === 'pass'" class="badge bg-success">PAS (Sesuai)</span>
+                                            <span t-elif="t.result_status === 'under'" class="badge bg-warning text-dark">Belum Pas (Kurang)</span>
+                                            <span t-elif="t.result_status === 'over'" class="badge bg-danger">Kelebihan (Over)</span>
+                                            <span t-else="" class="badge bg-secondary"><t t-esc="t.result_status"/></span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>
