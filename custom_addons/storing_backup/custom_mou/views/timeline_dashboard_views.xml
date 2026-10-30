@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="action_timeline_mou_dashboard" model="ir.actions.client">
+        <field name="name">Tracking</field>
+        <field name="tag">custom_timeline.main_action</field>
+    </record>
+</odoo>

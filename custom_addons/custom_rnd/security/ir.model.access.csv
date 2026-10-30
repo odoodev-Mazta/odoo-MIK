@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rnd_formulation,rnd.formulation,model_rnd_formulation,base.group_user,1,1,1,1
+access_rnd_formulation_trial,rnd.formulation.trial,model_rnd_formulation_trial,base.group_user,1,1,1,1

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <menuitem
+        id="menu_customer_profile_root"
+        name="Customer Profiling"
+        sequence="20"/>
+
+    <menuitem
+        id="menu_customer_profile"
+        name="Customer Profile"
+        parent="menu_customer_profile_root"
+        action="action_customer_profile"/>
+
+</odoo>

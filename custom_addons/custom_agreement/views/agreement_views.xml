@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="view_agreement_template_form" model="ir.ui.view">
+        <field name="name">agreement.template.form</field>
+        <field name="model">agreement.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Contoh: MOU Kerjasama Maklon"/></h1>
+                    </div>
+                    <notebook>
+                        <page string="Pasal 1 &amp; 2">
+                            <separator string="Pasal 1: Maksud dan Tujuan"/>
+                            <field name="pasal_1" nolabel="1" placeholder="Ketik isi pasal 1 di sini..."/>
+
+                            <separator string="Pasal 2: Ruang Lingkup" class="mt-4"/>
+                            <field name="pasal_2" nolabel="1" placeholder="Ketik isi pasal 2 di sini..."/>
+                        </page>
+
+                        <page string="Pasal 3">
+                            <separator string="Pasal 3: Nilai Kontrak"/>
+                            <field name="pasal_3" nolabel="1" placeholder="Ketik isi pasal 3 di sini..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_agreement_template_list" model="ir.ui.view">
+        <field name="name">agreement.template.list</field>
+        <field name="model">agreement.template</field>
+        <field name="arch" type="xml">
+            <list string="Template(s)">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_template" model="ir.actions.act_window">
+        <field name="name">Agreement Template</field>
+        <field name="res_model">agreement.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

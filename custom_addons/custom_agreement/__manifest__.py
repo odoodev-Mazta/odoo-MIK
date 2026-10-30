@@ -1,0 +1,20 @@
+{
+    'name': 'Agreement Template',
+    'version': '1.0',
+    'category': 'Agreement',
+    'summary': 'MOU Template Module',
+    'description': 'Modul ini digunakan untuk setting template printout untuk MOU.',
+    'author': 'William Purba',
+    'depends': ['base', 'web_enterprise'],
+    'data':[
+        'security/ir.model.access.csv',
+        'views/agreement_views.xml',
+        'views/agreement_menu.xml',
+        'report/report_action.xml',
+        'report/report_mou_template.xml',
+    ],
+    'auto_install': False,
+    'installable': True,
+    'application': True,
+    'license': 'LGPL-3',
+}

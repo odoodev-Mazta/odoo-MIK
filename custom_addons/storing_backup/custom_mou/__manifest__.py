@@ -1,0 +1,31 @@
+{
+    'name': 'MOU',
+    'version': '1.0',
+    'category': 'Memorandum Of Understanding',
+    'summary': 'Modul Custom untuk keperluan MOU',
+    'depends': ['base', 'web', 'account', 'custom_ecatalogue', 'sale'],
+    'data': [
+        'security/ir.model.access.csv',
+        'views/dashboard_mou_views.xml',
+        'views/progress_dashboard_views.xml',
+        'views/timeline_dashboard_views.xml',
+        'views/mou_setup_views.xml',
+        'views/account_sale_inherit_views.xml',
+        'views/mou_container_views.xml',
+        'views/mou_menus.xml',
+    ],
+    'assets': {
+        'web.assets_backend': [
+            'custom_mou/static/src/components/dashboard_mou.js',
+            'custom_mou/static/src/components/dashboard_mou.xml',
+            'custom_mou/static/src/components/progress_dashboard.js',
+            'custom_mou/static/src/components/progress_dashboard.xml',
+            'custom_mou/static/src/components/timeline_dashboard.js',
+            'custom_mou/static/src/components/timeline_dashboard.xml',
+            'custom_mou/static/src/css/style.scss',
+        ],
+    },
+    'installable': True,
+    'application': True,
+    'license': 'LGPL-3',
+}
