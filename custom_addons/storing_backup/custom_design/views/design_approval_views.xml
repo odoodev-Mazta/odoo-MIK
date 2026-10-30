@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════
+         FORM VIEW – design.approval
+    ═══════════════════════════════════════════════════ -->
+    <record id="view_design_approval_form" model="ir.ui.view">
+        <field name="name">design.approval.form</field>
+        <field name="model">design.approval</field>
+        <field name="arch" type="xml">
+            <form string="Approval Design">
+
+                <header>
+                    <button name="action_approve_marketing"
+                            string="Approve (Marketing)"
+                            type="object"
+                            class="btn-success"
+                            invisible="state != 'approval_marketing'"/>
+
+                    <button name="action_approve_client"
+                            string="Approve (Client)"
+                            type="object"
+                            class="btn-success"
+                            invisible="state != 'approval_client'"/>
+
+                    <button name="action_approve_ro"
+                            string="Approve (RO)"
+                            type="object"
+                            class="btn-success"
+                            invisible="state != 'approval_ro'"/>
+
+                    <button name="action_upload_done"
+                            string="Submit Form Design Final"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'upload_form'"/>
+
+                    <button name="action_revisi"
+                            string="Minta Revisi"
+                            type="object"
+                            class="btn-warning"
+                            invisible="state not in ('approval_marketing','approval_client','approval_ro','upload_form')"
+                            confirm="Revisi akan mereset approval dan mengembalikan usulan ke On Progress. Lanjutkan?"/>
+
+                    <button name="action_reject"
+                            string="Reject"
+                            type="object"
+                            class="btn-danger"
+                            invisible="state not in ('approval_marketing','approval_client','approval_ro','upload_form')"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="approval_marketing,approval_client,approval_ro,upload_form,done"/>
+                </header>
+
+                <sheet>
+
+                    <!-- Progress Banner -->
+                    <div invisible="state not in ('approval_marketing','approval_client','approval_ro')"
+                         style="margin-bottom:16px;">
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+
+                            <!-- Step 1: Marketing Active -->
+                            <div style="display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#0d6efd20; border:1.5px solid #0d6efd; color:#0d6efd;"
+                                 invisible="state != 'approval_marketing'">
+                                <i class="fa fa-bullhorn" title="Marketing"/> Manager Marketing
+                            </div>
+                            <!-- Step 1: Marketing Done -->
+                            <div style="display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#19875420; border:1.5px solid #198754; color:#198754;"
+                                 invisible="state not in ('approval_client','approval_ro')">
+                                <i class="fa fa-bullhorn" title="Marketing"/> Manager Marketing ✓
+                            </div>
+
+                            <i class="fa fa-chevron-right text-muted" title="next" style="font-size:11px;"/>
+
+                            <!-- Step 2: Client Waiting -->
+                            <div style="display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#dee2e620; border:1.5px solid #dee2e6; color:#6c757d;"
+                                 invisible="state != 'approval_marketing'">
+                                <i class="fa fa-user-circle" title="Client"/> Client
+                            </div>
+                            <!-- Step 2: Client Active -->
+                            <div style="display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#0d6efd20; border:1.5px solid #0d6efd; color:#0d6efd;"
+                                 invisible="state != 'approval_client'">
+                                <i class="fa fa-user-circle" title="Client"/> Client
+                            </div>
+                            <!-- Step 2: Client Done -->
+                            <div style="display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#19875420; border:1.5px solid #198754; color:#198754;"
+                                 invisible="state != 'approval_ro'">
+                                <i class="fa fa-user-circle" title="Client"/> Client ✓
+                            </div>
+
+                            <i class="fa fa-chevron-right text-muted" title="next" style="font-size:11px;"/>
+
+                            <!-- Step 3: RO Waiting -->
+                            <div style="display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#dee2e620; border:1.5px solid #dee2e6; color:#6c757d;"
+                                 invisible="state not in ('approval_marketing','approval_client')">
+                                <i class="fa fa-shield" title="RO"/> RO
+                            </div>
+                            <!-- Step 3: RO Active -->
+                            <div style="display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; background:#0d6efd20; border:1.5px solid #0d6efd; color:#0d6efd;"
+                                 invisible="state != 'approval_ro'">
+                                <i class="fa fa-shield" title="RO"/> RO
+                            </div>
+
+                            <span style="font-size:13px; color:#0d6efd; font-weight:600; margin-left:8px;"
+                                  invisible="state != 'approval_marketing'">← Menunggu persetujuan Manager Marketing</span>
+                            <span style="font-size:13px; color:#0d6efd; font-weight:600; margin-left:8px;"
+                                  invisible="state != 'approval_client'">← Menunggu persetujuan Client</span>
+                            <span style="font-size:13px; color:#0d6efd; font-weight:600; margin-left:8px;"
+                                  invisible="state != 'approval_ro'">← Menunggu persetujuan RO</span>
+                        </div>
+                    </div>
+
+                    <!-- Banner Upload Form -->
+                    <div class="alert alert-info mb-3" role="alert"
+                         invisible="state != 'upload_form'">
+                        <strong>RO telah menyetujui.</strong>
+                        Silakan upload Form Design Final dan klik Submit Form Design Final.
+                    </div>
+
+                    <!-- Banner Done -->
+                    <div class="alert alert-success mb-3" role="alert"
+                         invisible="state != 'done'">
+                        <strong>✅ Selesai.</strong> Form Design Final telah disubmit.
+                    </div>
+
+                    <!-- Banner Reject -->
+                    <div class="alert alert-danger mb-3" role="alert"
+                         invisible="state != 'reject'">
+                        <strong>Ditolak</strong> —
+                        <field name="reject_reason" readonly="1"/>
+                        <span class="text-muted ms-2">oleh
+                            <field name="rejected_by" readonly="1"/> pada
+                            <field name="rejected_date" readonly="1"/>
+                        </span>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Informasi Design">
+                            <field name="usulan_id" readonly="1"/>
+                            <field name="date" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="mou_id" readonly="1"/>
+                            <field name="brand" readonly="1"/>
+                        </group>
+                        <group string="Status">
+                            <field name="revisi_count" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Produk" name="produk">
+                            <field name="product_line_ids" readonly="1">
+                                <list>
+                                    <field name="nama_produk"/>
+                                    <field name="kemasan"/>
+                                    <field name="keterangan"/>
+                                    <field name="attachment" widget="binary" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="File Design" name="file_design">
+                            <group>
+                                <field name="attachment_design"
+                                       widget="binary"
+                                       filename="attachment_design_fname"
+                                       readonly="1"/>
+                                <field name="attachment_design_fname"
+                                       invisible="not attachment_design"/>
+                            </group>
+                        </page>
+
+                        <page string="Form Design Final" name="form_design_final">
+                            <group>
+                                <field name="attachment_form"
+                                       widget="binary"
+                                       filename="attachment_form_fname"
+                                       readonly="state != 'upload_form'"/>
+                                <field name="attachment_form_fname"
+                                       invisible="not attachment_form"/>
+                            </group>
+                        </page>
+
+                        <page string="Riwayat Approval" name="approval_history">
+                            <group string="Approval Marketing">
+                                <field name="approved_by_marketing" readonly="1"/>
+                                <field name="approved_by_marketing_date" readonly="1"/>
+                            </group>
+                            <group string="Approval Client">
+                                <field name="approved_by_client" readonly="1"/>
+                                <field name="approved_by_client_date" readonly="1"/>
+                            </group>
+                            <group string="Approval RO">
+                                <field name="approved_by_ro" readonly="1"/>
+                                <field name="approved_by_ro_date" readonly="1"/>
+                            </group>
+                            <group string="Penolakan" invisible="state != 'reject'">
+                                <field name="rejected_by" readonly="1"/>
+                                <field name="rejected_date" readonly="1"/>
+                                <field name="reject_reason" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════
+         LIST VIEW
+    ═══════════════════════════════════════════════════ -->
+    <record id="view_design_approval_list" model="ir.ui.view">
+        <field name="name">design.approval.list</field>
+        <field name="model">design.approval</field>
+        <field name="arch" type="xml">
+            <list string="Approval Design"
+                  decoration-success="state=='done'"
+                  decoration-info="state in ('approval_marketing','approval_client','approval_ro')"
+                  decoration-warning="state=='upload_form'"
+                  decoration-danger="state=='reject'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="usulan_id"/>
+                <field name="partner_id"/>
+                <field name="mou_id"/>
+                <field name="brand"/>
+                <field name="revisi_count" string="Revisi" optional="show"/>
+                <field name="approved_by_marketing" optional="show"/>
+                <field name="approved_by_client" optional="show"/>
+                <field name="approved_by_ro" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state=='done'"
+                       decoration-warning="state=='upload_form'"
+                       decoration-info="state in ('approval_marketing','approval_client','approval_ro')"
+                       decoration-danger="state=='reject'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════
+         ACTION
+    ═══════════════════════════════════════════════════ -->
+    <record id="action_design_approval" model="ir.actions.act_window">
+        <field name="name">Approval Design</field>
+        <field name="res_model">design.approval</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Belum ada usulan yang masuk tahap approval.
+            </p>
+        </field>
+    </record>
+
+</odoo>

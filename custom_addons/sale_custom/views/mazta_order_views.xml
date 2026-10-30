@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- TREE / LIST VIEW -->
+    <record id="view_mazta_order_tree" model="ir.ui.view">
+        <field name="name">mazta.order.tree</field>
+        <field name="model">mazta.order</field>
+        <field name="arch" type="xml">
+            <list string="Mazta Orders">
+                <field name="name"/>
+                <field name="date_order"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="amount_total" sum="Total"/>
+                <field name="state" widget="badge" decoration-success="state == 'sale'" decoration-info="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_mazta_order_form" model="ir.ui.view">
+        <field name="name">mazta.order.form</field>
+        <field name="model">mazta.order</field>
+        <field name="arch" type="xml">
+            <form string="Mazta Order">
+                <header>
+                    <button name="action_confirm" string="Confirm" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_preview_order" string="Preview" type="object" invisible="state == 'cancel'"/>
+                    <button name="action_print" string="Print" type="object" class="btn-secondary" invisible="state == 'cancel'"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state in ('done', 'cancel')"/>
+                    <button name="action_draft" string="Set to Draft" type="object" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,sale,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" decoration-muted="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id" widget="res_partner_many2one" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="date_order"/>
+                            <field name="user_id"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Order Lines" name="order_lines">
+                            <field name="order_line" mode="list">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="name"/>
+                                    <field name="product_uom_qty"/>
+                                    <field name="price_unit"/>
+                                    <field name="tax_id" widget="many2many_tags" optional="show"/>
+                                    <field name="price_subtotal" sum="Total"/>
+                                </list>
+                            </field>
+                            <div class="clearfix"/>
+                            <group class="oe_subtotal_footer oe_right" name="sale_total">
+                                <field name="amount_total" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            </group>
+                            <div class="clearfix"/>
+                        </page>
+                        <page string="Other Info" name="other_info">
+                            <group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- GRAPH VIEW -->
+    <record id="view_mazta_order_graph" model="ir.ui.view">
+        <field name="name">mazta.order.graph</field>
+        <field name="model">mazta.order</field>
+        <field name="arch" type="xml">
+            <graph string="Mazta Order Analysis" type="bar" sample="1">
+                <field name="date_order" interval="month" type="row"/>
+                <field name="amount_total" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- PIVOT VIEW -->
+    <record id="view_mazta_order_pivot" model="ir.ui.view">
+        <field name="name">mazta.order.pivot</field>
+        <field name="model">mazta.order</field>
+        <field name="arch" type="xml">
+            <pivot string="Mazta Order Pivot" sample="1">
+                <field name="partner_id" type="row"/>
+                <field name="date_order" interval="month" type="col"/>
+                <field name="amount_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- WINDOW ACTION (ORDERS) -->
+    <record id="action_mazta_order" model="ir.actions.act_window">
+        <field name="name">Mazta Orders</field>
+        <field name="res_model">mazta.order</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Buat data Mazta Order pertama Anda di sini!
+            </p>
+        </field>
+    </record>
+
+    <!-- DASHBOARD WINDOW ACTION -->
+    <record id="action_mazta_order_dashboard" model="ir.actions.client">
+        <field name="name">Order Dashboard</field>
+        <field name="tag">mazta_order_dashboard_tag</field>
+    </record>
+
+    <!-- MENU ITEM -->
+    <menuitem id="menu_mazta_root"
+              name="Mazta"
+              parent="sale.sale_menu_root"
+              sequence="100"/>
+
+    <menuitem id="menu_mazta_dashboard"
+              name="Dashboard"
+              parent="menu_mazta_root"
+              action="action_mazta_order_dashboard"
+              sequence="5"/>
+
+    <menuitem id="menu_mazta_orders"
+              name="Orders"
+              parent="menu_mazta_root"
+              action="action_mazta_order"
+              sequence="10"/>
+    
+
+    <!-- REPORT ACTION (UNTUK CETAK PDF) -->
+    <record id="action_report_mazta_order" model="ir.actions.report">
+        <field name="name">Mazta Order PDF</field>
+        <field name="model">mazta.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sale_custom.report_mazta_order_document</field>
+        <field name="report_file">sale_custom.report_mazta_order_document</field>
+        <field name="binding_model_id" ref="model_mazta_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- TEMPLATE TAMPILAN CETAK PDF (QWEB) -->
+    <template id="report_mazta_order_document">
+        <t t-call="web.external_layout">
+            <t t-foreach="docs" t-as="doc">
+                <main class="oe_structure">
+                    <div class="page">
+                        <h2>Mazta Order: <span t-field="doc.name"/></h2>
+                        <div class="row mt32 mb32">
+                            <div class="col-6">
+                                <strong>Customer:</strong> <span t-field="doc.partner_id.name"/><br/>
+                                <strong>Order Date:</strong> <span t-field="doc.date_order"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Salesperson:</strong> <span t-field="doc.user_id.name"/><br/>
+                                <strong>Status:</strong> <span t-field="doc.state"/>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm o_main_table mt-4">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.order_line" t-as="line">
+                                    <tr>
+                                        <td><span t-field="line.product_id.name"/></td>
+                                        <td><span t-field="line.name"/></td>
+                                        <td class="text-end"><span t-field="line.product_uom_qty"/></td>
+                                        <td class="text-end"><span t-field="line.price_unit"/></td>
+                                        <td class="text-end"><span t-field="line.price_subtotal"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <div class="clearfix">
+                            <div id="total" class="row">
+                                <div class="col-4 ms-auto">
+                                    <table class="table table-sm">
+                                        <tr class="border-top">
+                                            <td><strong>Total</strong></td>
+                                            <td class="text-end">
+                                                <strong><span t-field="doc.amount_total"/></strong>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </t>
+        </t>
+    </template>
+
+    <!-- TEMPLATE PORTAL -->
+    <!-- TEMPLATE PORTAL -->
+    <template id="mazta_portal_template" name="Mazta Order Portal Template">
+        <t t-call="portal.portal_layout">
+            <div id="wrap" class="container mt-3">
+                <div class="row bg-white shadow-sm p-4 rounded">
+                    <div class="col-12 alert alert-info text-center" role="alert">
+                        This is a preview of the customer portal. 
+                        <a t-att-href="'/web#id=%s&amp;model=mazta.order&amp;view_type=form' % doc.id" class="alert-link font-weight-bold ms-2">
+                            <i class="fa fa-arrow-right"/> Back to edit mode
+                        </a>
+                    </div>
+
+                    <div class="col-md-8">
+                        <h2>
+                            Quotation - <span t-field="doc.name"/>
+                        </h2>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <h3><span t-field="doc.amount_total"/></h3>
+                    </div>
+
+                    <div class="col-12 mt-3">
+                        <hr/>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Date:</strong> <span t-field="doc.date_order"/><br/>
+                                <strong>Salesperson:</strong> <span t-field="doc.user_id.name"/>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Customer:</strong> <span t-field="doc.partner_id.name"/><br/>
+                                <strong>Status:</strong> <span t-field="doc.state"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Products</th>
+                                    <th>Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.order_line" t-as="line">
+                                    <tr>
+                                        <td><span t-field="line.product_id.name"/></td>
+                                        <td><span t-field="line.product_uom_qty"/></td>
+                                        <td class="text-end"><span t-field="line.price_unit"/></td>
+                                        <td class="text-end"><span t-field="line.price_subtotal"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

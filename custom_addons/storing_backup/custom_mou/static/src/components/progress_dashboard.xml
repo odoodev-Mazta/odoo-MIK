@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <t t-name="custom_mou.ProgressTemplate" owl="1">
+        <div class="o_dashboard_container p-4 bg-light w-100 h-100 d-flex flex-column overflow-hidden">
+            <div class="row g-4">
+
+                <div class="col-xl-5">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body" style="min-height: 400px;">
+                            <canvas t-ref="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-7">
+                    <div class="card shadow-sm border-0 h-100" t-if="state.selected_mou">
+                        <div class="card-body">
+
+                            <div class="row mb-4 align-items-center">
+                                <div class="col-md-7 border-end">
+                                    <div class="mb-2 row">
+                                        <label class="col-sm-4 col-form-label fw-bold">No. MOU</label>
+                                        <div class="col-sm-8">
+                                            <select class="form-select form-select-sm" t-on-change="onChangeSelection">
+                                                <option t-foreach="state.mou_list" t-as="mou" t-key="mou.id"
+                                                        t-att-value="mou.id"
+                                                        t-att-selected="mou.id === state.selected_mou.id">
+                                                    <t t-esc="mou.no_mou"/>
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2 row">
+                                        <label class="col-sm-4 col-form-label fw-bold">Pelanggan</label>
+                                        <div class="col-sm-8">
+                                            <select class="form-select form-select-sm" t-on-change="onChangeSelection">
+                                                <option t-foreach="state.mou_list" t-as="mou" t-key="'p_'+mou.id"
+                                                        t-att-value="mou.id"
+                                                        t-att-selected="mou.id === state.selected_mou.id">
+                                                    <t t-esc="mou.pelanggan"/>
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2 row">
+                                        <label class="col-sm-4 col-form-label fw-bold">Brand</label>
+                                        <div class="col-sm-8">
+                                            <select class="form-select form-select-sm" t-on-change="onChangeSelection">
+                                                <option t-foreach="state.mou_list" t-as="mou" t-key="'b_'+mou.id"
+                                                        t-att-value="mou.id"
+                                                        t-att-selected="mou.id === state.selected_mou.id">
+                                                    <t t-esc="mou.brand"/>
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-5">
+                                    <div style="height: 150px;">
+                                        <canvas t-ref="gaugeChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered table-hover mb-0" style="font-size: 0.85rem;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th rowspan="2" class="align-middle bg-light py-2">Tahapan</th>
+                                            <th rowspan="2" class="align-middle bg-light py-2">Deadline</th>
+                                            <th rowspan="2" class="align-middle bg-light text-center py-2">Dana Masuk</th>
+                                            <th colspan="2" class="text-center bg-light border-bottom py-2">Status</th>
+                                            <th rowspan="2" class="align-middle text-center bg-light py-2">Ontime/Overdue</th>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-center bg-light py-1">Start</th>
+                                            <th class="text-center bg-light py-1">Done</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="state.selected_mou.stages" t-as="stage" t-key="stage.tahapan">
+                                            <td class="fw-bold py-1"><t t-esc="stage.tahapan"/></td>
+                                            <td class="align-middle py-1"><t t-esc="stage.deadline"/></td>
+
+                                            <td class="text-center align-middle py-1">
+                                                <i t-if="stage.is_dana_masuk" class="fa fa-check-circle text-success me-1"></i>
+                                                <t t-esc="stage.tgl_dana"/>
+                                            </td>
+
+                                            <td class="text-center align-middle py-1">
+                                                <i t-if="stage.is_start" class="fa fa-check-circle text-primary me-1"></i>
+                                                <t t-esc="stage.tgl_start"/>
+                                            </td>
+
+                                            <td class="text-center align-middle py-1">
+                                                <i t-if="stage.is_done" class="fa fa-check-circle text-success me-1"></i>
+                                                <t t-esc="stage.tgl_done"/>
+                                            </td>
+
+                                            <td class="text-center align-middle py-1">
+                                                <span t-attf-class="badge text-dark bg-{{ stage.overdue === 'Overdue' ? 'danger text-white' : (stage.overdue === 'Ontime' ? 'info' : 'light border') }}">
+                                                    <t t-esc="stage.overdue"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4 flex-grow-1 overflow-hidden">
+                <div class="col-12 h-100">
+                    <div class="card shadow-sm border-0 h-100 d-flex flex-column">
+
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <button t-if="state.display_master_table.length !== state.all_master_data.length"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="resetTable">
+                                <i class="fa fa-refresh me-1"></i> Tampilkan Semua Pelanggan
+                            </button>
+                        </div>
+
+                        <div class="card-body p-0 overflow-auto">
+                            <div class="table-responsive h-100">
+                                <table class="table table-hover o_list_table mb-0">
+                                    <thead class="table-light" style="position: sticky; top: 0; z-index: 1; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);">
+                                        <tr>
+                                            <th class="py-3 px-4">Pelanggan</th>
+                                            <th class="text-center">By. Registrasi</th>
+                                            <th class="text-center">DP</th>
+                                            <th class="text-center">NIE</th>
+                                            <th class="text-center">Bahan Baku</th>
+                                            <th class="text-center">Kemasan</th>
+                                            <th class="text-center">Produksi</th>
+                                            <th class="text-center">Delivery</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="state.display_master_table" t-as="row" t-key="row.id"
+                                            t-on-click="() => this.selectMouFromTable(row.id)"
+                                            t-attf-class="{{ state.selected_mou and state.selected_mou.id === row.id ? 'table-primary border-primary' : '' }}"
+                                            style="cursor: pointer; transition: background-color 0.2s;">
+
+                                            <td class="py-3 px-4 fw-bold align-middle"><t t-esc="row.pelanggan"/></td>
+
+                                            <t t-foreach="['reg', 'dp', 'nie', 'bahan', 'kemasan', 'produksi', 'delivery']" t-as="stage" t-key="stage">
+                                                <td class="text-center align-middle">
+                                                    <span t-attf-class="badge rounded-pill bg-{{ row[stage] === 'Done' ? 'success' : (row[stage] === 'Process' ? 'primary' : 'secondary') }}">
+                                                        <t t-esc="row[stage]"/>
+                                                    </span>
+                                                </td>
+                                            </t>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_mou_container_form" model="ir.ui.view">
+        <field name="name">mou.container.form</field>
+        <field name="model">mou.container</field>
+        <field name="arch" type="xml">
+            <form string="MOU Progress Container">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="mou_id" string="No. MOU"/>
+                        <h1>
+                            <field name="mou_id" options="{'no_create': True}"/>
+                        </h1>
+                        <h2>
+                            <field name="pelanggan" readonly="1"/>
+                        </h2>
+                    </div>
+
+                    <notebook>
+                        <page string="1. Biaya Registrasi" name="page_registrasi">
+                            <group>
+                                <group string="Jadwal">
+                                    <field name="reg_due_date"/>
+                                    <field name="reg_actual_date" string="Tanggal Selesai (Actual)"/>
+                                </group>
+                                <group string="Keuangan">
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="reg_nilai" widget="monetary"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="2. DP" name="page_dp">
+                            <group>
+                                <group string="Jadwal">
+                                    <field name="dp_due_date"/>
+                                    <field name="dp_actual_date" string="Tanggal Selesai (Actual)"/>
+                                </group>
+                                <group string="Keuangan">
+                                    <field name="dp_nilai" widget="monetary"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="3. NIE" name="page_nie">
+                            <group>
+                                <group string="Jadwal">
+                                    <field name="nie_due_date"/>
+                                    <field name="nie_actual_date" string="Tanggal Selesai (Actual)"/>
+                                </group>
+                                <group string="Keuangan">
+                                    <field name="nie_nilai" widget="monetary"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="4. Pengadaan" name="page_pengadaan">
+                            <group>
+                                <group string="Jadwal">
+                                    <field name="peng_due_date"/>
+                                    <field name="peng_actual_date" string="Tanggal Selesai (Actual)"/>
+                                </group>
+                                <group string="Keuangan">
+                                    <field name="peng_nilai" widget="monetary"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_mou_progress_container_list" model="ir.ui.view">
+        <field name="name">mou.container.list</field>
+        <field name="model">mou.container</field>
+        <field name="arch" type="xml">
+            <list string="Progress Container">
+                <field name="mou_id" readonly="1"/>
+                <field name="pelanggan" readonly="1"/>
+
+                <field name="reg_due_date" optional="show"/>
+                <field name="reg_actual_date" optional="show"/>
+
+                <field name="dp_due_date" optional="show"/>
+                <field name="dp_actual_date" optional="show"/>
+
+                <field name="nie_due_date" optional="hide"/>
+                <field name="nie_actual_date" optional="hide"/>
+
+                <field name="peng_due_date" optional="hide"/>
+                <field name="peng_actual_date" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_mou_progress_container" model="ir.actions.act_window">
+        <field name="name">MOU Progress Container</field>
+        <field name="res_model">mou.container</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Belum ada data progres.
+            </p>
+            <p>
+                Data di sini akan ditarik secara otomatis oleh Dashboard Timeline.
+            </p>
+        </field>
+    </record>
+
+</odoo>

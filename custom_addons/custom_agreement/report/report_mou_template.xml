@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_agreement_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.basic_layout">
+                    <div class="header">
+                        <div class="text-center" style="font-family: 'Times New Roman', serif; margin-top: 5mm;">
+                            <h4 style="font-weight: bold; margin: 0;">PERJANJIAN KERJASAMA</h4>
+                            <h4 style="font-weight: bold; margin: 0;">KONTRAK PRODUKSI</h4>
+                            <p style="margin: 2px 0;">Antara</p>
+                            <p style="font-weight: bold; margin: 0; font-size: 16px;">PT. Mazta Industri Kosmetik dengan</p>
+                            <p style="font-weight: bold; margin: 0; font-size: 16px;">DR.dr. Balqis Wasliati,SH,M.Hum,M.Biomed</p>
+                            <p style="margin: 2px 0;">Nomor : 001/MKT-MIK/XI/2024</p>
+                        </div>
+                    </div>
+                    <div class="page" style="font-family: 'Times New Roman', Times, serif; line-height: 1.2;">
+                        <div style="width: 90%; margin: 0 auto; text-align: justify;">
+
+                            <p style="margin-bottom: 25px; font-size: 18px;">
+                                Pada hari ini Senin tanggal 18 November 2024, telah dibuat suatu perjanjian kerja sama kontrak produksi oleh dan diantara :
+                            </p>
+
+                            <div style="margin-left: 30px; margin-bottom: 25px;">
+                                <table class="table table-sm table-borderless" style="margin-bottom: 0; padding: 0;">
+                                    <tr>
+                                        <td style="width: 35%; padding: 2px 0;">Nama Perusahan</td>
+                                        <td style="width: 3%; padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">Perorangan an dr balqis</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">Nama Perwakilan PJ</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">Dhani Afriandy,SH,M.Hum</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">Jabatan</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">Pemilik Merek</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">Alamat</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">Jl.B.Katamso.Gg.Aman.No.437A.Medan</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">No.KTP</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">1271014807890001</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">No. Tlp rumah / handphone</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">0811 640 9292</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">Email perusahaan</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">balqiswasliati@gmail.com</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <p style="margin-bottom: 30px; font-size: 18px;">
+                                Selanjutnya disebut sebagai <strong>Pemberi Kontrak</strong> disebut juga <strong>Pihak Pertama,</strong>
+                            </p>
+
+                            <div style="margin-left: 30px; margin-bottom: 40px;">
+                                <table class="table table-sm table-borderless" style="margin-bottom: 0; padding: 0;">
+                                    <tr>
+                                        <td style="width: 35%; padding: 2px 0;">Nama Perusahaan</td>
+                                        <td style="width: 3%; padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">PT. Mazta Industri Kosmetik</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0; vertical-align: top;">Alamat Perusahaan</td>
+                                        <td style="padding: 2px 0; vertical-align: top;">:</td>
+                                        <td style="padding: 2px 0;">Jl Raya Tenjo, RT/RW: 02/03. Tegal, pondoh,<br/>Singabangsa Kec. Tenjo, Kab. Bogor, Jawa Barat.</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">Nama Perwakilan PJ</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">Dedi Dianto</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">Jabatan</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">Direktur Utama</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0; vertical-align: top;">Alamat</td>
+                                        <td style="padding: 2px 0; vertical-align: top;">:</td>
+                                        <td style="padding: 2px 0;">Jl Raya Tenjo, RT/RW: 02/03. Tegal, pondoh,<br/>Singabangsa Kec. Tenjo, Kab. Bogor, Jawa Barat.</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">No.KTP</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">36032824075001</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">No. Tlp Rumah</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">08121351777</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">No. TlP. Kantor/Fax</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">(021) 22527412</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 2px 0;">Email perusahaan</td>
+                                        <td style="padding: 2px 0;">:</td>
+                                        <td style="padding: 2px 0;">dedi.dianto@maztafarma.co.id</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <div t-field="o.pasal_1"/>
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <div t-field="o.pasal_2"/>
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <div t-field="o.pasal_3"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
