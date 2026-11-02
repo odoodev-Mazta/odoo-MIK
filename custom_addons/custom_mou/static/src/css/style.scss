@@ -2,3 +2,30 @@
 .o_custom_dashboard_wrapper {
     display: block;
 }
+
+/* Tracking MOU: item yang bisa diklik untuk membuka popup */
+.o_trk_link {
+    cursor: pointer;
+    border-radius: 4px;
+
+    &:hover {
+        background: #f1f3f5;
+    }
+}
+
+.o_trk_doc {
+    display: inline-flex;
+    align-items: center;
+    font-size: 9.5px;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: #e7f1ff;
+    color: #084298;
+    border: 0.5px solid #9ec5fe;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+        background: #cfe2ff;
+    }
+}

@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 class PurchaseRequest(models.Model):
     _name = 'purchase.request'
@@ -10,7 +11,6 @@ class PurchaseRequest(models.Model):
         string='PR Number',
         required=True,
         copy=False,
-        readonly=True,
         default='New'
     )
 
@@ -181,12 +181,30 @@ class PurchaseRequest(models.Model):
         domain="[('nama_cust','=',customer_id), ('state','=','mou')]"
     )
 
+    sale_order_id = fields.Many2one(
+        'sale.order',
+        string='Sales Order',
+        domain="[('mou_id', '=', mou_id)]"
+    )
+
     company_id = fields.Many2one(
         'res.company',
         string='Company',
         required=True,
         default=lambda self: self.env.company,
         index=True,
+    )
+
+    purchase_order_ids = fields.One2many(
+        'purchase.order',
+        'purchase_request_id',
+        string='Purchase Order',
+    )
+
+    has_active_po = fields.Boolean(
+        string='Sudah Ada PO',
+        compute='_compute_has_active_po',
+        store=True,
     )
 
     is_bulk_purchase = fields.Boolean(
@@ -242,6 +260,28 @@ class PurchaseRequest(models.Model):
     #         'target': 'current',
     #     }
 
+    @api.depends('purchase_order_ids', 'purchase_order_ids.state')
+    def _compute_has_active_po(self):
+        for rec in self:
+            rec.has_active_po = any(po.state != 'cancel' for po in rec.purchase_order_ids)
+
+    def onchange(self, values, field_names, fields_spec):
+        """Nomor diketik manual: form baru dibuka dengan nomor kosong."""
+        result = super().onchange(values, field_names, fields_spec)
+        if not self and not field_names and 'name' in fields_spec and not self.env.context.get('default_name'):
+            result.setdefault('value', {})['name'] = False
+        return result
+
+    @api.constrains('name', 'company_id')
+    def _check_unique_number(self):
+        for rec in self:
+            if rec.name and rec.name != 'New' and self.search_count([
+                ('id', '!=', rec.id),
+                ('name', '=', rec.name),
+                ('company_id', '=', rec.company_id.id),
+            ]):
+                raise ValidationError(f'Nomor {rec.name} sudah dipakai.')
+
     def write(self, vals):
         res = super().write(vals)
         if vals.get('attachment_ids'):
@@ -253,12 +293,28 @@ class PurchaseRequest(models.Model):
 
     @api.onchange('customer_id')
     def _onchange_customer(self):
-        self.mou_id = False
+        if self.mou_id.nama_cust != self.customer_id:
+            self.mou_id = False
+
+    def _fill_single_sale_order(self):
+        """SO terisi otomatis hanya jika MOU punya tepat satu SO."""
+        if self.sale_order_id or not self.mou_id:
+            return
+        orders = self.env['sale.order'].search([
+            ('mou_id', '=', self.mou_id.id),
+            ('company_id', '=', self.company_id.id),
+            ('state', '!=', 'cancel'),
+        ], limit=2)
+        if len(orders) == 1:
+            self.sale_order_id = orders
 
     @api.onchange('mou_id')
     def _onchange_mou(self):
+        if self.sale_order_id.mou_id != self.mou_id:
+            self.sale_order_id = False
         if not self.mou_id:
             return
+        self._fill_single_sale_order()
         # set customer otomatis
         self.customer_id = self.mou_id.nama_cust
 

@@ -1,7 +1,7 @@
 {
     'name': 'Custom Purchase Request',
     'version': '1.0',
-    'depends': ['purchase', 'web', 'base', 'hr', 'account', 'product', 'custom_usulandana', 'custom_ecatalogue'],
+    'depends': ['purchase', 'web', 'base', 'hr', 'account', 'product', 'custom_usulandana', 'custom_ecatalogue', 'custom_mou', 'sale'],
     'data': [
         'security/ir.model.access.csv',
         'security/security.xml',
@@ -9,6 +9,7 @@
         'views/purchase_request_views.xml',
         'views/pr_timeline_views.xml',
         'views/purchase_order_views.xml',
+        'views/detail_export_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

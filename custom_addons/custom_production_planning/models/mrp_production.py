@@ -9,6 +9,16 @@ class MrpProduction(models.Model):
         readonly=True,
     )
 
+    plan_mou_id = fields.Many2one(
+        related="production_plan_id.mou_id",
+        string="No. MOU",
+    )
+
+    plan_brand_name = fields.Char(
+        related="production_plan_id.brand_name",
+        string="Nama Brand",
+    )
+
     production_plan_line_id = fields.Many2one(
         "mrp.production.plan.line",
         string="Production Plan Line",

@@ -7,9 +7,25 @@
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
 
+            <xpath expr="//field[@name='partner_id']" position="before">
+                <field name="purchase_request_id" options="{'no_create': True}" readonly="state not in ('draft', 'sent')"/>
+                <field name="recommended_vendor_ids" invisible="1"/>
+                <field name="recommended_vendor_id" options="{'no_create': True, 'no_open': True}"
+                       invisible="not recommended_vendor_ids"
+                       readonly="state not in ('draft', 'sent')"
+                       placeholder="Pilih dari rekomendasi PR, atau isi Vendor di bawah"/>
+                <field name="recommended_vendor_note" invisible="not recommended_vendor_note" class="text-warning"/>
+            </xpath>
+
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="customer_id"/>
                 <field name="mou_id"/>
+                <field name="sale_order_id" options="{'no_create': True}" invisible="not mou_id"/>
+            </xpath>
+
+            <xpath expr="//div[hasclass('oe_title')]//field[@name='name']" position="attributes">
+                <attribute name="readonly">state not in ('draft', 'sent')</attribute>
+                <attribute name="placeholder">Ketik No. PQ/PO...</attribute>
             </xpath>
 
             <xpath expr="//page[field[@name='order_line']]" position="after">

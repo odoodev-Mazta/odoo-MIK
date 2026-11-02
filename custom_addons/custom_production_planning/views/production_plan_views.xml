@@ -7,6 +7,8 @@
             <list>
                 <field name="name"/>
                 <field name="sale_order_id"/>
+                <field name="mou_id" optional="show"/>
+                <field name="brand_name" optional="show"/>
                 <field name="production_po_number"/>
                 <field name="customer_id"/>
                 <field name="planned_start"/>
@@ -108,6 +110,8 @@
                         <group>
                             <field name="name"/>
                             <field name="sale_order_id"/>
+                            <field name="mou_id"/>
+                            <field name="brand_name"/>
                             <field name="production_po_number"/>
                             <field
                                 name="production_type"

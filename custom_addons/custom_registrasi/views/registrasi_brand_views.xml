@@ -151,29 +151,25 @@
                             <group string="1. Electronic Brand License Agreement">
                                 <field name="doc_license_agreement"
                                        widget="binary"
-                                       filename="doc_license_agreement_fname"
-                                       readonly="state not in ('draft',)"/>
+                                       filename="doc_license_agreement_fname"/>
                                 <field name="doc_license_agreement_fname" invisible="1"/>
                             </group>
                             <group string="2. Surat Keterangan Penggunaan Merek (Client Signed)">
                                 <field name="doc_brand_statement"
                                        widget="binary"
-                                       filename="doc_brand_statement_fname"
-                                       readonly="state not in ('draft',)"/>
+                                       filename="doc_brand_statement_fname"/>
                                 <field name="doc_brand_statement_fname" invisible="1"/>
                             </group>
                             <group string="3. Sertifikat HAKI / Tanda Bukti HAKI">
                                 <field name="doc_haki_certificate"
                                        widget="binary"
-                                       filename="doc_haki_certificate_fname"
-                                       readonly="state not in ('draft',)"/>
+                                       filename="doc_haki_certificate_fname"/>
                                 <field name="doc_haki_certificate_fname" invisible="1"/>
                             </group>
                             <group string="4. Surat Pernyataan Merek (MIK Director Signed)">
                                 <field name="doc_dir_statement"
                                        widget="binary"
-                                       filename="doc_dir_statement_fname"
-                                       readonly="state not in ('draft',)"/>
+                                       filename="doc_dir_statement_fname"/>
                                 <field name="doc_dir_statement_fname" invisible="1"/>
                             </group>
                         </page>

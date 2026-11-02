@@ -22,6 +22,7 @@ class UsulanPaymentChoiceWizard(models.TransientModel):
         ('vendor_bill', 'Vendor Bill'),
         ('journal_entry', 'Journal Entry'),
         ('bank_payment', 'Bank Payment'),
+        ('credit_card', 'Credit Card'),
     ], string='Pilihan Pembayaran',
        required=True,
        default='vendor_bill')
@@ -30,6 +31,12 @@ class UsulanPaymentChoiceWizard(models.TransientModel):
         'account.journal',
         string='Bank',
         domain=[('type', '=', 'bank')]
+    )
+
+    credit_card_journal_id = fields.Many2one(
+        'account.journal',
+        string='Credit Card',
+        domain=[('type', '=', 'credit')]
     )
 
     def action_confirm(self):
@@ -91,13 +98,19 @@ class UsulanPaymentChoiceWizard(models.TransientModel):
             }
 
         # ==========================================
-        # 3. BANK PAYMENT
+        # 3. BANK PAYMENT / 4. CREDIT CARD
         # ==========================================
-        elif self.payment_choice == 'bank_payment':
+        elif self.payment_choice in ('bank_payment', 'credit_card'):
 
-            if not self.bank_journal_id:
+            is_credit_card = self.payment_choice == 'credit_card'
+            journal = self.credit_card_journal_id if is_credit_card else self.bank_journal_id
+            action_name = 'Pembayaran Credit Card' if is_credit_card else 'Pembayaran Bank'
+
+            if not journal:
                 raise UserError(
-                    "Silakan pilih Bank terlebih dahulu."
+                    "Silakan pilih Credit Card terlebih dahulu."
+                    if is_credit_card
+                    else "Silakan pilih Bank terlebih dahulu."
                 )
 
             schedule = self.schedule_id
@@ -111,7 +124,7 @@ class UsulanPaymentChoiceWizard(models.TransientModel):
             # Jangan buat payment dua kali
             if schedule.payment_id:
                 return {
-                    'name': 'Pembayaran Bank',
+                    'name': action_name,
                     'type': 'ir.actions.act_window',
                     'res_model': 'account.payment',
                     'view_mode': 'form',
@@ -137,16 +150,16 @@ class UsulanPaymentChoiceWizard(models.TransientModel):
                     "Vendor belum dipilih pada Usulan Dana."
                 )
 
-            # Ambil payment method bank
-            payment_method_line = self.bank_journal_id.outbound_payment_method_line_ids[:1]
+            # Ambil payment method dari jurnal
+            payment_method_line = journal.outbound_payment_method_line_ids[:1]
 
             if not payment_method_line:
                 raise UserError(
-                    f"Jurnal Bank '{self.bank_journal_id.name}' "
+                    f"Jurnal '{journal.name}' "
                     "belum memiliki metode pembayaran Outbound."
                 )
 
-            # Buat Bank Payment
+            # Buat Payment
             payment = self.env['account.payment'].create({
                 'payment_type': 'outbound',
                 'partner_type': 'supplier',
@@ -154,7 +167,7 @@ class UsulanPaymentChoiceWizard(models.TransientModel):
                 'amount': schedule.amount,
                 'currency_id': self.env.company.currency_id.id,
                 'date': fields.Date.context_today(self),
-                'journal_id': self.bank_journal_id.id,
+                'journal_id': journal.id,
                 'payment_method_line_id': payment_method_line.id,
                 'memo': f"Pembayaran {usulan.name} - Termin {schedule.amount_percentage}%",
             })
@@ -170,7 +183,7 @@ class UsulanPaymentChoiceWizard(models.TransientModel):
             })
 
             return {
-                'name': 'Pembayaran Bank',
+                'name': action_name,
                 'type': 'ir.actions.act_window',
                 'res_model': 'account.payment',
                 'view_mode': 'form',

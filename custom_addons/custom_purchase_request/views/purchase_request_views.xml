@@ -6,6 +6,10 @@
         <field name="model">purchase.request</field>
         <field name="arch" type="xml">
             <list js_class="purchase_request_list">
+                <header>
+                    <button name="action_export_detail" type="object" string="Export Detail"
+                            display="always" groups="base.group_allow_export"/>
+                </header>
                 <field name="date_usulan" string="Tgl Usulan"/>
                 <field name="name"/>
                 <field name="department_id"/>
@@ -44,7 +48,7 @@
                             invisible="not is_urgent"/>
                     <div class="oe_title">
                         <h1>
-                            <field name="name" readonly="1"/>
+                            <field name="name" placeholder="Ketik No. PR..." readonly="state != 'draft'"/>
                         </h1>
                     </div>
                     <group>
@@ -62,6 +66,8 @@
                             <field name="usulan_dana_id"/>
                             <field name="customer_id" invisible="is_bulk_purchase"/>
                             <field name="mou_id" options="{'no_create': True}" invisible="is_bulk_purchase"/>
+                            <field name="sale_order_id" options="{'no_create': True}" invisible="is_bulk_purchase or not mou_id"/>
+                            <field name="purchase_order_ids" widget="many2many_tags" readonly="1" invisible="not purchase_order_ids"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </group>
                     </group>

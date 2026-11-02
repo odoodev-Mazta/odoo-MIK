@@ -200,11 +200,22 @@ class RegistrasiBrand(models.Model):
             }
         }
     
+    _MOU_DOC_FIELDS = (
+        ('doc_license_agreement', 'doc_license_agreement_fname'),
+        ('doc_brand_statement', 'doc_brand_statement_fname'),
+        ('doc_haki_certificate', 'doc_haki_certificate_fname'),
+    )
+
     @api.onchange('mou_id')
     def _onchange_mou_id(self):
         if self.mou_id:
             self.brand_name = self.mou_id.brand
             self.client_id = self.mou_id.nama_cust.id
+            mou = self.mou_id.with_context(bin_size=False)
+            for doc_field, fname_field in self._MOU_DOC_FIELDS:
+                if mou[doc_field]:
+                    self[doc_field] = mou[doc_field]
+                    self[fname_field] = mou[fname_field]
 
     # ────────────────────────────────────────────────────────────────────────
     # ORM Overrides
@@ -217,6 +228,12 @@ class RegistrasiBrand(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code(
                     'registrasi.brand'
                 ) or _('New')
+            if vals.get('mou_id'):
+                mou = self.env['draft.maklon'].with_context(bin_size=False).browse(vals['mou_id'])
+                for doc_field, fname_field in self._MOU_DOC_FIELDS:
+                    if not vals.get(doc_field) and mou[doc_field]:
+                        vals[doc_field] = mou[doc_field]
+                        vals[fname_field] = mou[fname_field]
         return super().create(vals_list)
 
     def copy(self, default=None):
