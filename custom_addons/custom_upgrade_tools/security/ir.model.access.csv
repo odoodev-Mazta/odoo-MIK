@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_custom_upgrade_run,custom.upgrade.run,model_custom_upgrade_run,base.group_system,1,1,1,1
+access_custom_upgrade_run_line,custom.upgrade.run.line,model_custom_upgrade_run_line,base.group_system,1,1,1,1
