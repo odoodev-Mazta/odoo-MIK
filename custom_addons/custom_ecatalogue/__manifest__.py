@@ -20,6 +20,7 @@
         'web.assets_backend': [
             'custom_ecatalogue/static/src/components/ecatalogue_carousel/**/*',
             'custom_ecatalogue/static/src/components/css/ecatalogue_carousel.scss',
+            'custom_ecatalogue/static/src/components/pdf_preview/**/*',
         ]
     },
     'auto_install': False,

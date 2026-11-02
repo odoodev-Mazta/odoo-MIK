@@ -7,6 +7,9 @@ class StockPicking(models.Model):
     mou_id = fields.Many2one(
         'draft.maklon',
         string='No MOU',
+        compute='_compute_mou_id',
+        store=True,
+        readonly=False,
         domain="[('nama_cust', '=', partner_id), ('state', '=', 'mou')]",
     )
 
@@ -27,13 +30,23 @@ class StockPicking(models.Model):
         for picking in self:
             picking.is_return = bool(picking.move_ids.mapped('origin_returned_move_id'))
 
+    @api.depends('sale_id.mou_id')
+    def _compute_mou_id(self):
+        for picking in self:
+            picking.mou_id = picking.sale_id.mou_id or picking.mou_id
+
     @api.onchange('partner_id')
     def _onchange_partner_id_delivery(self):
+        if self.sale_id:
+            return
         self.mou_id = False
         self.delivery_line_ids = [(5, 0, 0)]
 
     @api.onchange('mou_id')
     def _onchange_mou_id(self):
+        # Delivery dari SO: barisnya milik SO, jangan diganti dari MOU.
+        if self.sale_id:
+            return
         self.delivery_line_ids = [(5, 0, 0)]
         self.move_ids = [(5, 0, 0)]
 

@@ -79,6 +79,7 @@ class DashboardTimeline(models.Model):
             )
 
             result['brand'].append({
+                'id': rec.id,
                 'name': rec.name,
                 'brand': rec.brand_name,
                 'owner': rec.brand_owner or '-',
@@ -108,6 +109,7 @@ class DashboardTimeline(models.Model):
 
             for line in rec.product_line_ids:
                 result['nie'].append({
+                    'id': rec.id,
                     'name': rec.name,
                     'brand': (
                         rec.brand_registration_id.brand_name
@@ -166,6 +168,7 @@ class DashboardTimeline(models.Model):
         )
         for rec in halal_records:
             result['halal'].append({
+                'id': rec.id,
                 'name': rec.name,
                 'brand': rec.brand_registration_id.brand_name if rec.brand_registration_id else '-',
                 'product_name': rec.product_name,
@@ -201,11 +204,14 @@ class DashboardTimeline(models.Model):
         ])
         for picking in pickings:
             lines = []
-            for line in picking.delivery_line_ids:
+            # Delivery dari SO tidak punya tab Deliveries, jadi pakai baris Operations.
+            for line in picking.delivery_line_ids or picking.move_ids:
+                is_move = line._name == 'stock.move'
+                uom = line.product_uom if is_move else line.uom_id
                 lines.append({
                     'product': line.product_id.name,
-                    'qty': line.product_qty,
-                    'uom': line.uom_id.name if line.uom_id else '-',
+                    'qty': line.product_uom_qty if is_move else line.product_qty,
+                    'uom': uom.name if uom else '-',
                     'jenis_product': dict(line._fields['jenis_product'].selection).get(line.jenis_product, '-') if line.jenis_product else '-',
                     'kemasan': dict(line._fields['kemasan'].selection).get(line.kemasan, '-') if line.kemasan else '-',
                     'ukuran': line.ukuran or '-',
@@ -255,14 +261,43 @@ class DashboardTimeline(models.Model):
     
     # ─── Ambil Data Sales Order (termasuk Repeat Order) ─────────────────────
 
+    def _get_usulan_dana_data(self, mou, pr_records):
+        """Usulan Dana untuk pembelian MOU ini: lewat PO, baris usulan, atau PR."""
+        if 'usulan.usulan.dana' not in self.env:
+            return []
+        usulans = self.env['usulan.usulan.dana'].search([
+            '|', '|',
+            ('purchase_order_id.mou_id', '=', mou.id),
+            ('line_ids.mou_id', '=', mou.id),
+            ('id', 'in', pr_records.usulan_dana_id.ids),
+            ('state', '!=', 'cancel'),
+        ], order='tgl_usulan asc, id asc')
+        state_labels = dict(usulans._fields['state'].selection)
+        result = []
+        for usulan in usulans:
+            po = usulan.purchase_order_id
+            request = pr_records.filtered(lambda pr: pr.usulan_dana_id == usulan)[:1]
+            result.append({
+                'id': usulan.id,
+                'name': usulan.name,
+                'state_label': state_labels.get(usulan.state, usulan.state),
+                # Selesai = semua Plan Payment sudah dirilis.
+                'is_done': usulan.status_payment == 'paid',
+                'date': fields.Date.to_string(usulan.tgl_usulan) if usulan.tgl_usulan else None,
+                'amount_total': usulan.amount_total,
+                'po_name': po.name or False,
+                'sale_order_id': po.sale_order_id.id or request.sale_order_id.id or False,
+            })
+        return result
+
     def _get_sale_order_data(self, mou_id):
-        """Ambil semua SO untuk MOU ini (termasuk Repeat Order), untuk dropdown filter."""
+        """Ambil SO aktif untuk MOU ini (termasuk Repeat Order), untuk dropdown filter."""
         stage_label_map = {
             'reg': 'Biaya Registrasi', 'dp': 'Down Payment',
             'nie': 'Tagihan NIE', 'peng': 'Pengadaan', 'bp': 'Balance Payment',
         }
         orders = self.env['sale.order'].search(
-            [('mou_id', '=', mou_id)], order='create_date asc'
+            [('mou_id', '=', mou_id), ('state', 'not in', ('draft', 'cancel'))], order='create_date asc'
         )
         result = []
         for so in orders:
@@ -273,32 +308,62 @@ class DashboardTimeline(models.Model):
             result.append({
                 'id': so.id,
                 'name': so.name,
-                'timeline_stage_label': stage_label_map.get(so.timeline_stage, so.timeline_stage),
+                'timeline_stage_label': stage_label_map.get(so.timeline_stage, so.timeline_stage) or 'Seluruh Tahapan',
                 'is_repeat_order': so.is_repeat_order,
                 'is_paid': bool(paid_invoice),
                 'amount_total': so.amount_total,
             })
         return result
 
-        # ─── Hook: Progress Produksi (di-override oleh custom_production_planning) ──
+    # ─── Dokumen tagihan per tahapan (untuk popup di tracking) ──────────────
 
-        def _get_production_data(self, mou_id):
-            """
-            Placeholder.
-            Modul custom_production_planning akan meng-override method ini
-            lewat _inherit = 'dashboard.timeline.mou' untuk mengisi data asli.
-            """
-            return []
+    def _get_stage_docs(self, mou):
+        """Customer Payment per tahapan, plus invoice lama yang masih bertahapan."""
+        docs = {stage: [] for stage in ('reg', 'dp', 'nie', 'bp')}
+        payments = self.env['account.payment'].search([
+            ('mou_id', '=', mou.id),
+            ('timeline_stage', '!=', False),
+            ('state', 'not in', ('canceled', 'rejected')),
+        ], order='date asc, id asc')
+        for payment in payments:
+            docs[payment.timeline_stage].append({
+                'model': 'account.payment',
+                'id': payment.id,
+                'name': payment.display_name,
+            })
+        invoices = self.env['account.move'].search([
+            ('mou_id', '=', mou.id),
+            ('timeline_stage', '!=', False),
+            ('move_type', '=', 'out_invoice'),
+            ('state', '=', 'posted'),
+        ], order='invoice_date asc, id asc')
+        for invoice in invoices:
+            docs[invoice.timeline_stage].append({
+                'model': 'account.move',
+                'id': invoice.id,
+                'name': invoice.display_name,
+            })
+        return docs
 
-        # ─── Hook: Progress QC (di-override oleh custom_production_qc) ──────────
+    # ─── Hook: Progress Produksi (di-override oleh custom_production_planning) ──
 
-        def _get_qc_data(self, mou_id):
-            """
-            Placeholder.
-            Modul custom_production_qc akan meng-override method ini
-            lewat _inherit = 'dashboard.timeline.mou' untuk mengisi data asli.
-            """
-            return []
+    def _get_production_data(self, mou_id):
+        """
+        Placeholder.
+        Modul custom_production_planning akan meng-override method ini
+        lewat _inherit = 'dashboard.timeline.mou' untuk mengisi data asli.
+        """
+        return []
+
+    # ─── Hook: Progress QC (di-override oleh custom_production_qc) ──────────
+
+    def _get_qc_data(self, mou_id):
+        """
+        Placeholder.
+        Modul custom_production_qc akan meng-override method ini
+        lewat _inherit = 'dashboard.timeline.mou' untuk mengisi data asli.
+        """
+        return []
 
     # ─── Main Method ────────────────────────────────────────────────────────
 
@@ -384,22 +449,19 @@ class DashboardTimeline(models.Model):
             ])
             pr_data = []
             for pr in pr_records:
-                # Cari PO terkait PR ini (via origin)
+                # Cari PO terkait PR ini (relasi langsung, lalu via origin)
                 po = self.env['purchase.order'].search([
+                    ('purchase_request_id', '=', pr.id),
+                ], limit=1) or self.env['purchase.order'].search([
                     ('origin', 'like', pr.name),
                 ], limit=1)
-
-                # Fallback: cari PO langsung via mou_id jika origin tidak cocok
-                if not po:
-                    po = self.env['purchase.order'].search([
-                        ('mou_id', '=', mou.id),
-                    ], limit=1)
 
                 # Tentukan state PR yang sudah di-submit
                 pr_is_done = pr.state == 'pr'
 
                 # Stock picking terkait PO (receipt/done)
                 delivered = False
+                picking_id = None
                 picking_name = None
                 picking_date = None
                 # =====================================================
@@ -446,6 +508,7 @@ class DashboardTimeline(models.Model):
                             # cukup salah satu produk bulk milik MOU ini diterima
                             if any(prod in received_products for prod in bulk_products):
                                 delivered = True
+                                picking_id = pick.id
                                 picking_name = pick.name
                                 picking_date = fields.Date.to_string(
                                     pick.date_done.date() if pick.date_done else None
@@ -472,6 +535,7 @@ class DashboardTimeline(models.Model):
 
                         if picking:
                             delivered = True
+                            picking_id = picking.id
                             picking_name = picking.name
                             picking_date = fields.Date.to_string(
                                 picking.date_done.date() if picking.date_done else None
@@ -483,6 +547,8 @@ class DashboardTimeline(models.Model):
                 pr_data.append({
                     'id': pr.id,
                     'name': pr.name,
+                    'sale_order_id': pr.sale_order_id.id or False,
+                    'po_sale_order_id': (po.sale_order_id.id or pr.sale_order_id.id or False) if po else False,
                     'state': pr.state,
                     'state_label': dict(pr._fields['state'].selection).get(
                         pr.state, pr.state
@@ -506,6 +572,7 @@ class DashboardTimeline(models.Model):
 
                     # Delivered
                     'delivered': delivered,
+                    'delivered_id': picking_id,
                     'delivered_name': picking_name,
                     'delivered_date': picking_date,
                 })
@@ -528,6 +595,8 @@ class DashboardTimeline(models.Model):
                 'container': container_data,
                 'registrasi': registrasi_data,
                 'pr_data': pr_data,
+                'usulan_data': self._get_usulan_dana_data(mou, pr_records),
+                'stage_docs': self._get_stage_docs(mou),
                 'delivery_data': delivery_data,
                 'sale_orders': sale_order_data,
                 'production_data': production_data,

@@ -1,6 +1,6 @@
 {
     'name': 'Maklon Inventory Integration',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'summary': 'Integrasi Draft MOU dengan Inventory',
     'description': """
 Integrasi Draft Maklon ke Stock Picking
@@ -20,7 +20,9 @@ Fitur:
     'depends': [
         'base',
         'stock',
+        'sale_stock',
         'custom_ecatalogue',
+        'custom_mou',
     ],
 
     'data': [

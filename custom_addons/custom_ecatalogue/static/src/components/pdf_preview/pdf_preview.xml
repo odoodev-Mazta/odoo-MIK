@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="custom_ecatalogue.PdfPreviewDialog">
+        <Dialog title="props.title" size="'xl'">
+            <iframe class="w-100 border-0" style="height: 75vh;" t-att-src="viewerUrl" t-att-title="props.title"/>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="props.onDownload">
+                    <i class="fa fa-download me-1"/><t t-esc="downloadLabel"/>
+                </button>
+                <button class="btn btn-secondary" t-on-click="props.close">
+                    <t t-esc="closeLabel"/>
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

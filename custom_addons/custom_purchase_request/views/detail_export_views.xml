@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="detail_export_wizard_form" model="ir.ui.view">
+        <field name="name">detail.export.wizard.form</field>
+        <field name="model">detail.export.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="res_model" invisible="1"/>
+                <group>
+                    <field name="export_mode" widget="radio"/>
+                    <field name="date_label" string="Berdasarkan" invisible="export_mode != 'date'"/>
+                    <field name="date_from" invisible="export_mode != 'date'" required="export_mode == 'date'"/>
+                    <field name="date_to" invisible="export_mode != 'date'" required="export_mode == 'date'"/>
+                </group>
+                <footer>
+                    <button name="action_export" type="object" string="Export" class="btn-primary"/>
+                    <button string="Batal" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="sale_order_tree_detail_export" model="ir.ui.view">
+        <field name="name">sale.order.list.detail.export</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_export_detail" type="object" string="Export Detail"
+                        display="always" groups="base.group_allow_export"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="purchase_order_tree_detail_export" model="ir.ui.view">
+        <field name="name">purchase.order.list.detail.export</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='priority']" position="before">
+                <header>
+                    <button name="action_export_detail" type="object" string="Export Detail"
+                            display="always" groups="base.group_allow_export"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="purchase_order_kpis_tree_detail_export" model="ir.ui.view">
+        <field name="name">purchase.order.kpis.list.detail.export</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_export_detail" type="object" string="Export Detail"
+                        display="always" groups="base.group_allow_export"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="purchase_order_view_tree_detail_export" model="ir.ui.view">
+        <field name="name">purchase.order.view.list.detail.export</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_export_detail" type="object" string="Export Detail"
+                        display="always" groups="base.group_allow_export"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

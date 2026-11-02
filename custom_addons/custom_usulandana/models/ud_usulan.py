@@ -212,8 +212,13 @@ class UsulanUsulanDana(models.Model):
 
         new_lines = []
         for line in self.purchase_order_id.order_line:
+            if line.display_type:
+                continue
             line_values = {
-                'item_name': line.name,
+                'line_type': 'product',
+                'product_id': line.product_id.id,
+                'uom_id': line.product_uom_id.id,
+                'keterangan': line.name,
                 'quantity': line.product_qty,
                 'price_unit': line.price_unit,
                 'tax_ids': [(6, 0, line.tax_ids.ids)],

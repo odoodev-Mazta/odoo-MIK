@@ -1,11 +1,33 @@
-import { Component, useState, onWillStart, onMounted, onPatched, onWillUnmount } from "@odoo/owl";
+import { Component, useState, useChildSubEnv, onWillStart, onMounted, onPatched, onWillUnmount } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { loadJS } from "@web/core/assets";
+import { patch } from "@web/core/utils/patch";
+import { FormViewDialog } from "@web/views/view_dialogs/form_view_dialog";
+import { Many2One } from "@web/views/fields/many2one/many2one";
+
+// Popup dashboard: link many2one (mis. produk di baris invoice) dibuka sebagai popup baru,
+// bukan memindahkan halaman di belakang popup.
+class TimelineRecordDialog extends FormViewDialog {
+    setup() {
+        super.setup();
+        useChildSubEnv({ timelinePopup: true });
+    }
+}
+
+patch(Many2One.prototype, {
+    async openRecord(mode) {
+        if (mode === "action" && this.env.timelinePopup && !this.props.openRecordAction) {
+            mode = "dialog";
+        }
+        return super.openRecord(mode);
+    },
+});
 
 export class TimelineDashboard extends Component {
     setup() {
         this.orm = useService("orm");
+        this.dialog = useService("dialog");
         this._donutInstances = {};
 
         this.state = useState({
@@ -157,6 +179,45 @@ export class TimelineDashboard extends Component {
         }
     }
 
+    // Muat ulang data tanpa mengubah MOU, SO, dan accordion yang sedang dibuka.
+    async reloadData() {
+        const result = await this.orm.call("dashboard.timeline.mou", "get_timeline_data", []);
+        const mouId = this.state.selected_mou?.id;
+        this.state.all_mou = this.buildTimelineData(result || []);
+        this.state.selected_mou = this.state.all_mou.find(m => m.id === mouId) || this.state.all_mou[0] || null;
+    }
+
+    // ─── Popup ───────────────────────────────────────────────────────────────
+
+    _popup(model, id, title) {
+        return id ? { model, id, title: title || '' } : null;
+    }
+
+    // Tagihan per tahapan: dokumen pembayaran ditempel di baris tagihan pertama.
+    _attachDocs(stage, docs) {
+        const first = stage.details[0];
+        if (!first || !docs || !docs.length) return;
+        first.docs = docs.map(doc => this._popup(doc.model, doc.id, doc.name));
+        if (docs.length === 1) first.popup = first.docs[0];
+    }
+
+    openRecord(popup) {
+        if (!popup) return;
+        this.dialog.add(TimelineRecordDialog, {
+            resModel: popup.model,
+            resId: popup.id,
+            title: popup.title,
+            canExpand: false,
+        }, {
+            // noReload: popup ditutup karena pindah halaman, dashboard sudah tidak tampil
+            onClose: (params) => {
+                if (!params?.noReload) {
+                    this.reloadData();
+                }
+            },
+        });
+    }
+
     // computed properties pelanggan dan mou
 
     get uniquePelanggan() {
@@ -226,7 +287,9 @@ export class TimelineDashboard extends Component {
                 label: 'MOU Disahkan',
                 date: this.formatDate(mou.tgl_draft),
                 is_done: true,
+                popup: this._popup('draft.maklon', mou.id, mou.no_mou),
             });
+            const stageDocs = mou.stage_docs || {};
 
             // ── Stage 2: Biaya Registrasi ─────────────────────────────────
             const regStage = stages.find(s => s.code === 'biaya_registrasi');
@@ -251,6 +314,7 @@ export class TimelineDashboard extends Component {
                     is_done: !!c.reg_actual_date,
                 });
             }
+            this._attachDocs(regStage, stageDocs.reg);
 
             // ── Stage 3: DP ───────────────────────────────────────────────
             const dpStage = stages.find(s => s.code === 'dp');
@@ -275,6 +339,7 @@ export class TimelineDashboard extends Component {
                     is_done: !!c.dp_actual_date,
                 });
             }
+            this._attachDocs(dpStage, stageDocs.dp);
 
             // ── Stage 4: Registrasi ───────────────────────────────────────
             const registrasiStage = stages.find(s => s.code === 'registrasi');
@@ -299,6 +364,7 @@ export class TimelineDashboard extends Component {
                     is_done: !!c.nie_actual_date,
                 });
             }
+            this._attachDocs(registrasiStage, stageDocs.nie);
 
             // Sub-registrasi (accordion detail)
             const reg = mou.registrasi;
@@ -307,6 +373,7 @@ export class TimelineDashboard extends Component {
                     registrasiStage.sub_registrasi.brand.push({
                         label: `${item.brand} (${item.name})`,
                         owner: item.owner,
+                        popup: this._popup('registrasi.brand', item.id, item.name),
                         status_label: item.status_label,
                         date: item.tgl_terbit
                             ? `NIE Terbit: ${this.formatDate(item.tgl_terbit)}`
@@ -320,6 +387,7 @@ export class TimelineDashboard extends Component {
                         label: `${item.brand} — ${item.product_name} (${item.name})`,
                         status_label: item.status_label,
                         nie_number: item.nie_number,
+                        popup: this._popup('registrasi.produk', item.id, item.name),
                         date: item.tgl_terbit
                             ? `NIE Terbit: ${this.formatDate(item.tgl_terbit)}`
                             : item.tgl ? `Submit: ${this.formatDate(item.tgl)}` : '-',
@@ -335,6 +403,7 @@ export class TimelineDashboard extends Component {
                         label: `${item.brand} — ${item.product_name} (${item.name})`,
                         status_label: item.status_label,
                         nomor_sertifikat: item.nomor_sertifikat,
+                        popup: this._popup('halal.registrasi', item.id, item.name),
                         date: item.tgl_terbit
                             ? `Terbit: ${this.formatDate(item.tgl_terbit)}`
                             : item.tgl ? `Pengajuan: ${this.formatDate(item.tgl)}` : '-',
@@ -415,6 +484,8 @@ export class TimelineDashboard extends Component {
                     is_urgent: pr.is_urgent,
                     state_label: pr.state_label,
                     amount: this.formatCurrency(pr.total_amount),
+                    sale_order_id: pr.sale_order_id,
+                    popup: this._popup('purchase.request', pr.id, pr.name),
                 });
 
                 // ==========================
@@ -435,6 +506,8 @@ export class TimelineDashboard extends Component {
                         is_done: pr.po_is_done,
                         pr_ref: pr.name,
                         po_state: pr.po_state,
+                        sale_order_id: pr.po_sale_order_id,
+                        popup: this._popup('purchase.order', pr.po_id, pr.po_name),
                     });
                 }
 
@@ -483,8 +556,22 @@ export class TimelineDashboard extends Component {
                     date: pr.delivered_date ? this.formatDate(pr.delivered_date) : '-',
                     is_done: pr.delivered,
                     pr_ref: pr.name,
+                    sale_order_id: pr.po_sale_order_id || pr.sale_order_id,
+                    popup: this._popup('stock.picking', pr.delivered_id, pr.delivered_name),
                 });
             });
+
+            pengStage.sub_pengadaan.ud = (mou.usulan_data || []).map(ud => ({
+                id: ud.id,
+                label: ud.name,
+                po_ref: ud.po_name,
+                state_label: ud.state_label,
+                date: ud.date ? this.formatDate(ud.date) : '-',
+                amount: this.formatCurrency(ud.amount_total),
+                is_done: ud.is_done,
+                sale_order_id: ud.sale_order_id,
+                popup: this._popup('usulan.usulan.dana', ud.id, ud.name),
+            }));
 
             // Summary badge
             pengStage.sub_summary_pengadaan = {
@@ -499,6 +586,10 @@ export class TimelineDashboard extends Component {
                 delivered: {
                     total: pengStage.sub_pengadaan.delivered.length,
                     done:  pengStage.sub_pengadaan.delivered.filter(i => i.is_done).length,
+                },
+                ud: {
+                    total: pengStage.sub_pengadaan.ud.length,
+                    done:  pengStage.sub_pengadaan.ud.filter(i => i.is_done).length,
                 },
             };
 
@@ -525,6 +616,7 @@ export class TimelineDashboard extends Component {
                     is_done: !!c.bp_actual_date,
                 });
             }
+            this._attachDocs(bpStage, stageDocs.bp);
 
             // ── Stage 9: Delivery ────────────────────────────────────────
             const deliveryStage = stages.find(s => s.code === 'delivery');
@@ -535,6 +627,7 @@ export class TimelineDashboard extends Component {
                     label: pk.name,
                     state_label: pk.state_label,
                     is_done: pk.is_done,
+                    popup: this._popup('stock.picking', pk.id, pk.name),
                     date: pk.date_done
                         ? `Selesai: ${this.formatDate(pk.date_done)}`
                         : pk.scheduled_date
@@ -560,6 +653,7 @@ export class TimelineDashboard extends Component {
                     label: rt.name,
                     state_label: rt.state_label,
                     is_done: rt.is_done,
+                    popup: this._popup('stock.picking', rt.id, rt.name),
                     origin: rt.origin_picking,
                     date: rt.date_done
                         ? `Selesai: ${this.formatDate(rt.date_done)}`
@@ -607,6 +701,7 @@ export class TimelineDashboard extends Component {
                     mo_count: p.mo_count,
                     mo_done: p.mo_done,
                     is_done: p.is_done,
+                    popup: this._popup('mrp.production.plan', p.id, p.name),
                     is_cancelled: p.is_cancelled,
                     date: p.planned_start
                         ? `${this.formatDate(p.planned_start)} — ${p.planned_end ? this.formatDate(p.planned_end) : '-'}`
@@ -640,6 +735,7 @@ export class TimelineDashboard extends Component {
                     failed_count: q.failed_count,
                     pending_count: q.pending_count,
                     is_done: q.is_done,
+                    popup: this._popup('production.qc.schedule', q.id, q.name),
                     is_failed: q.is_failed,
                     date: q.inspection_date ? this.formatDate(q.inspection_date) : '-',
                 });
@@ -651,7 +747,7 @@ export class TimelineDashboard extends Component {
 
             // ── Hitung status tiap stage ──────────────────────────────────
             stages.forEach((stage, i) => {
-                const result = this._computeStageStatus(stage, i, stages);
+                const result = this._computeStageStatus(stage);
                 stage.status   = result.status;
                 stage.color    = result.color;
                 stage.progress = result.progress;
@@ -678,15 +774,12 @@ export class TimelineDashboard extends Component {
 
     // ─── Logika Status Stage ─────────────────────────────────────────────────
 
-    _computeStageStatus(stage, index, allStages) {
+    _computeStageStatus(stage) {
     if (stage.code === 'mou') {
         return { status: 'done', color: 'success', progress: 'full' };
     }
 
-    if (index > 0 && allStages[index - 1].status === 'waiting') {
-        return { status: 'waiting', color: 'secondary', progress: 'none' };
-    }
-
+    // Tahapan berjalan paralel: status tiap tahap hanya dinilai dari datanya sendiri.
     if (stage.code === 'registrasi') {
         const sub = stage.sub_registrasi || {};
         const allItems = [
@@ -707,6 +800,7 @@ export class TimelineDashboard extends Component {
             ...stage.details,
             ...(sub.pr        || []),
             ...(sub.po        || []),
+            ...(sub.ud        || []),
             ...(sub.delivered || []),
         ];
         if (allItems.length === 0) return { status: 'waiting', color: 'secondary', progress: 'none' };
@@ -841,13 +935,38 @@ export class TimelineDashboard extends Component {
         );
     }
 
+    filterProcurementBySo(stage, soId) {
+        if (!stage.sub_pengadaan) return stage;
+
+        // Data tanpa SO (data lama / pembelian bulk) tetap ditampilkan.
+        const sub = {};
+        const summary = { ...(stage.sub_summary_pengadaan || {}) };
+        for (const key of ['pr', 'po', 'ud', 'delivered']) {
+            sub[key] = (stage.sub_pengadaan[key] || []).filter(
+                item => !item.sale_order_id || item.sale_order_id === soId
+            );
+            summary[key] = {
+                ...(summary[key] || {}),
+                total: sub[key].length,
+                done: sub[key].filter(item => item.is_done).length,
+            };
+        }
+        return { ...stage, sub_pengadaan: sub, sub_summary_pengadaan: summary };
+    }
+
     get displayStages() {
         if (!this.state.selected_mou) return [];
-        const stages = this.state.selected_mou.stages;
         const so = this.selectedSaleOrder;
+        if (!so) return this.state.selected_mou.stages;
 
-        // Tidak ada SO dipilih, atau SO yang dipilih bukan repeat order → tampilan normal
-        if (!so || !so.is_repeat_order) {
+        // Status dihitung ulang karena isi Pengadaan sudah mengikuti SO terpilih.
+        const stages = this.state.selected_mou.stages.map(stage => this.filterProcurementBySo(stage, so.id));
+        stages.forEach((stage, index) => {
+            stages[index] = { ...stage, ...this._computeStageStatus(stage) };
+        });
+
+        // SO yang dipilih bukan repeat order → tampilan normal
+        if (!so.is_repeat_order) {
             return stages;
         }
 

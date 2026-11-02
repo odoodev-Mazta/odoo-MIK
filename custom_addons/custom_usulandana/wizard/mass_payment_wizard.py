@@ -25,7 +25,7 @@ class UsulanMassPaymentWizard(models.TransientModel):
                 dpp_per_unit = line.price_subtotal / (line.quantity or 1.0)
 
                 invoice_line_values.append((0, 0, {
-                    'name': f"[{usulan.name}] {line.item_name}",
+                    'name': f"[{usulan.name}] {line.product_id.display_name or line.setup_item_id.name or line.keterangan or ''}",
                     'account_id': line.setup_item_id.account_id.id,
                     'quantity': line.quantity or 1,
                     'price_unit': dpp_per_unit,
@@ -34,9 +34,10 @@ class UsulanMassPaymentWizard(models.TransientModel):
                 correct_accounts.append(line.setup_item_id.account_id.id)
 
         usulan_pertama = plans[0].usulan_dana_id
+        currency = usulan_pertama.currency_id or self.env.company.currency_id
         invoice_vals = {
             'move_type': 'in_invoice',
-            'currency_id': usulan_pertama.currency_id.id,
+            'currency_id': currency.id,
             'invoice_date': self.payment_date,
             'invoice_date_due': max_due_date,
             'ref': 'Tagihan Gabungan Usulan Dana',
@@ -45,7 +46,7 @@ class UsulanMassPaymentWizard(models.TransientModel):
         }
 
         bill = self.env['account.move'].with_context(
-            default_currency_id=usulan_pertama.currency_id.id
+            default_currency_id=currency.id
         ).sudo().create(invoice_vals)
 
         all_new_attachment_ids = []
@@ -74,7 +75,7 @@ class UsulanMassPaymentWizard(models.TransientModel):
                 'message_main_attachment_id': all_new_attachment_ids[0]
             })
 
-        bill.write({'currency_id': usulan_pertama.currency_id.id})
+        bill.write({'currency_id': currency.id})
         for index, move_line in enumerate(bill.invoice_line_ids):
             if index < len(correct_accounts) and correct_accounts[index]:
                 move_line.write({'account_id': correct_accounts[index]})

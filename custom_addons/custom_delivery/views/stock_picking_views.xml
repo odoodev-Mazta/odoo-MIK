@@ -8,7 +8,7 @@
         <field name="arch" type="xml">
 
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="mou_id"/>
+                <field name="mou_id" readonly="sale_id"/>
             </xpath>
 
             <xpath expr="//page[@name='operations']" position="after">
