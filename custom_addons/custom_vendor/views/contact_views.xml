@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='category_id']" position="after">
                 <field name="status_vendor" />
-                <field name="marketplace" invisible="status_vendor != 'online'"/>
+                <field name="marketplace" invisible="status_vendor != 'online'" required="status_vendor == 'online'"/>
                 <field name="nama_bank" />
                 <field name="nomor_rek" />
             </xpath>

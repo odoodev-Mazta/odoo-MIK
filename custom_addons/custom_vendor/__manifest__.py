@@ -1,6 +1,6 @@
 {
     'name': 'Modul Custom Field Data Vendor',
-    'version': '1.0',
+    'version': '1.1',
     'category': 'Contacts',
     'summary': 'Adding custom fields to Contacts',
     'description': 'Modul ini digunakan untuk menambahkan custom field ke Vendor.',
