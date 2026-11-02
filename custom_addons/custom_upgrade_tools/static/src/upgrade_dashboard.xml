@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="custom_upgrade_tools.Dashboard">
+        <div class="o_action h-100 overflow-auto p-4" style="max-width:1100px;">
+            <h2 class="mb-1">Upgrade Modul Custom</h2>
+            <p class="text-muted mb-3">
+                Mengupgrade <t t-esc="state.moduleCount"/> modul di folder custom_addons satu per satu,
+                sesuai urutan ketergantungan. Biarkan halaman ini terbuka sampai selesai.
+            </p>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <t t-set="run" t-value="state.run"/>
+                <button class="btn btn-primary" t-on-click="() => this.start()" t-att-disabled="state.processing">
+                    <t t-if="run and run.state === 'running'"><i class="fa fa-play me-1"/>Lanjutkan</t>
+                    <t t-else=""><i class="fa fa-refresh me-1"/>Upgrade Semua Modul Custom</t>
+                </button>
+                <button t-if="run and run.state === 'failed'" class="btn btn-warning"
+                        t-on-click="() => this.retryFailed()" t-att-disabled="state.processing">
+                    <i class="fa fa-repeat me-1"/>Coba Lagi yang Gagal
+                </button>
+            </div>
+
+            <t t-if="state.run">
+                <t t-set="run" t-value="state.run"/>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+                            <div>
+                                <strong t-esc="run.name"/>
+                                <span class="text-muted ms-2">oleh <t t-esc="run.user"/></span>
+                            </div>
+                            <div>
+                                <span t-attf-class="badge #{run.state === 'done' ? 'text-bg-success' : run.state === 'failed' ? 'text-bg-danger' : 'text-bg-primary'}"
+                                      t-esc="runLabels[run.state]"/>
+                            </div>
+                        </div>
+                        <div class="progress mb-2" style="height:22px;">
+                            <div t-attf-class="progress-bar #{run.state === 'running' ? 'progress-bar-striped progress-bar-animated' : ''} #{run.failed or run.skipped ? 'bg-warning' : 'bg-success'}"
+                                 role="progressbar" t-attf-style="width: #{percent}%;">
+                                <t t-esc="percent"/>%
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <t t-esc="run.done"/> selesai · <t t-esc="run.failed"/> gagal · <t t-esc="run.skipped"/> ditunda · dari <t t-esc="run.total"/> modul
+                            <t t-if="state.waitingSeconds"> · mencoba lagi dalam <t t-esc="state.waitingSeconds"/> detik</t>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Modul</th>
+                            <th style="width:140px;">Status</th>
+                            <th style="width:110px;">Percobaan</th>
+                            <th style="width:100px;">Durasi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="run.lines" t-as="line" t-key="line.id">
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold" t-esc="line.title"/>
+                                    <div class="small text-muted" t-esc="line.module"/>
+                                </td>
+                                <td>
+                                    <span t-attf-class="badge #{badgeClass(line.state)}">
+                                        <i t-if="line.state === 'running'" class="fa fa-circle-o-notch fa-spin me-1"/>
+                                        <t t-esc="stateLabels[line.state]"/>
+                                    </span>
+                                </td>
+                                <td><t t-esc="line.attempts"/></td>
+                                <td><t t-if="line.duration"><t t-esc="line.duration"/> dtk</t></td>
+                            </tr>
+                            <tr t-if="line.error">
+                                <td colspan="4" class="border-top-0 pt-0">
+                                    <a href="#" class="small" t-on-click.prevent="() => this.toggleError(line.id)">
+                                        <i t-attf-class="fa #{state.openErrors[line.id] ? 'fa-caret-down' : 'fa-caret-right'} me-1"/>
+                                        <t t-if="line.state === 'skipped'">Alasan ditunda</t>
+                                        <t t-else="">Lihat error</t>
+                                    </a>
+                                    <pre t-if="state.openErrors[line.id]" class="small bg-light border rounded p-2 mt-1 mb-0"
+                                         style="white-space:pre-wrap;max-height:300px;overflow:auto;" t-esc="line.error"/>
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </t>
+            <div t-else="" class="alert alert-info">Belum ada riwayat upgrade.</div>
+
+            <t t-if="state.history.length > 1">
+                <h5 class="mt-4">Riwayat</h5>
+                <ul class="list-unstyled small">
+                    <t t-foreach="state.history" t-as="item" t-key="item.id">
+                        <li>
+                            <a href="#" t-on-click.prevent="() => this.openHistory(item.id)" t-esc="item.name"/>
+                            <span class="text-muted"> · <t t-esc="item.user"/> · <t t-esc="runLabels[item.state]"/></span>
+                        </li>
+                    </t>
+                </ul>
+            </t>
+        </div>
+    </t>
+</templates>

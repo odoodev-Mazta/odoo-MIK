@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_custom_upgrade_dashboard" model="ir.actions.client">
+        <field name="name">Upgrade Modul Custom</field>
+        <field name="tag">custom_upgrade_tools.dashboard</field>
+    </record>
+
+    <menuitem id="menu_custom_upgrade_dashboard"
+              name="Upgrade Modul Custom"
+              parent="base.menu_apps"
+              action="action_custom_upgrade_dashboard"
+              groups="base.group_system"
+              sequence="6"/>
+
+</odoo>
