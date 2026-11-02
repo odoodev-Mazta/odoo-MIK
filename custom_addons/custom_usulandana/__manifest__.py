@@ -1,6 +1,6 @@
 {
     'name': 'Usulan Dana',
-    'version': '1.0',
+    'version': '1.1',
     'category': 'Usulan Dana',
     'summary': 'Usulan Dana Module',
     'description': 'Modul ini digunakan untuk Usulan Dana.',

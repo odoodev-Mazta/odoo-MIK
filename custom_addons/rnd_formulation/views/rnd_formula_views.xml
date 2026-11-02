@@ -69,6 +69,15 @@
         </field>
     </record>
 
+    <!-- ACTION UNTUK TRIAL (dipanggil dari smart button, harus sebelum form view) -->
+    <record id="action_rnd_formula_trial" model="ir.actions.act_window">
+        <field name="name">Daftar Percobaan</field>
+        <field name="res_model">rnd.formula.trial</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('formula_id', '=', active_id)]</field>
+        <field name="context">{'default_formula_id': active_id}</field>
+    </record>
+
     <!-- FORM VIEW UTAMA FORMULASI -->
     <record id="view_rnd_formula_form" model="ir.ui.view">
         <field name="name">rnd.formula.form</field>
@@ -100,14 +109,14 @@
                     <div class="oe_button_box" name="button_box">
                         <button name="%(action_rnd_formula_trial)d" type="action"
                                 class="oe_stat_button" icon="fa-flask"
-                                context="{'default_formula_id': active_id, 'search_default_formula_id': active_id}">
+                                context="{'default_formula_id': id, 'search_default_formula_id': id}">
                             <field name="trial_count" string="Percobaan" widget="statinfo"/>
                         </button>
                     </div>
 
                     <div class="oe_title">
                         <h1>
-                            <field name="name" readonly="1" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                            <field name="name" readonly="1"/>
                         </h1>
                     </div>
                     <group>
@@ -177,15 +186,6 @@
                 Buat formulasi uji coba laboratorium baru!
             </p>
         </field>
-    </record>
-
-    <!-- ACTION UNTUK TRIAL (dipanggil dari smart button) -->
-    <record id="action_rnd_formula_trial" model="ir.actions.act_window">
-        <field name="name">Daftar Percobaan</field>
-        <field name="res_model">rnd.formula.trial</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('formula_id', '=', active_id)]</field>
-        <field name="context">{'default_formula_id': active_id}</field>
     </record>
 
     <!-- MENU STRUCTURE -->
