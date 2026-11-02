@@ -18,6 +18,10 @@
                            invisible="payment_choice != 'bank_payment'"
                            required="payment_choice == 'bank_payment'"/>
 
+                    <field name="credit_card_journal_id"
+                           invisible="payment_choice != 'credit_card'"
+                           required="payment_choice == 'credit_card'"/>
+
                 </group>
 
                 <footer>

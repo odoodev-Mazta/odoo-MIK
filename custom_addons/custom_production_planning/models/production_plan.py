@@ -30,6 +30,18 @@ class ProductionPlan(models.Model):
         store=True,
     )
 
+    mou_id = fields.Many2one(
+        related="sale_order_id.mou_id",
+        string="No. MOU",
+        store=True,
+    )
+
+    brand_name = fields.Char(
+        related="sale_order_id.brand_name",
+        string="Nama Brand",
+        store=True,
+    )
+
     planned_start = fields.Date(
         required=False,
         tracking=True,

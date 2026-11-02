@@ -34,10 +34,7 @@ class SaleOrder(models.Model):
     def action_send_to_production(self):
         for order in self:
 
-            if not order.marketing_sequence:
-                raise ValidationError(
-                    "No. PO Produksi harus diisi terlebih dahulu."
-                )
+            production_po_number = order.marketing_sequence or order.name
 
             if order.production_plan_ids:
                 raise ValidationError(
@@ -55,7 +52,7 @@ class SaleOrder(models.Model):
 
             plan = self.env["mrp.production.plan"].create({
                 "sale_order_id": order.id,
-                "production_po_number": order.marketing_sequence,
+                "production_po_number": production_po_number,
             })
 
             for sequence, line in enumerate(
@@ -75,7 +72,7 @@ class SaleOrder(models.Model):
                 body=Markup(
                     "<p><b>Production request telah dikirim.</b></p>"
                     f"<p><b>No. PO Produksi:</b> "
-                    f"{order.marketing_sequence}</p>"
+                    f"{production_po_number}</p>"
                     "<p><b>Production Planning:</b></p>"
                     f"<ul><li>{plan.name}</li></ul>"
                 )

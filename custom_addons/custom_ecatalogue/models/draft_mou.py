@@ -18,6 +18,13 @@ class DraftMaklon(models.Model):
     jabatan_cust = fields.Char(string="Jabatan", store=True)
     brand = fields.Char(string="Nama Brand")
 
+    doc_license_agreement = fields.Binary(string="Electronic Brand License Agreement", attachment=True)
+    doc_license_agreement_fname = fields.Char(string="License Agreement Filename")
+    doc_brand_statement = fields.Binary(string="Surat Keterangan Penggunaan Merek (Client Signed)", attachment=True)
+    doc_brand_statement_fname = fields.Char(string="Brand Statement Filename")
+    doc_haki_certificate = fields.Binary(string="Sertifikat HAKI / Tanda Bukti HAKI", attachment=True)
+    doc_haki_certificate_fname = fields.Char(string="HAKI Certificate Filename")
+
     currency_id = fields.Many2one("res.currency", string="Currency",
                                   default=lambda self: self.env.company.currency_id.id)
     state = fields.Selection([
@@ -178,7 +185,6 @@ class DraftMaklon(models.Model):
         return self.env['sale.order'].create({
             'partner_id': self.nama_cust.id,
             'mou_id': self.id,
-            'timeline_stage': 'dp',
             'is_repeat_order': True,
             'order_line': order_lines,
         })

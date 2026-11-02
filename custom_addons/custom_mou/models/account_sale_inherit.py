@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import UserError, ValidationError
 
 
 class SaleOrder(models.Model):
@@ -14,9 +15,9 @@ class SaleOrder(models.Model):
         ('reg',  'Biaya Registrasi'),
         ('dp',   'Down Payment'),
         ('nie',  'Tagihan NIE'),
-        ('peng', 'Pengadaan'),
         ('bp' , 'Balance Payment'),
-    ], string='Tahapan', default='reg', required=True)
+    ], string='Tahapan (Data Lama)', copy=False,
+        help="Hanya untuk SO lama. Tahapan SO baru dipilih di Customer Payment.")
 
     is_repeat_order = fields.Boolean(
         string='Repeat Order?',
@@ -24,42 +25,47 @@ class SaleOrder(models.Model):
         copy=False,
     )
 
-    bp_total_kontrak = fields.Monetary(
-        string='Total Nilai Kontrak', compute='_compute_bp_outstanding')
-    bp_total_tertagih = fields.Monetary(
-        string='Sudah Ditagih (Semua Tahapan)', compute='_compute_bp_outstanding')
-    bp_outstanding_amount = fields.Monetary(
-        string='Sisa Tunggakan', compute='_compute_bp_outstanding')
+    brand_name = fields.Char(
+        string='Nama Brand',
+        compute='_compute_brand_name',
+        store=True,
+        readonly=False,
+        help="Terisi dari MOU jika brand sudah terdaftar. "
+             "Jika belum ada, bisa diisi manual sambil menunggu brand disetujui.",
+    )
 
-    @api.depends('mou_id', 'timeline_stage')
-    def _compute_bp_outstanding(self):
+    mou_payment_ids = fields.One2many(
+        'account.payment', 'sale_order_id', string='Customer Payments')
+    mou_payment_count = fields.Integer(
+        string='Jumlah Payment', compute='_compute_mou_payment_count')
+
+    @api.depends('mou_id', 'mou_id.brand')
+    def _compute_brand_name(self):
         for order in self:
-            order.bp_total_kontrak = 0.0
-            order.bp_total_tertagih = 0.0
-            order.bp_outstanding_amount = 0.0
+            order.brand_name = order.mou_id.brand or order.brand_name
 
-            if order.timeline_stage != 'bp' or not order.mou_id:
-                continue
+    @api.depends('mou_payment_ids')
+    def _compute_mou_payment_count(self):
+        for order in self:
+            order.mou_payment_count = len(order.mou_payment_ids)
 
-            dp_invoices = self.env['account.move'].search([
-                ('mou_id', '=', order.mou_id.id),
-                ('state', '=', 'posted'),
-                ('move_type', 'in', ('out_invoice', 'out_refund')),
-                ('timeline_stage', '=', 'dp'),
-            ])
+    def action_view_mou_payments(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Customer Payments',
+            'res_model': 'account.payment',
+            'view_mode': 'list,form',
+            'domain': [('sale_order_id', '=', self.id)],
+            'context': {
+                'default_payment_type': 'inbound',
+                'default_partner_type': 'customer',
+                'default_partner_id': self.partner_id.id,
+                'default_mou_id': self.mou_id.id,
+                'default_sale_order_id': self.id,
+            },
+        }
 
-            total_dp = sum(
-                inv.amount_total if inv.move_type == 'out_invoice'
-                else -inv.amount_total
-                for inv in dp_invoices
-            )
-
-            order.bp_total_kontrak = order.mou_id.nilai_kontrak or 0.0
-            order.bp_total_tertagih = total_dp
-            order.bp_outstanding_amount = (
-                    order.bp_total_kontrak - total_dp
-            )
-    
     # @api.depends('mou_id')
     # def _compute_is_repeat_order(self):
     #     for order in self:
@@ -74,6 +80,28 @@ class SaleOrder(models.Model):
     #         else:
     #             order.is_repeat_order = False
     
+    def onchange(self, values, field_names, fields_spec):
+        """Nomor diketik manual: form baru dibuka dengan nomor kosong."""
+        result = super().onchange(values, field_names, fields_spec)
+        if not self and not field_names and 'name' in fields_spec and not self.env.context.get('default_name'):
+            result.setdefault('value', {})['name'] = False
+        return result
+
+    @api.constrains('name', 'company_id')
+    def _check_unique_number(self):
+        for rec in self:
+            if rec.name and rec.name != 'New' and self.search_count([
+                ('id', '!=', rec.id),
+                ('name', '=', rec.name),
+                ('company_id', '=', rec.company_id.id),
+            ]):
+                raise ValidationError(f'Nomor {rec.name} sudah dipakai.')
+
+    @api.onchange('partner_id')
+    def _onchange_partner_id_reset_mou(self):
+        self.mou_id = False
+        self.brand_name = False
+
     @api.onchange('mou_id', 'timeline_stage')
     def _onchange_mou_id_fill_lines(self):
         """
@@ -82,8 +110,8 @@ class SaleOrder(models.Model):
 
         - Untuk tahapan 'bp' (Balance Payment): hitung proporsional dari SISA
         tunggakan kontrak (logic lama, dipertahankan).
-        - Untuk tahapan lain (reg, dp, nie, peng): isi langsung dari HNA per
-        baris produk MOU (tanpa proporsi sisa tunggakan).
+        - Selain itu: isi langsung dari HNA per baris produk MOU
+        (tanpa proporsi sisa tunggakan).
         """
         if not self.mou_id:
             self.order_line = [(5, 0, 0)]
@@ -158,13 +186,12 @@ class SaleOrder(models.Model):
             return
 
         # ═══════════════════════════════════════════════════════════════
-        # TAHAPAN LAIN (reg, dp, nie, peng): isi langsung dari HNA per baris
+        # SO BARU / TAHAPAN LAIN: isi langsung dari HNA per baris
         # ═══════════════════════════════════════════════════════════════
         stage_label_map = {
             'reg':  'Biaya Registrasi',
             'dp':   'Down Payment',
             'nie':  'Tagihan NIE',
-            'peng': 'Pengadaan',
         }
         label_suffix = stage_label_map.get(self.timeline_stage, '')
 
@@ -208,6 +235,75 @@ class SaleAdvancePaymentInv(models.TransientModel):
         return invoice
 
 
+class AccountPaymentRegister(models.TransientModel):
+    """Tombol Pay di invoice: No. MOU dan tahapan ikut terisi dari invoice."""
+    _inherit = 'account.payment.register'
+
+    mou_invoice_id = fields.Many2one(
+        'account.move', compute='_compute_mou_invoice', store=True)
+    mou_id = fields.Many2one(
+        'draft.maklon', string='No. MOU', compute='_compute_mou_invoice', store=True)
+    # Compute terpisah: tahapan bisa diubah user tanpa mengosongkan No. MOU.
+    timeline_stage = fields.Selection([
+        ('reg', 'Biaya Registrasi'),
+        ('dp', 'Down Payment'),
+        ('nie', 'Tagihan NIE'),
+        ('bp', 'Balance Payment'),
+    ], string='Tahapan', compute='_compute_timeline_stage', store=True, readonly=False)
+
+    @api.depends('line_ids')
+    def _compute_mou_invoice(self):
+        for wizard in self:
+            invoice = wizard.line_ids.move_id
+            single = len(invoice) == 1 and invoice.move_type == 'out_invoice' and invoice.mou_id
+            wizard.mou_invoice_id = invoice if single else False
+            wizard.mou_id = invoice.mou_id if single else False
+
+    @api.depends('mou_invoice_id')
+    def _compute_timeline_stage(self):
+        for wizard in self:
+            invoice = wizard.mou_invoice_id
+            if not invoice:
+                wizard.timeline_stage = False
+            elif invoice.timeline_stage:
+                wizard.timeline_stage = invoice.timeline_stage
+            else:
+                # Invoice belum pernah dibayar = DP, sudah pernah = pelunasan.
+                paid_before = self.env['account.payment'].search_count([
+                    ('sale_invoice_id', '=', invoice.id),
+                    ('state', 'in', ('in_process', 'paid')),
+                ]) or invoice.currency_id.compare_amounts(invoice.amount_residual, invoice.amount_total) < 0
+                wizard.timeline_stage = 'bp' if paid_before else 'dp'
+
+    def _mou_payment_vals(self):
+        if not self.mou_id:
+            return {}
+        return {
+            'mou_id': self.mou_id.id,
+            'timeline_stage': self.timeline_stage,
+            'sale_invoice_id': self.mou_invoice_id.id,
+        }
+
+    @api.depends('mou_invoice_id')
+    def _compute_amount(self):
+        """Nominal awal tidak boleh melebihi sisa tagihan yang sebenarnya."""
+        super()._compute_amount()
+        for wizard in self:
+            invoice = wizard.mou_invoice_id
+            if invoice and not wizard.custom_user_amount and wizard.currency_id == invoice.currency_id:
+                wizard.amount = min(wizard.amount, max(invoice._get_mou_outstanding(), 0.0))
+
+    def _create_payment_vals_from_wizard(self, batch_result):
+        vals = super()._create_payment_vals_from_wizard(batch_result)
+        vals.update(self._mou_payment_vals())
+        return vals
+
+    def _create_payment_vals_from_batch(self, batch_result):
+        vals = super()._create_payment_vals_from_batch(batch_result)
+        vals.update(self._mou_payment_vals())
+        return vals
+
+
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
@@ -223,18 +319,30 @@ class AccountMove(models.Model):
         ('reg',  'Biaya Registrasi'),
         ('dp',   'Down Payment'),
         ('nie',  'Tagihan NIE'),
-        ('peng', 'Pengadaan'),
         ('bp', 'Balance Payment'),
-    ], string='Tahapan', readonly=False, copy=False)
+    ], string='Tahapan (Data Lama)', readonly=False, copy=False)
+
+    def _get_mou_outstanding(self, exclude_payments=None):
+        """Sisa invoice dikurangi payment yang belum punya jurnal entry,
+        karena payment itu belum mengurangi residual invoice."""
+        self.ensure_one()
+        payments = self.matched_payment_ids | self.env['account.payment'].search([
+            ('sale_invoice_id', '=', self.id),
+        ])
+        pending = payments.filtered(
+            lambda pay: pay.state in ('in_process', 'paid') and not pay.move_id
+        )
+        if exclude_payments:
+            pending -= exclude_payments
+        return self.amount_residual - sum(pending.mapped('amount'))
 
     # ── Mapping timeline_stage invoice → state mou.setup ─────────────────────
-    # timeline_stage di invoice pakai 'reg','dp','nie','peng'
-    # state di mou.setup pakai 'biaya_registrasi','dp','nie','pengadaan'
+    # timeline_stage di invoice pakai 'reg','dp','nie','bp'
+    # state di mou.setup pakai 'biaya_registrasi','dp','nie','bp'
     _STAGE_TO_SETUP_STATE = {
         'reg':  'biaya_registrasi',
         'dp':   'dp',
         'nie':  'nie',
-        'peng': 'pengadaan',
         'bp' : 'bp',
     }
 
@@ -276,14 +384,12 @@ class AccountMove(models.Model):
             'reg':  'reg_due_date',
             'dp':   'dp_due_date',
             'nie':  'nie_due_date',
-            'peng': 'peng_due_date',
             'bp' : 'bp_due_date',
         }
         nilai_field_map = {
             'reg':  'reg_nilai',
             'dp':   'dp_nilai',
             'nie':  'nie_nilai',
-            'peng': 'peng_nilai',
             'bp' : 'bp_nilai',
         }
         for move in self:
@@ -327,7 +433,6 @@ class AccountMove(models.Model):
             'reg':  'reg_payment_date',
             'dp':   'dp_payment_date',
             'nie':  'nie_payment_date',
-            'peng': 'peng_payment_date',
             'bp' : 'bp_payment_date',
         }
         pay_field = payment_field_map.get(self.timeline_stage)
@@ -355,5 +460,196 @@ class AccountPayment(models.Model):
     mou_id = fields.Many2one(
         'draft.maklon',
         string='No. MOU',
-        domain=[('state', '=', 'mou')]
+        domain="[('state', '=', 'mou'), ('nama_cust', '=', partner_id)]"
     )
+
+    timeline_stage = fields.Selection([
+        ('reg', 'Biaya Registrasi'),
+        ('dp', 'Down Payment'),
+        ('nie', 'Tagihan NIE'),
+        ('bp', 'Balance Payment'),
+    ], string='Tahapan', copy=False)
+
+    sale_invoice_id = fields.Many2one(
+        'account.move',
+        string='Sales Invoice',
+        copy=False,
+        domain="[('move_type', '=', 'out_invoice'), ('state', '=', 'posted'),"
+               " ('mou_id', '=', mou_id), ('amount_residual', '>', 0)]",
+        help="Invoice yang dibayar. DP dan BP selalu membayar Sales Invoice dari SO.",
+    )
+
+    sale_order_id = fields.Many2one(
+        'sale.order',
+        string='Sales Order',
+        compute='_compute_sale_order_id',
+        store=True,
+        readonly=False,
+        copy=False,
+    )
+
+    so_outstanding_amount = fields.Monetary(
+        string='Sisa Tagihan Invoice',
+        compute='_compute_so_outstanding_amount',
+    )
+    sale_invoice_total = fields.Monetary(
+        string='Total Invoice', related='sale_invoice_id.amount_total')
+    sale_invoice_paid = fields.Monetary(
+        string='Sudah Dibayar', compute='_compute_so_outstanding_amount')
+
+    bukti_bayar_ids = fields.Many2many(
+        'ir.attachment',
+        'account_payment_bukti_bayar_rel',
+        'payment_id',
+        'attachment_id',
+        string='Bukti Bayar',
+        copy=False,
+    )
+
+    _STAGE_SETUP_FIELDS = {
+        'reg': ('reg_nilai', 'reg_payment_date', 'reg_due_date'),
+        'dp': ('dp_nilai', 'dp_payment_date', 'dp_due_date'),
+        'nie': ('nie_nilai', 'nie_payment_date', 'nie_due_date'),
+        'bp': ('bp_nilai', 'bp_payment_date', 'bp_due_date'),
+    }
+    _STAGES_WITH_SO = ('dp', 'bp')
+
+    @api.depends('sale_invoice_id')
+    def _compute_sale_order_id(self):
+        for payment in self:
+            order = payment.sale_invoice_id.line_ids.sale_line_ids.order_id[:1]
+            payment.sale_order_id = order or payment.sale_order_id
+
+    def _get_invoice_outstanding(self):
+        self.ensure_one()
+        return self.sale_invoice_id._origin._get_mou_outstanding(exclude_payments=self._origin)
+
+    @api.depends('sale_invoice_id', 'timeline_stage')
+    def _compute_so_outstanding_amount(self):
+        for payment in self:
+            payment.so_outstanding_amount = (
+                payment._get_invoice_outstanding()
+                if payment.sale_invoice_id and payment.timeline_stage in self._STAGES_WITH_SO
+                else 0.0
+            )
+            payment.sale_invoice_paid = (
+                payment.sale_invoice_id.amount_total - payment.so_outstanding_amount
+                if payment.sale_invoice_id else 0.0
+            )
+
+    @api.onchange('mou_id')
+    def _onchange_mou_id(self):
+        if self.mou_id:
+            self.partner_id = self.mou_id.nama_cust
+        if self.sale_invoice_id.mou_id != self.mou_id:
+            self.sale_invoice_id = False
+            self.sale_order_id = False
+
+    @api.onchange('timeline_stage')
+    def _onchange_timeline_stage(self):
+        if self.timeline_stage not in self._STAGES_WITH_SO:
+            self.sale_invoice_id = False
+            self.sale_order_id = False
+
+    @api.onchange('sale_invoice_id')
+    def _onchange_fill_invoice_amount(self):
+        """Nominal awal = sisa tagihan invoice. Tetap bisa diedit untuk bayar sebagian."""
+        if self.sale_invoice_id:
+            self.amount = max(self.so_outstanding_amount, 0.0)
+            self.currency_id = self.sale_invoice_id.currency_id
+
+    def _check_mou_payment(self):
+        for payment in self:
+            if payment.payment_type != 'inbound' or payment.partner_type != 'customer':
+                continue
+            if not payment.mou_id and not payment.timeline_stage:
+                continue
+            if not payment.mou_id or not payment.timeline_stage:
+                raise UserError('No. MOU dan Tahapan harus diisi bersamaan.')
+            if payment.timeline_stage not in self._STAGES_WITH_SO:
+                continue
+
+            invoice = payment.sale_invoice_id
+            if not invoice:
+                raise UserError('Pembayaran DP/BP harus memilih Sales Invoice.')
+            if invoice.state != 'posted' or invoice.move_type != 'out_invoice':
+                raise UserError(f'Invoice {invoice.name} belum di-posting.')
+            if invoice.mou_id != payment.mou_id:
+                raise UserError('Sales Invoice tidak sesuai dengan No. MOU yang dipilih.')
+            if payment.currency_id == invoice.currency_id:
+                outstanding = payment._get_invoice_outstanding()
+                if payment.currency_id.compare_amounts(payment.amount, outstanding) > 0:
+                    raise UserError(
+                        f'Nominal {payment.amount:,.2f} melebihi sisa tagihan '
+                        f'invoice {invoice.name} sebesar {outstanding:,.2f}.'
+                    )
+
+    def _reconcile_with_sale_order(self):
+        """Kurangi Sales Invoice yang dipilih. Payment tanpa jurnal entry hanya ditautkan."""
+        for payment in self:
+            invoice = payment.sale_invoice_id
+            if payment.timeline_stage not in self._STAGES_WITH_SO or not invoice:
+                continue
+            payment.invoice_ids = [(4, invoice.id)]
+            payment_lines = payment.move_id.line_ids.filtered(
+                lambda line: line.account_id.account_type == 'asset_receivable'
+                and not line.reconciled
+            )
+            invoice_lines = invoice.line_ids.filtered(
+                lambda line: line.account_id in payment_lines.account_id
+                and not line.reconciled
+            )
+            if payment_lines and invoice_lines:
+                (payment_lines + invoice_lines).reconcile()
+
+    def _sync_mou_tracking(self):
+        """Tulis nilai dan tanggal per tahapan ke mou.setup, yang lanjut ke tracking."""
+        for mou, stage in {(pay.mou_id, pay.timeline_stage) for pay in self if pay.mou_id and pay.timeline_stage}:
+            payments = self.search([
+                ('mou_id', '=', mou.id),
+                ('timeline_stage', '=', stage),
+                ('state', 'in', ('in_process', 'paid')),
+            ])
+            # Invoice lama masih bertahapan; invoice dari SO baru tidak.
+            legacy_invoices = self.env['account.move'].search([
+                ('mou_id', '=', mou.id),
+                ('timeline_stage', '=', stage),
+                ('state', '=', 'posted'),
+                ('move_type', '=', 'out_invoice'),
+            ]) - payments.sale_invoice_id  # invoice yang sudah dibayar payment ber-MOU tidak dihitung dua kali
+            nilai_field, date_field, due_field = self._STAGE_SETUP_FIELDS[stage]
+            vals = {nilai_field: sum(payments.mapped('amount')) + sum(legacy_invoices.mapped('amount_untaxed'))}
+
+            dates = payments.mapped('date')
+            if dates:
+                vals[date_field] = max(dates)
+            elif not legacy_invoices.filtered(lambda inv: inv.payment_state in ('in_payment', 'paid')):
+                vals[date_field] = False
+
+            due_dates = [
+                due for due in payments.sale_invoice_id.mapped('invoice_date_due') if due
+            ]
+            if due_dates:
+                vals[due_field] = min(due_dates)
+
+            setup = self.env['account.move'].sudo()._get_or_create_setup(mou.id, stage)
+            setup.write(vals)
+
+    def action_post(self):
+        self._check_mou_payment()
+        res = super().action_post()
+        self._reconcile_with_sale_order()
+        self._sync_mou_tracking()
+        return res
+
+    def action_draft(self):
+        so_payments = self.filtered(lambda pay: pay.timeline_stage in self._STAGES_WITH_SO)
+        so_payments.move_id.line_ids.remove_move_reconcile()
+        res = super().action_draft()
+        self._sync_mou_tracking()
+        return res
+
+    def action_cancel(self):
+        res = super().action_cancel()
+        self._sync_mou_tracking()
+        return res

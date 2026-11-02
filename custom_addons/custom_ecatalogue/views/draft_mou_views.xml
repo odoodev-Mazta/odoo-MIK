@@ -8,8 +8,10 @@
                 <header>
                     <button name="action_confirm_mou" string="MOU" type="object" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_draft" string="Reset to Draft" type="object" invisible="state == 'draft'"/>
-                    <button name="action_repeat_order" string="Repeat Order" type="object" 
-                            class="btn-secondary" invisible="state != 'mou'"/>
+                    <button name="action_repeat_order" string="Repeat Order (Buat SO Baru)" type="object"
+                            class="btn-secondary" invisible="state != 'mou'"
+                            help="Membuat Sales Order baru bertanda Repeat Order dengan produk dari MOU ini."
+                            confirm="Buat Sales Order baru (Repeat Order) dari MOU ini?"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,mou"/>
                 </header>
                 <sheet>
@@ -82,6 +84,22 @@
                                     <field name="date_estimasi"/>
                                 </list>
                             </field>
+                        </page>
+                        <page string="Dokumen Brand">
+                            <group>
+                                <group string="1. Electronic Brand License Agreement">
+                                    <field name="doc_license_agreement" filename="doc_license_agreement_fname"/>
+                                    <field name="doc_license_agreement_fname" invisible="1"/>
+                                </group>
+                                <group string="2. Surat Keterangan Penggunaan Merek (Client Signed)">
+                                    <field name="doc_brand_statement" filename="doc_brand_statement_fname"/>
+                                    <field name="doc_brand_statement_fname" invisible="1"/>
+                                </group>
+                                <group string="3. Sertifikat HAKI / Tanda Bukti HAKI">
+                                    <field name="doc_haki_certificate" filename="doc_haki_certificate_fname"/>
+                                    <field name="doc_haki_certificate_fname" invisible="1"/>
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

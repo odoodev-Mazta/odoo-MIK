@@ -182,7 +182,7 @@
                                     <option value="">-- Semua SO --</option>
                                     <t t-foreach="state.selected_mou.sale_orders || []" t-as="so" t-key="'so_'+so.id">
                                         <option t-att-value="so.id" t-att-selected="state.selected_so_id === so.id">
-                                            <t t-esc="so.name"/><t t-if="so.is_repeat_order"> — Repeat Order</t>
+                                            <t t-esc="so.name"/><t t-if="so.is_repeat_order"> — Repeat Order</t><t t-else=""> — Order Baru</t>
                                         </option>
                                     </t>
                                 </select>
@@ -203,6 +203,10 @@
                                 <span t-attf-style="font-size:9px;padding:1px 6px;border-radius:99px;font-weight:500;background:{{selectedSaleOrder.is_paid ? '#d1e7dd' : '#fff5f5'}};color:{{selectedSaleOrder.is_paid ? '#0a3622' : '#dc3545'}};">
                                     <t t-if="selectedSaleOrder.is_paid">Lunas</t>
                                     <t t-else="">Belum Lunas</t>
+                                </span>
+                                <span class="o_trk_doc"
+                                      t-on-click="() => this.openRecord({ model: 'sale.order', id: selectedSaleOrder.id, title: selectedSaleOrder.name })">
+                                    <i class="fa fa-eye me-1"></i>Lihat SO
                                 </span>
                             </div>
                         </t>
@@ -410,7 +414,7 @@
                                 </div>
 
                                 <!-- Column body -->
-                                <div style="flex:1;padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:0;">
+                                <div style="flex:1;min-height:0;padding:10px;overflow-y:auto;">
 
                                     <!-- ═══ KOLOM REGISTRASI: Accordion ═══ -->
                                     <t t-if="has_sub">
@@ -418,7 +422,7 @@
                                         <!-- Detail tagihan biasa (dari details array) -->
                                         <t t-if="stage.details and stage.details.length > 0">
                                             <t t-foreach="stage.details" t-as="detail" t-key="detail.label">
-                                                <div style="position:relative;padding-left:14px;padding-bottom:10px;">
+                                                <div style="position:relative;padding-left:14px;padding-bottom:10px;" t-att-class="detail.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(detail.popup)">
                                                     <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#dee2e6;"></div>
                                                     <div t-attf-style="
                                                         position:absolute;left:-2px;top:5px;
@@ -433,6 +437,15 @@
                                                     <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
                                                         <i class="fa fa-calendar-o me-1"></i><t t-esc="detail.date"/>
                                                     </div>
+                                                    <t t-if="detail.docs and detail.docs.length > 1">
+                                                        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;">
+                                                            <t t-foreach="detail.docs" t-as="doc" t-key="doc.model + '_' + doc.id">
+                                                                <span class="o_trk_doc" t-on-click.stop="() => this.openRecord(doc)">
+                                                                    <i class="fa fa-file-text-o me-1"></i><t t-esc="doc.title"/>
+                                                                </span>
+                                                            </t>
+                                                        </div>
+                                                    </t>
                                                 </div>
                                             </t>
                                             <hr style="border:none;border-top:0.5px solid #dee2e6;margin:4px 0 8px;"/>
@@ -444,9 +457,9 @@
 
                                         <!-- Accordion: Brand / Merek -->
                                         <div style="border:0.5px solid #dee2e6;border-radius:0;border-left:2px solid #EF9F27;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                  t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'brand')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-tag" style="color:#EF9F27;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Brand / Merek</span>
                                                     <span t-attf-style="
@@ -467,7 +480,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_registrasi.brand and stage.sub_registrasi.brand.length > 0">
                                                         <t t-foreach="stage.sub_registrasi.brand" t-as="item" t-key="item.label">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="item.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(item.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#EF9F27;opacity:0.4;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#EF9F27' : '#fff'}};border:1.5px solid #EF9F27;"></div>
                                                                 <div t-attf-style="font-size:11px;line-height:1.4;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
@@ -493,9 +506,9 @@
 
                                         <!-- Accordion: Produk / NIE -->
                                         <div style="border:0.5px solid #dee2e6;border-radius:0;border-left:2px solid #378ADD;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                  t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'nie')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-clipboard" style="color:#378ADD;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Produk / NIE</span>
                                                     <span t-attf-style="
@@ -516,7 +529,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_registrasi.nie and stage.sub_registrasi.nie.length > 0">
                                                         <t t-foreach="stage.sub_registrasi.nie" t-as="item" t-key="item.label">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="item.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(item.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#378ADD;opacity:0.4;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#378ADD' : '#fff'}};border:1.5px solid #378ADD;"></div>
                                                                 <div t-attf-style="font-size:11px;line-height:1.4;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
@@ -552,9 +565,9 @@
 
                                         <!-- Accordion: Halal -->
                                         <div style="border:0.5px solid #dee2e6;border-radius:0;border-left:2px solid #639922;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                  t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'halal')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-leaf" style="color:#639922;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Halal</span>
                                                     <span t-attf-style="
@@ -575,7 +588,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_registrasi.halal and stage.sub_registrasi.halal.length > 0">
                                                         <t t-foreach="stage.sub_registrasi.halal" t-as="item" t-key="item.label">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="item.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(item.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#639922;opacity:0.4;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#639922' : '#fff'}};border:1.5px solid #639922;"></div>
                                                                 <div t-attf-style="font-size:11px;line-height:1.4;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
@@ -623,7 +636,7 @@
                                         <!-- Detail tagihan biasa -->
                                         <t t-if="stage.details and stage.details.length > 0">
                                             <t t-foreach="stage.details" t-as="detail" t-key="detail.label">
-                                                <div style="position:relative;padding-left:14px;padding-bottom:10px;">
+                                                <div style="position:relative;padding-left:14px;padding-bottom:10px;" t-att-class="detail.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(detail.popup)">
                                                     <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#dee2e6;"></div>
                                                     <div t-attf-style="
                                                         position:absolute;left:-2px;top:5px;
@@ -637,6 +650,15 @@
                                                     <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
                                                         <i class="fa fa-calendar-o me-1"></i><t t-esc="detail.date"/>
                                                     </div>
+                                                    <t t-if="detail.docs and detail.docs.length > 1">
+                                                        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;">
+                                                            <t t-foreach="detail.docs" t-as="doc" t-key="doc.model + '_' + doc.id">
+                                                                <span class="o_trk_doc" t-on-click.stop="() => this.openRecord(doc)">
+                                                                    <i class="fa fa-file-text-o me-1"></i><t t-esc="doc.title"/>
+                                                                </span>
+                                                            </t>
+                                                        </div>
+                                                    </t>
                                                 </div>
                                             </t>
                                             <hr style="border:none;border-top:0.5px solid #dee2e6;margin:4px 0 8px;"/>
@@ -648,9 +670,9 @@
 
                                         <!-- Accordion: Purchase Request -->
                                         <div style="border:0.5px solid #dee2e6;border-left:2px solid #7048e8;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'peng_pr')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-file-text-o" style="color:#7048e8;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Purchase Request</span>
                                                     <span t-attf-style="
@@ -672,7 +694,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_pengadaan and stage.sub_pengadaan.pr.length > 0">
                                                         <t t-foreach="stage.sub_pengadaan.pr" t-as="item" t-key="item.label">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="item.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(item.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#7048e8;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#7048e8' : '#fff'}};border:1.5px solid #7048e8;"></div>
                                                                 <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
@@ -709,9 +731,9 @@
 
                                         <!-- Accordion: Purchase Order -->
                                         <div style="border:0.5px solid #dee2e6;border-left:2px solid #0d6efd;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'peng_po')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-shopping-bag" style="color:#0d6efd;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Purchase Order</span>
                                                     <span t-attf-style="
@@ -733,7 +755,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_pengadaan and stage.sub_pengadaan.po.length > 0">
                                                         <t t-foreach="stage.sub_pengadaan.po" t-as="item" t-key="item.pr_ref + '_po'">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="item.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(item.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#0d6efd;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#0d6efd' : '#fff'}};border:1.5px solid #0d6efd;"></div>
                                                                 <div t-attf-style="font-size:11px;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
@@ -765,11 +787,69 @@
                                             </t>
                                         </div>
 
+                                        <!-- Accordion: Usulan Dana -->
+                                        <div style="border:0.5px solid #dee2e6;border-left:2px solid #fd7e14;overflow:hidden;margin-bottom:6px;">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'peng_ud')">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+                                                    <i class="fa fa-money" style="color:#fd7e14;font-size:12px;"></i>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Usulan Dana</span>
+                                                    <span t-attf-style="
+                                                        font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
+                                                        background:{{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.ud.total > 0 ? '#ffe5d0' : '#f8f9fa'}};
+                                                        color:{{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.ud.total > 0 ? '#8a3c00' : '#6c757d'}};
+                                                        border:0.5px solid {{stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.ud.total > 0 ? '#fd7e14' : '#dee2e6'}};
+                                                    ">
+                                                        <t t-if="stage.sub_summary_pengadaan and stage.sub_summary_pengadaan.ud.total > 0">
+                                                            <t t-esc="stage.sub_summary_pengadaan.ud.done"/>/<t t-esc="stage.sub_summary_pengadaan.ud.total"/>
+                                                        </t>
+                                                        <t t-else="">0</t>
+                                                    </span>
+                                                </div>
+                                                <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'peng_ud') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                style="font-size:10px;color:#adb5bd;"></i>
+                                            </div>
+                                            <t t-if="isAccordionOpen(state.selected_mou.id, 'peng_ud')">
+                                                <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                    <t t-if="stage.sub_pengadaan and stage.sub_pengadaan.ud.length > 0">
+                                                        <t t-foreach="stage.sub_pengadaan.ud" t-as="item" t-key="'ud_' + item.id">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="item.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(item.popup)">
+                                                                <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#fd7e14;opacity:0.3;"></div>
+                                                                <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#fd7e14' : '#fff'}};border:1.5px solid #fd7e14;"></div>
+                                                                <div t-attf-style="font-size:11px;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
+                                                                    <t t-esc="item.label"/>
+                                                                </div>
+                                                                <t t-if="item.po_ref">
+                                                                    <div style="font-size:10px;color:#adb5bd;margin-top:1px;">
+                                                                        PO: <t t-esc="item.po_ref"/>
+                                                                    </div>
+                                                                </t>
+                                                                <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#ffe5d0' : '#f8f9fa'}};color:{{item.is_done ? '#8a3c00' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#fd7e14' : '#dee2e6'}};">
+                                                                    <t t-esc="item.state_label"/>
+                                                                </span>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
+                                                                    <i class="fa fa-money me-1"></i><t t-esc="item.amount"/>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <div style="font-size:11px;color:#adb5bd;text-align:center;padding:6px 0;">
+                                                            <i class="fa fa-inbox me-1"></i>Belum ada data
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                        </div>
+
                                         <!-- Accordion: Delivered -->
                                         <div style="border:0.5px solid #dee2e6;border-left:2px solid #198754;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'peng_delivered')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-truck" style="color:#198754;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Arrived Material</span>
                                                     <span t-attf-style="
@@ -791,10 +871,10 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_pengadaan and stage.sub_pengadaan.delivered.length > 0">
                                                         <t t-foreach="stage.sub_pengadaan.delivered" t-as="item" t-key="item.pr_ref + '_del'">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="item.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(item.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#198754;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#198754' : '#fff'}};border:1.5px solid #198754;"></div>
-                                                                <div style="display:flex;align-items:center;gap:4px;">
+                                                                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
                                                                     <span t-attf-style="font-size:11px;font-weight:500;color:{{item.is_done ? '#212529' : '#6c757d'}};">
                                                                         <t t-if="item.label !== '-'"><t t-esc="item.label"/></t>
                                                                         <t t-else="">Penerimaan Barang</t>
@@ -805,7 +885,7 @@
                                                                         </span>
                                                                     </t>
                                                                     <t t-else="">
-                                                                        <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#f8f9fa;color:#6c757d;border:0.5px solid #dee2e6;">
+                                                                        <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#f8f9fa;color:#6c757d;border:0.5px solid #dee2e6;white-space:nowrap;">
                                                                             Menunggu
                                                                         </span>
                                                                     </t>
@@ -841,9 +921,9 @@
 
                                         <!-- Accordion: Production Plan -->
                                         <div style="border:0.5px solid #dee2e6;border-left:2px solid #2563eb;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'produksi_plan')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-cogs" style="color:#2563eb;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Production Plan</span>
                                                     <span t-attf-style="
@@ -865,7 +945,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_produksi and stage.sub_produksi.plans.length > 0">
                                                         <t t-foreach="stage.sub_produksi.plans" t-as="plan" t-key="plan.label">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="plan.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(plan.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#2563eb;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{plan.is_done ? '#2563eb' : '#fff'}};border:1.5px solid #2563eb;"></div>
                                                                 <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
@@ -911,9 +991,9 @@
 
                                         <!-- Accordion: QC Schedule -->
                                         <div style="border:0.5px solid #dee2e6;border-left:2px solid #7c3aed;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'qc_schedule')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-check-square-o" style="color:#7c3aed;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">QC Schedule</span>
                                                     <span t-attf-style="
@@ -936,7 +1016,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_qc and stage.sub_qc.schedules.length > 0">
                                                         <t t-foreach="stage.sub_qc.schedules" t-as="sched" t-key="sched.label">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="sched.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(sched.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#7c3aed;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{sched.is_failed ? '#dc3545' : (sched.is_done ? '#7c3aed' : '#fff')}};border:1.5px solid {{sched.is_failed ? '#dc3545' : '#7c3aed'}};"></div>
                                                                 <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
@@ -983,9 +1063,9 @@
 
                                         <!-- Accordion: Delivery Order -->
                                         <div style="border:0.5px solid #dee2e6;border-left:2px solid #d63384;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'delivery_pk')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-truck" style="color:#d63384;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Delivery Order</span>
                                                     <span t-attf-style="
@@ -1007,7 +1087,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_delivery and stage.sub_delivery.picking.length > 0">
                                                         <t t-foreach="stage.sub_delivery.picking" t-as="pk" t-key="pk.label">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="pk.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(pk.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#d63384;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{pk.is_done ? '#d63384' : '#fff'}};border:1.5px solid #d63384;"></div>
                                                                 <div t-attf-style="font-size:11px;font-weight:500;color:{{pk.is_done ? '#212529' : '#6c757d'}};">
@@ -1045,9 +1125,9 @@
                                         </div>
                                         <!-- Accordion: Retur / Pengembalian -->
                                         <div style="border:0.5px solid #dee2e6;border-left:2px solid #dc3545;overflow:hidden;margin-bottom:6px;">
-                                            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'delivery_retur')">
-                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-undo" style="color:#dc3545;font-size:12px;"></i>
                                                     <span style="font-size:11.5px;font-weight:500;color:#212529;">Retur / Pengembalian</span>
                                                     <span t-attf-style="
@@ -1069,7 +1149,7 @@
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_delivery and stage.sub_delivery.retur.length > 0">
                                                         <t t-foreach="stage.sub_delivery.retur" t-as="rt" t-key="rt.label">
-                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;">
+                                                            <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="rt.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(rt.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#dc3545;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{rt.is_done ? '#dc3545' : '#fff'}};border:1.5px solid #dc3545;"></div>
                                                                 <div t-attf-style="font-size:11px;font-weight:500;color:{{rt.is_done ? '#212529' : '#6c757d'}};">
@@ -1110,7 +1190,7 @@
                                     <!-- ═══ KOLOM BIASA (bukan registrasi, bukan pengadaan) ═══ -->
                                     <t t-elif="stage.details and stage.details.length > 0">
                                         <t t-foreach="stage.details" t-as="detail" t-key="detail.label">
-                                            <div style="position:relative;padding-left:14px;padding-bottom:14px;">
+                                            <div style="position:relative;padding-left:14px;padding-bottom:14px;" t-att-class="detail.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(detail.popup)">
                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#dee2e6;"></div>
                                                 <div t-attf-style="
                                                     position:absolute;left:-2px;top:5px;
@@ -1124,6 +1204,15 @@
                                                 <div style="font-size:10.5px;color:#adb5bd;margin-top:2px;">
                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="detail.date"/>
                                                 </div>
+                                                <t t-if="detail.docs and detail.docs.length > 1">
+                                                    <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;">
+                                                        <t t-foreach="detail.docs" t-as="doc" t-key="doc.model + '_' + doc.id">
+                                                            <span class="o_trk_doc" t-on-click.stop="() => this.openRecord(doc)">
+                                                                <i class="fa fa-file-text-o me-1"></i><t t-esc="doc.title"/>
+                                                            </span>
+                                                        </t>
+                                                    </div>
+                                                </t>
                                             </div>
                                         </t>
                                     </t>
