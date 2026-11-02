@@ -1,6 +1,6 @@
 {
     'name': 'Custom Registrasi BPOM & Halal',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Regulatory / Compliance',
     'summary': 'BPOM Brand (HAKI) and Product NIE Registration Workflow',
     'description': """

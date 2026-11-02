@@ -1,6 +1,6 @@
 {
     'name': 'Custom Purchase Request',
-    'version': '1.0',
+    'version': '1.1',
     'depends': ['purchase', 'web', 'base', 'hr', 'account', 'product', 'custom_usulandana', 'custom_ecatalogue', 'custom_mou', 'sale'],
     'data': [
         'security/ir.model.access.csv',

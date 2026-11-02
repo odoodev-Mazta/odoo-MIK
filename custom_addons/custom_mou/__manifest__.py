@@ -1,6 +1,6 @@
 {
     'name': 'MOU',
-    'version': '1.0',
+    'version': '1.1',
     'category': 'Memorandum Of Understanding',
     'summary': 'Modul Custom untuk keperluan MOU',
     'author': 'staff dev',

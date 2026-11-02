@@ -1,6 +1,6 @@
 {
     'name': 'E-Catalogue',
-    'version': '1.0',
+    'version': '1.1',
     'category': 'E-Catalogue',
     'summary': 'E-Catalogue Module for MOU Needs',
     'description': 'Modul ini digunakan untuk E-Catalogue.',
