@@ -138,7 +138,6 @@ class RegistrasiProduk(models.Model):
     )
     moq_qty = fields.Integer(
         string='Minimum Order Quantity (MOQ)',
-        digits=(16, 3),
     )
 
     # ─── Halal Specification ────────────────────────────────────────────────

@@ -2,6 +2,7 @@ from odoo import models,fields, api
 
 class UangLainnyaWizardLine(models.TransientModel):
     _name = 'uang.lainnya.wizard.line'
+    _description = 'Baris Wizard Uang Lainnya'
 
     wizard_id = fields.Many2one('uang.lainnya.wizard')
 
@@ -27,6 +28,7 @@ class UangLainnyaWizardLine(models.TransientModel):
 
 class UangLainnyaWizard(models.TransientModel):
     _name = 'uang.lainnya.wizard'
+    _description = 'Wizard Uang Lainnya'
 
     currency_id = fields.Many2one(
         'res.currency',

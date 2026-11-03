@@ -2,6 +2,7 @@ from odoo import models,fields,api
 
 class UsulanDanaTax(models.Model):
     _name = 'usulan.dana.tax'
+    _description = 'Pajak Usulan Dana'
     _rec_name = 'usulan_dana_id'
 
     name = fields.Char()
@@ -58,6 +59,7 @@ class UsulanDanaTax(models.Model):
 
 class UsulanDanaTaxLine(models.Model):
     _name = 'usulan.dana.tax.line'
+    _description = 'Baris Pajak Usulan Dana'
 
     product_id = fields.Many2one(
         'product.product',

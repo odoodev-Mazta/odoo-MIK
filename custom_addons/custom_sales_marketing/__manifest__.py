@@ -1,5 +1,7 @@
 {
     'name': 'Custom Sales Marketing',
+    'author': 'Staff Dev',
+    'license': 'LGPL-3',
     'version': '19.0.1.0.1',
     'category': 'Sales',
     'summary': 'Custom Marketing Sequence on Sales Order',
