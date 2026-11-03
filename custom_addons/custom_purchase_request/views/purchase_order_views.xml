@@ -7,6 +7,19 @@
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
 
+            <xpath expr="//header/field[@name='state']" position="before">
+                <field name="has_active_usulan_dana" invisible="1"/>
+                <button name="action_create_usulan_dana" string="Buat Usulan Dana" type="object"
+                        class="btn-primary" invisible="state != 'purchase' or has_active_usulan_dana"/>
+            </xpath>
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" name="action_view_usulan_dana" type="object"
+                        icon="fa-money" invisible="not usulan_dana_count">
+                    <field name="usulan_dana_count" widget="statinfo" string="Usulan Dana"/>
+                </button>
+            </xpath>
+
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="purchase_request_id" options="{'no_create': True}" readonly="state not in ('draft', 'sent')"/>
                 <field name="recommended_vendor_ids" invisible="1"/>
