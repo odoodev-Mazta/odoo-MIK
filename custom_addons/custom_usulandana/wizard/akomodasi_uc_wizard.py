@@ -4,6 +4,7 @@ from odoo.exceptions import UserError
 
 class AkomodasiUcWizard(models.TransientModel):
     _name = 'akomodasi.uc.wizard'
+    _description = 'Wizard Akomodasi Upcountry'
 
     line_id = fields.Many2one('usulan.up.country.line')
     transportasi = fields.Selection(related='line_id.transportasi', readonly=False)

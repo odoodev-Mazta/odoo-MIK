@@ -1,5 +1,7 @@
 {
     'name': 'Custom COA',
+    'author': 'Staff Dev',
+    'license': 'LGPL-3',
     'version': '1.0',
     'summary': 'Membatasi penggunaan Header Account di Journal Entries',
     'depends': ['account'],

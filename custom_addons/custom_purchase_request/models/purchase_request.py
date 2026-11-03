@@ -37,8 +37,7 @@ class PurchaseRequest(models.Model):
 
     # rekomen vendor 1
     recommended_vendor_1 = fields.Char(
-        string='Vendor',
-        domain=[('supplier_rank', '>', 0)]
+        string='Vendor'
     )
 
     recommended_vendor_1_address = fields.Char(
@@ -68,34 +67,33 @@ class PurchaseRequest(models.Model):
 
     # rekomendasi vendor 2
     recommended_vendor_2 = fields.Char(
-        string='Vendor',
-        domain=[('supplier_rank', '>', 0)]
+        string='Vendor 2'
     )
 
     recommended_vendor_2_address = fields.Char(
-        string='Alamat',
+        string='Alamat Vendor 2',
         readonly=False,
     )
 
     recommended_vendor_2_phone = fields.Char(
-        string='No WA',
+        string='No WA Vendor 2',
         readonly=False,
     )
 
     recommended_vendor_2_email = fields.Char(
-        string='Email',
+        string='Email Vendor 2',
         readonly=False,
     )
 
     recommended_vendor_2_website = fields.Char(
-        string='Website',
+        string='Website Vendor 2',
         readonly=False,
     )
 
     recommended_vendor_2_type = fields.Selection([
         ('online', 'Online'),
         ('offline', 'Offline'),
-    ], string='Jenis')
+    ], string='Jenis Vendor 2')
 
     attachment_ids = fields.Many2many(
         'ir.attachment',
@@ -158,7 +156,7 @@ class PurchaseRequest(models.Model):
         'purchase.request.line',
         compute='_compute_line_split',
         inverse='_inverse_product_line_ids',
-        string='Products',
+        string='Produk',
         store=False,
     )
 

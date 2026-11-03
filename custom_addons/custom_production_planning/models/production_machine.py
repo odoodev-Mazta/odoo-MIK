@@ -42,6 +42,7 @@ class ProductionMachine(models.Model):
     machine_schedule_ids = fields.One2many(
         "mrp.production.machine.schedule",
         "machine_id",
+        string="Jadwal Mesin",
     )
 
     schedule_ids = fields.One2many(

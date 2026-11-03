@@ -19,7 +19,7 @@ class UsulanPlanPayment(models.Model):
         ('reschedule', 'Reschedule Payment'),
         ('cancel', 'Cancelled'),
         ('rilis', 'Rilis')
-    ], string='Status', default='menggantung', tracking=True)
+    ], string='Status', default='menggantung')
     payment_line_ids = fields.One2many('usulan.payment.schedule', 'plan_payment_id', string='Termin Pembayaran')
     currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id)
     amount_total = fields.Monetary(string='Total Keseluruhan', compute='_compute_progress', store=True)

@@ -170,6 +170,7 @@ class SaleOrder(models.Model):
         'order_line/qty_invoiced': 'Qty Ditagih',
     }
 
+    @api.model
     def get_import_templates(self):
         return [{
             'label': _('Template Import SO'),
@@ -210,6 +211,7 @@ class PurchaseOrder(models.Model):
         'setup_line_ids/item_qty': 'Qty Item Setup',
     }
 
+    @api.model
     def get_import_templates(self):
         return [{
             'label': _('Template Import PQ/PO'),
@@ -261,6 +263,7 @@ class PurchaseRequest(models.Model):
         'bulk_line_ids/note': 'Bulk: Catatan',
     }
 
+    @api.model
     def get_import_templates(self):
         return [{
             'label': _('Template Import PR'),

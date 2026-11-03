@@ -17,6 +17,7 @@ class MasterDataBrand(models.Model):
 
 class MasterDataBrandLine(models.Model):
     _name = 'master.data.brand.line'
+    _description = 'Baris Master Data Brand'
 
     master_brand_id = fields.Many2one(
         'master.data.brand',

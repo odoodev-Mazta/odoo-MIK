@@ -533,6 +533,7 @@ class UsulanUpCountryLine(models.Model):
 
 class UangLainnyaLine(models.Model):
     _name = 'uang.lainnya.line'
+    _description = 'Baris Uang Lainnya'
 
     up_country_id = fields.Many2one(
         'usulan.up.country'
@@ -551,6 +552,7 @@ class UangLainnyaLine(models.Model):
 
 class RencanaKerjaLine(models.Model):
     _name = 'rencana.kerja.line'
+    _description = 'Baris Rencana Kerja'
 
     up_country_id = fields.Many2one(
         'usulan.up.country'
