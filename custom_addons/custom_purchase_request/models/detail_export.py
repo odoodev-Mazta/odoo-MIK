@@ -236,7 +236,6 @@ class PurchaseRequest(models.Model):
         'customer_id': 'Customer',
         'mou_id': 'No. MOU',
         'sale_order_id': 'No. SO',
-        'usulan_dana_id': 'No. Usulan Dana',
         'recommended_vendor_1': 'Vendor 1',
         'recommended_vendor_2': 'Vendor 2',
         'currency_id': 'Mata Uang',
