@@ -1,5 +1,6 @@
 {
     "name": "Production Quality Control",
+    "author": "Staff Dev",
     "version": "19.0.1.0.0",
     "category": "Manufacturing",
     "summary": "Production Quality Control Management",

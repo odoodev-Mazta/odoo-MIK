@@ -3,6 +3,7 @@ from odoo.exceptions import ValidationError
 
 class ProductionMachineSchedule(models.Model):
     _name = "mrp.production.machine.schedule"
+    _description = 'Jadwal Mesin Produksi'
 
     name = fields.Char(
         string="Schedule Reference",

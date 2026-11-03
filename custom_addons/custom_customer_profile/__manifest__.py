@@ -1,5 +1,7 @@
 {
     'name': 'Custom Customer Profile',
+    'author': 'Staff Dev',
+    'license': 'LGPL-3',
     'version': '1.0',
     'summary': 'Customer Profile Untuk Rekomendasi pada Dokter',
     'depends': ['base', 'product'],

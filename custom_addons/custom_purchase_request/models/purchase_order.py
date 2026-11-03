@@ -50,7 +50,7 @@ class PurchaseOrder(models.Model):
     item_line_ids = fields.One2many(
         'purchase.order.line',
         'order_id',
-        string='Item Setup'
+        string='Item Barang'
     )
 
     setup_line_ids = fields.One2many(

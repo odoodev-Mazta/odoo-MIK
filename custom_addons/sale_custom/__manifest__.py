@@ -1,5 +1,7 @@
 {
     'name': 'Mazta Custom Sales Order',
+    'author': 'Staff Dev',
+    'license': 'LGPL-3',
     'version': '19.0.2.0.1',
     'depends': ['sale'],
     'data': [

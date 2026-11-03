@@ -4,6 +4,7 @@ from datetime import timedelta
 
 class RencanaKerjaWizardLine(models.TransientModel):
     _name = 'rencana.kerja.wizard.line'
+    _description = 'Baris Wizard Rencana Kerja'
 
     wizard_id = fields.Many2one(
         'rencana.kerja.wizard'
@@ -29,6 +30,7 @@ class RencanaKerjaWizardLine(models.TransientModel):
 
 class RencanaKerjaWizard(models.TransientModel):
     _name = 'rencana.kerja.wizard'
+    _description = 'Wizard Rencana Kerja'
 
     line_ids = fields.One2many(
         'rencana.kerja.wizard.line',
