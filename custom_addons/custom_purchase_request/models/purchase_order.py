@@ -1,5 +1,5 @@
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
@@ -58,6 +58,62 @@ class PurchaseOrder(models.Model):
         'order_id',
         string='Item Setup'
     )
+
+    usulan_dana_ids = fields.One2many(
+        'usulan.usulan.dana',
+        'purchase_order_id',
+        string='Usulan Dana',
+    )
+
+    usulan_dana_count = fields.Integer(
+        compute='_compute_usulan_dana',
+    )
+
+    has_active_usulan_dana = fields.Boolean(
+        compute='_compute_usulan_dana',
+    )
+
+    @api.depends('usulan_dana_ids.state')
+    def _compute_usulan_dana(self):
+        for order in self:
+            order.usulan_dana_count = len(order.usulan_dana_ids)
+            order.has_active_usulan_dana = bool(order.usulan_dana_ids.filtered(
+                lambda ud: ud.state not in ('reject', 'cancel')
+            ))
+
+    def action_create_usulan_dana(self):
+        """Buka form Usulan Dana baru; vendor & baris terisi dari onchange PO di Usulan Dana."""
+        self.ensure_one()
+        if self.state != 'purchase':
+            raise UserError('Usulan Dana hanya bisa dibuat dari PO yang sudah dikonfirmasi.')
+        if self.has_active_usulan_dana:
+            raise UserError(f'PO {self.name} sudah punya Usulan Dana yang masih berjalan.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Usulan Dana',
+            'res_model': 'usulan.usulan.dana',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_document_type': 'ud',
+                'default_purchase_order_id': self.id,
+            },
+        }
+
+    def action_view_usulan_dana(self):
+        self.ensure_one()
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': 'Usulan Dana',
+            'res_model': 'usulan.usulan.dana',
+            'domain': [('purchase_order_id', '=', self.id)],
+            'context': {'default_document_type': 'ud', 'default_purchase_order_id': self.id},
+        }
+        if self.usulan_dana_count == 1:
+            action.update(view_mode='form', res_id=self.usulan_dana_ids.id)
+        else:
+            action['view_mode'] = 'list,form'
+        return action
 
     @api.depends(
         'purchase_request_id.recommended_vendor_1',

@@ -63,7 +63,6 @@
 
                         <group>
                             <field name="deliver_to"/>
-                            <field name="usulan_dana_id"/>
                             <field name="customer_id" invisible="is_bulk_purchase"/>
                             <field name="mou_id" options="{'no_create': True}" invisible="is_bulk_purchase"/>
                             <field name="sale_order_id" options="{'no_create': True}" invisible="is_bulk_purchase or not mou_id"/>
