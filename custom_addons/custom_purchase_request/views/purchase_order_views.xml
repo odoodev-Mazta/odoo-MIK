@@ -36,6 +36,11 @@
                 <field name="sale_order_id" options="{'no_create': True}" invisible="not mou_id"/>
             </xpath>
 
+            <!-- input data hari-hari sebelumnya: tanggal konfirmasi bisa diubah selama PO belum di-lock -->
+            <xpath expr="//div[@name='date_approve']/field[@name='date_approve']" position="attributes">
+                <attribute name="readonly">locked</attribute>
+            </xpath>
+
             <xpath expr="//div[hasclass('oe_title')]//field[@name='name']" position="attributes">
                 <attribute name="readonly">state not in ('draft', 'sent')</attribute>
                 <attribute name="placeholder">Ketik No. PQ/PO...</attribute>
