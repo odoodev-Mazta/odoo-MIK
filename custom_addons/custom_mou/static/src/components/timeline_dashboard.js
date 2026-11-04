@@ -622,6 +622,16 @@ export class TimelineDashboard extends Component {
             const deliveryStage = stages.find(s => s.code === 'delivery');
             deliveryStage.sub_delivery = { picking: [], retur: [] };
 
+            const deliverySummary = mou.delivery_data?.summary;
+            if (deliverySummary && deliverySummary.total) {
+                deliveryStage.details.push({
+                    label: `Total terkirim MOU: ${deliverySummary.delivered}/${deliverySummary.total}`,
+                    date: `${Math.round(deliverySummary.delivered / deliverySummary.total * 100)}%`,
+                    is_done: deliverySummary.delivered >= deliverySummary.total,
+                    is_cancelled: false,
+                });
+            }
+
             (mou.delivery_data?.picking || []).forEach(pk => {
                 deliveryStage.sub_delivery.picking.push({
                     label: pk.name,
@@ -683,9 +693,21 @@ export class TimelineDashboard extends Component {
             produksiStage.sub_produksi = { plans: [] };
             produksiStage.sub_summary_produksi = { total: 0, done: 0 };
 
-            (mou.production_data || []).forEach(p => {
+            const produksiPlans = mou.production_data || [];
+            if (produksiPlans.length && produksiPlans[0].mou_qty_total) {
+                const totalDone = produksiPlans.reduce((sum, p) => sum + (p.qty_done || 0), 0);
+                const totalQty = produksiPlans[0].mou_qty_total;
                 produksiStage.details.push({
-                    label: `${p.name} — ${p.product}`,
+                    label: `Total produksi MOU: ${totalDone}/${totalQty}`,
+                    date: `${Math.round(totalDone / totalQty * 100)}%`,
+                    is_done: totalDone >= totalQty,
+                    is_cancelled: false,
+                });
+            }
+
+            produksiPlans.forEach(p => {
+                produksiStage.details.push({
+                    label: `${p.name} — ${p.product}${p.origin_label ? ' (' + p.origin_label + ')' : ''}${p.qty_plan ? ' · Jadi ' + p.qty_done + '/' + p.qty_plan : ''}`,
                     date: p.is_done
                         ? `Selesai${p.planned_end ? ': ' + this.formatDate(p.planned_end) : ''}`
                         : `Target: ${p.planned_end ? this.formatDate(p.planned_end) : '-'}`,
@@ -696,6 +718,7 @@ export class TimelineDashboard extends Component {
                 produksiStage.sub_produksi.plans.push({
                     label: p.name,
                     product: p.product,
+                    origin_label: p.origin_label,
                     state_label: p.state_label,
                     progress: p.progress,
                     mo_count: p.mo_count,

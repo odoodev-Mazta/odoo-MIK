@@ -257,6 +257,14 @@ class DashboardTimeline(models.Model):
                 'lines': lines,
             })
 
+        # ── Ringkasan: terkirim (DO selesai dikurangi retur selesai) dibanding total MOU ──
+        def done_qty(records):
+            return sum(records.filtered(lambda p: p.state == 'done').move_ids.mapped('quantity'))
+
+        result['summary'] = {
+            'delivered': done_qty(pickings) - done_qty(returns),
+            'total': sum(self.env['draft.maklon'].browse(mou_id).maklon_line_ids.mapped('product_qty')),
+        }
         return result
     
     # ─── Ambil Data Sales Order (termasuk Repeat Order) ─────────────────────

@@ -950,7 +950,7 @@
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{plan.is_done ? '#2563eb' : '#fff'}};border:1.5px solid #2563eb;"></div>
                                                                 <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
                                                                     <span t-attf-style="font-size:11px;font-weight:500;color:{{plan.is_done ? '#212529' : '#6c757d'}};">
-                                                                        <t t-esc="plan.label"/> — <t t-esc="plan.product"/>
+                                                                        <t t-esc="plan.label"/> — <t t-esc="plan.product"/><t t-if="plan.origin_label"> (<t t-esc="plan.origin_label"/>)</t>
                                                                     </span>
                                                                     <span t-attf-style="
                                                                         font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500;

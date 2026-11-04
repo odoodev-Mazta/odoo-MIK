@@ -1,0 +1,35 @@
+<odoo>
+    <data noupdate="1">
+        <record id="stage_penimbangan" model="mrp.production.stage">
+            <field name="name">Penimbangan</field>
+            <field name="sequence">10</field>
+            <field name="origin_type">both</field>
+        </record>
+        <record id="stage_mixing" model="mrp.production.stage">
+            <field name="name">Mixing</field>
+            <field name="sequence">20</field>
+            <field name="origin_type">lokal</field>
+        </record>
+        <record id="stage_filling" model="mrp.production.stage">
+            <field name="name">Filling</field>
+            <field name="sequence">30</field>
+            <field name="origin_type">both</field>
+        </record>
+        <record id="stage_labeling" model="mrp.production.stage">
+            <field name="name">Labeling</field>
+            <field name="sequence">40</field>
+            <field name="origin_type">both</field>
+        </record>
+        <record id="stage_coding" model="mrp.production.stage">
+            <field name="name">Coding</field>
+            <field name="sequence">50</field>
+            <field name="origin_type">both</field>
+            <field name="set_batch" eval="True"/>
+        </record>
+        <record id="stage_packing" model="mrp.production.stage">
+            <field name="name">Packing</field>
+            <field name="sequence">60</field>
+            <field name="origin_type">both</field>
+        </record>
+    </data>
+</odoo>
