@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import Command, api, fields, models
 from odoo.exceptions import ValidationError
 
 class PurchaseRequest(models.Model):
@@ -306,6 +306,26 @@ class PurchaseRequest(models.Model):
         if len(orders) == 1:
             self.sale_order_id = orders
 
+    @api.onchange('sale_order_id')
+    def _onchange_sale_order_id(self):
+        """Produk diisi dari baris Sales Order; qty tetap bisa diubah."""
+        if not self.sale_order_id or self.state != 'draft':
+            return
+        lines = self.sale_order_id.order_line.filtered(
+            lambda line: not line.display_type and line.product_id and line.product_id.type != 'service'
+        )
+        self.product_line_ids = [Command.clear()] + [
+            Command.create({
+                'line_type': 'product',
+                'product_id': line.product_id.id,
+                'description': line.product_id.display_name,
+                'product_qty': line.product_uom_qty,
+                'product_uom': line.product_uom_id.id,
+                'currency_id': self.currency_id.id,
+            })
+            for line in lines
+        ]
+
     @api.onchange('mou_id')
     def _onchange_mou(self):
         if self.sale_order_id.mou_id != self.mou_id:
@@ -366,6 +386,10 @@ class PurchaseRequest(models.Model):
     def action_cancel(self):
         for rec in self:
             rec.state = 'cancelled'
+
+    def action_set_draft(self):
+        for rec in self:
+            rec.state = 'draft'
 
     @api.model_create_multi
     def create(self, vals_list):

@@ -31,6 +31,19 @@ class ProductionPlanProductLine(models.Model):
         required=True,
     )
 
+    finished_product_id = fields.Many2one(
+        "product.product",
+        string="Produk Jadi (brand)",
+        help="Import: produk brand client hasil kemas ulang. BOM, Check Material, MO, dan stok "
+             "memakai produk ini. Kosongkan bila produk di kolom Product sudah produk jadi.",
+    )
+
+    bom_product_id = fields.Many2one(
+        "product.product",
+        string="Produk yang Diproduksi",
+        compute="_compute_bom_product_id",
+    )
+
     production_qty = fields.Float(
         string="Production Quantity",
         compute="_compute_production_qty",
@@ -137,6 +150,27 @@ class ProductionPlanProductLine(models.Model):
         compute="_compute_has_mo",
         store=True,
     )
+
+    @api.depends("product_id", "finished_product_id")
+    def _compute_bom_product_id(self):
+        for line in self:
+            line.bom_product_id = line.finished_product_id or line.product_id
+
+    def _suggest_finished_product(self):
+        """Import: barang impor yang hanya dipakai di satu BOM produk brand diisi otomatis."""
+        self.ensure_one()
+        if self.plan_id.origin_type != "import" or not self.product_id:
+            return self.env["product.product"]
+        Bom = self.env["mrp.bom"]
+        if Bom.search_count([("product_tmpl_id", "=", self.product_id.product_tmpl_id.id)]):
+            return self.env["product.product"]  # sudah punya BOM sendiri
+        brands = Bom.search([("bom_line_ids.product_id", "=", self.product_id.id)]).product_tmpl_id
+        return brands.product_variant_id if len(brands) == 1 else self.env["product.product"]
+
+    @api.onchange("product_id")
+    def _onchange_product_id_suggest_finished(self):
+        for line in self:
+            line.finished_product_id = line._suggest_finished_product()
 
     @api.depends("manufacturing_order_ids")
     def _compute_has_mo(self):
