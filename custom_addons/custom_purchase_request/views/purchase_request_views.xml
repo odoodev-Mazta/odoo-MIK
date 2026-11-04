@@ -56,6 +56,7 @@
                     <group>
                         <group>
                             <field name="is_urgent" widget="boolean_toggle"/>
+                            <field name="date_usulan" readonly="state != 'draft'"/>
                             <field name="department_id"/>
                             <field name="pic_dept"/>
                             <field name="whatsapp_no"/>
