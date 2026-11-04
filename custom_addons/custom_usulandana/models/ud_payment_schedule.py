@@ -102,6 +102,8 @@ class UsulanPaymentSchedule(models.Model):
         correct_accounts = []
 
         def _get_account_for_line(line):
+            if line.account_id:
+                return line.account_id.id
             if line.setup_item_id and line.setup_item_id.account_id:
                 return line.setup_item_id.account_id.id
             if line.product_id:

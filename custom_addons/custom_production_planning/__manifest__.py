@@ -1,6 +1,6 @@
 {
     "name": "Custom Production Planning",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.5",
     "category": "Manufacturing",
     "author": "William Purba",
 
@@ -9,11 +9,14 @@
         "sale_management",
         "product",
         "mail",
+        "product_expiry",
         "custom_mou",
+        "custom_purchase_request",
     ],
 
     "data": [
         "data/ir_sequence.xml",
+        "data/production_stage_data.xml",
         "security/ir.model.access.csv",
         "views/production_plan_views.xml",
         "views/production_machine_views.xml",
@@ -22,6 +25,7 @@
         "views/production_dashboard_views.xml",
         "views/production_plan_product_line_views.xml",
         "views/production_plan_menus.xml",
+        "views/production_stage_views.xml",
         "wizard/production_plan_split_wizard_views.xml",
     ],
     "assets": {

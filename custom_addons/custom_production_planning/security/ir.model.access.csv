@@ -8,3 +8,7 @@ access_production_material_shortage,mrp.production.material.shortage,model_mrp_p
 access_production_dashboard,mrp.production.dashboard,model_mrp_production_dashboard,base.group_user,1,0,0,0
 access_production_product_plan_line,mrp.production.plan.product.line,model_mrp_production_plan_product_line,base.group_user,1,1,1,1
 access_production_plan_split_wizard,mrp.production.plan.split.wizard,model_mrp_production_plan_split_wizard,base.group_user,1,1,1,1
+access_production_stage,mrp.production.stage,model_mrp_production_stage,base.group_user,1,1,1,1
+access_production_plan_stage,mrp.production.plan.stage,model_mrp_production_plan_stage,base.group_user,1,1,1,1
+access_production_stage_parameter,mrp.production.stage.parameter,model_mrp_production_stage_parameter,base.group_user,1,1,1,1
+access_production_plan_stage_check,mrp.production.plan.stage.check,model_mrp_production_plan_stage_check,base.group_user,1,1,1,1

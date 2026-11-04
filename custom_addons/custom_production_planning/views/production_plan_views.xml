@@ -9,6 +9,7 @@
                 <field name="sale_order_id"/>
                 <field name="mou_id" optional="show"/>
                 <field name="brand_name" optional="show"/>
+                <field name="origin_type"/>
                 <field name="production_po_number"/>
                 <field name="customer_id"/>
                 <field name="planned_start"/>
@@ -25,11 +26,19 @@
             <form>
                 <header>
                     <button
+                        name="action_generate_stages"
+                        type="object"
+                        string="Buat Jadwal Proses"
+                        class="btn-primary"
+                        invisible="state != 'draft' or material_check_state != 'available'"
+                    />
+
+                    <button
                         name="action_check_capacity"
                         type="object"
                         string="Check Capacity"
-                        class="btn-primary"
-                        invisible="state in ('done', 'cancel')"
+                        class="btn-secondary"
+                        invisible="state in ('done', 'cancel') or stage_ids"
                     />
 
                     <button
@@ -53,7 +62,7 @@
                         type="object"
                         string="Load Operations"
                         class="btn-secondary"
-                        invisible="state != 'draft'"
+                        invisible="state != 'draft' or stage_ids"
                     />
 
                     <button
@@ -69,7 +78,7 @@
                         type="object"
                         string="Check Machine Availability"
                         class="btn-info"
-                        invisible="state != 'draft'"
+                        invisible="state != 'draft' or stage_ids"
                     />
 
                     <button
@@ -108,11 +117,12 @@
 
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="state != 'draft'" placeholder="Kosongkan untuk nomor otomatis"/>
                             <field name="sale_order_id"/>
+                            <field name="origin_type" readonly="state != 'draft'"/>
                             <field name="mou_id"/>
                             <field name="brand_name"/>
-                            <field name="production_po_number"/>
+                            <field name="purchase_order_ids" widget="many2many_tags" options="{'no_create': True}"/>
                             <field
                                 name="production_type"
                                 widget="badge"
@@ -170,15 +180,18 @@
                         <page string="Products">
                             <field name="product_line_ids">
                                 <list editable="bottom">
-                                    <field name="product_id"/>
-                                    <field name="product_qty" string="Total Qty"/>
+                                    <field name="product_id" width="260px"/>
+                                    <field name="finished_product_id" width="260px"
+                                           column_invisible="parent.origin_type != 'import'"
+                                           options="{'no_create': True}"/>
+                                    <field name="product_qty" string="Qty"/>
                                     <field name="production_qty" string="Production Qty" readonly="1"/>
-                                    <field name="product_uom_id"/>
-                                    <field name="production_start"/>
-                                    <field name="production_end"/>
-                                    <field name="child_allocated_qty"/>
-                                    <field name="remaining_qty"/>
-                                    <field name="production_type"/>
+                                    <field name="product_uom_id" optional="hide"/>
+                                    <field name="production_start" string="Mulai" optional="hide"/>
+                                    <field name="production_end" string="Selesai" optional="hide"/>
+                                    <field name="child_allocated_qty" string="Split" optional="hide"/>
+                                    <field name="remaining_qty" string="Sisa Split" optional="hide"/>
+                                    <field name="production_type" string="Tipe" optional="hide"/>
 
                                     <!-- MO -->
                                     <field name="create_mo" string="Create MO"/>
@@ -214,7 +227,45 @@
                             </field>
                         </page>
 
-                        <page string="Operations">
+                        <page string="Jadwal Proses">
+                            <field name="stage_ids" readonly="state in ('done', 'cancel')">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="stage_id" readonly="state != 'todo'"/>
+                                    <field name="date_start" readonly="state == 'done'"/>
+                                    <field name="date_end" readonly="state == 'done'"/>
+                                    <field name="user_id" readonly="state == 'done'"/>
+                                    <field name="machine_id" readonly="state == 'done'"/>
+                                    <field name="set_batch" column_invisible="1"/>
+                                    <field name="qty_plan" optional="hide"/>
+                                    <field name="qty_good" readonly="state != 'in_progress'"/>
+                                    <field name="qty_reject" readonly="state != 'in_progress'"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'done'" decoration-info="state == 'in_progress'"/>
+                                    <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'" decoration-danger="qc_state == 'failed'"/>
+                                    <field name="batch_no" readonly="not set_batch or state != 'in_progress'"/>
+                                    <field name="expiry_date" readonly="not set_batch or state != 'in_progress'"/>
+                                    <field name="qc_note" readonly="state != 'in_progress'"/>
+                                    <field name="attempts" optional="hide"/>
+                                    <field name="date_start_actual" optional="hide"/>
+                                    <field name="date_end_actual" optional="hide"/>
+                                    <field name="note" optional="hide"/>
+                                    <button name="action_start" type="object" string="Mulai" icon="fa-play"
+                                            invisible="state != 'todo' or parent.state != 'running'"/>
+                                    <field name="has_checks" column_invisible="1"/>
+                                    <button name="action_open_checks" type="object" string="Isi Parameter QC" icon="fa-list-alt"
+                                            invisible="state != 'in_progress' or not has_checks"/>
+                                    <button name="action_qc_pass" type="object" string="QC Lulus" icon="fa-check"
+                                            invisible="state != 'in_progress' or qc_state == 'passed'"/>
+                                    <button name="action_qc_fail" type="object" string="QC Gagal" icon="fa-times"
+                                            invisible="state != 'in_progress' or qc_state == 'passed'"/>
+                                    <button name="action_done" type="object" string="Selesai" icon="fa-flag-checkered"
+                                            invisible="state != 'in_progress' or qc_state != 'passed'"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Operations" invisible="stage_ids">
                             <field name="line_ids">
                                 <list editable="bottom">
                                     <field
@@ -262,7 +313,7 @@
                             </field>
                         </page>
 
-                        <page string="Machine Schedule">
+                        <page string="Machine Schedule" invisible="stage_ids">
                             <field
                                 name="machine_schedule_ids"
                                 readonly="1"

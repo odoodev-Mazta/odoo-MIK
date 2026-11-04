@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import Command, api, fields, models
 from odoo.exceptions import ValidationError
 from datetime import timedelta, datetime
 import math
@@ -13,16 +13,30 @@ class ProductionPlan(models.Model):
     _order = "planned_start desc"
 
     name = fields.Char(
+        string="No. Plan",
         default="New",
-        readonly=True,
         copy=False,
         tracking=True,
+        help="Diketik manual. Kosongkan untuk nomor otomatis.",
     )
 
     sale_order_id = fields.Many2one(
         "sale.order",
         required=True,
         tracking=True,
+    )
+
+    origin_type = fields.Selection(
+        [
+            ("lokal", "Lokal"),
+            ("import", "Import"),
+        ],
+        string="Tipe Produksi",
+        default="lokal",
+        required=True,
+        tracking=True,
+        help="Lokal: produk baru dibuat dari bahan baku. "
+             "Import: produk yang sudah ada, hanya dikemas ulang dengan label brand client.",
     )
 
     customer_id = fields.Many2one(
@@ -78,20 +92,25 @@ class ProductionPlan(models.Model):
         string="Machine Schedule",
     )
 
+    stage_ids = fields.One2many(
+        "mrp.production.plan.stage",
+        "plan_id",
+        string="Jadwal Proses",
+    )
+
     manufacturing_order_ids = fields.One2many(
         "mrp.production",
         "production_plan_id",
         string="Manufacturing Orders"
     )
 
+    # Produk ada di baris (product_line_ids); field ini hanya terisi untuk plan turunan (split).
     product_id = fields.Many2one(
         "product.product",
-        required=True,
         string="Product",
     )
 
     product_qty = fields.Float(
-        required=True,
         string="Quantity",
     )
 
@@ -155,10 +174,20 @@ class ProductionPlan(models.Model):
         string="Material Shortage"
     )
 
+    purchase_order_ids = fields.Many2many(
+        "purchase.order",
+        "mrp_production_plan_purchase_order_rel",
+        "plan_id",
+        "purchase_order_id",
+        string="PO Pembelian",
+        domain="[('sale_order_id', '=', sale_order_id), ('state', '!=', 'cancel')]",
+        help="PO yang dipakai plan ini. Satu SO bisa punya banyak PO; pilih yang untuk periode plan ini.",
+    )
+
     production_po_number = fields.Char(
         string="No. PO Produksi",
-        readonly=True,
-        copy=False,
+        compute="_compute_production_po_number",
+        help="Nomor PO yang dipilih di plan ini.",
     )
 
     production_number = fields.Char(
@@ -269,10 +298,72 @@ class ProductionPlan(models.Model):
         for plan in self:
             plan.has_child_production = bool(plan.child_plan_ids)
 
+    @api.depends("purchase_order_ids")
+    def _compute_production_po_number(self):
+        for plan in self:
+            plan.production_po_number = ", ".join(plan.purchase_order_ids.mapped("name")) or False
+
+    def _finished_product_vals(self, product):
+        self.ensure_one()
+        line = self.env["mrp.production.plan.product.line"].new({"plan_id": self.id, "product_id": product.id})
+        line.plan_id = self
+        suggestion = line._suggest_finished_product()
+        return {"finished_product_id": suggestion.id} if suggestion else {}
+
+    def _set_product_lines(self, quantities):
+        """Ganti baris produk dengan {product: qty}; qty tetap bisa diubah di form."""
+        self.ensure_one()
+        if not quantities or self._origin.product_line_ids.manufacturing_order_ids:
+            return
+        self.product_line_ids = [Command.clear()] + [
+            Command.create({"product_id": product.id, "product_qty": qty, **self._finished_product_vals(product)})
+            for product, qty in quantities.items()
+        ]
+
+    def _quantities_from_sale_order(self):
+        self.ensure_one()
+        quantities = {}
+        for line in self.sale_order_id.order_line:
+            if not line.display_type and line.product_id and line.product_id.type != "service":
+                quantities[line.product_id] = quantities.get(line.product_id, 0) + line.product_uom_qty
+        return quantities
+
+    def _quantities_from_purchase_orders(self):
+        """Qty produk SO yang tercantum di PO terpilih (PO bahan/kemasan biasanya tidak memuatnya)."""
+        self.ensure_one()
+        sale_products = self.sale_order_id.order_line.product_id
+        quantities = {}
+        for line in self.purchase_order_ids.order_line:
+            if not line.display_type and line.product_id in sale_products:
+                quantities[line.product_id] = quantities.get(line.product_id, 0) + line.product_qty
+        return quantities
+
+    @api.onchange("sale_order_id")
+    def _onchange_sale_order_id(self):
+        """PO dipilih otomatis bila SO hanya punya satu; produk diisi dari SO (atau PO bila memuatnya)."""
+        for plan in self:
+            if not plan.sale_order_id:
+                plan.purchase_order_ids = False
+                continue
+            orders = self.env["purchase.order"].search([
+                ("sale_order_id", "=", plan.sale_order_id.id),
+                ("state", "!=", "cancel"),
+            ])
+            plan.purchase_order_ids = orders if len(orders) == 1 else False
+            plan._set_product_lines(
+                plan._quantities_from_purchase_orders() or plan._quantities_from_sale_order()
+            )
+
+    @api.onchange("purchase_order_ids")
+    def _onchange_purchase_order_ids(self):
+        """Bila PO memuat produk SO, qty-nya dipakai; selain itu daftar produk dibiarkan."""
+        for plan in self:
+            plan._set_product_lines(plan._quantities_from_purchase_orders())
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get("name", "New") == "New":
+            if not vals.get("name") or vals["name"] == "New":
                 vals["name"] = (
                         self.env["ir.sequence"].next_by_code(
                             "mrp.production.plan"
@@ -280,6 +371,97 @@ class ProductionPlan(models.Model):
                         or "New"
                 )
         return super().create(vals_list)
+
+    def onchange(self, values, field_names, fields_spec):
+        """Nomor diketik manual: form baru dibuka dengan nomor kosong."""
+        result = super().onchange(values, field_names, fields_spec)
+        if not self and not field_names and "name" in fields_spec and not self.env.context.get("default_name"):
+            result.setdefault("value", {})["name"] = False
+        return result
+
+    @api.constrains("name")
+    def _check_unique_number(self):
+        for plan in self:
+            if plan.name and plan.name != "New" and self.search_count([
+                ("id", "!=", plan.id),
+                ("name", "=", plan.name),
+            ]):
+                raise ValidationError(f"Nomor {plan.name} sudah dipakai.")
+
+    def action_generate_stages(self):
+        """Susun Jadwal Proses dari tahap yang berlaku untuk Tipe Produksi plan ini."""
+        Stage = self.env["mrp.production.stage"]
+        for plan in self:
+            if plan.state != "draft":
+                raise ValidationError("Jadwal Proses hanya bisa disusun saat plan masih Draft.")
+            if plan.material_check_state != "available":
+                raise ValidationError(
+                    "Cek ketersediaan material dulu. Jadwal Proses baru bisa "
+                    "disusun setelah bahan cukup."
+                )
+            product_lines = plan._get_effective_product_lines()
+            if not product_lines:
+                raise ValidationError("Tambahkan produk dulu sebelum menyusun Jadwal Proses.")
+            stages = Stage.search([("origin_type", "in", ("both", plan.origin_type))])
+            # Tiap produk punya rangkaian tahapnya sendiri, supaya qty bagus dan QC tidak tercampur.
+            plan.stage_ids = [Command.clear()] + [
+                Command.create({
+                    "product_line_id": product_line.id,
+                    "stage_id": stage.id,
+                    "sequence": stage.sequence,
+                    "date_start": plan.planned_start,
+                    "date_end": plan.planned_start,
+                })
+                for product_line in product_lines
+                for stage in stages
+            ]
+            plan.state = "planned"
+        return True
+
+    def _finish_product_line(self, product_line, qty):
+        """Packing selesai: selesaikan MO produk itu dengan qty bagus dari tahap terakhir."""
+        self.ensure_one()
+        open_orders = product_line.manufacturing_order_ids.filtered(lambda mo: mo.state not in ("done", "cancel"))
+        batch_stage = self.stage_ids.filtered(
+            lambda stage: stage.product_line_id == product_line and stage.set_batch and stage.batch_no
+        )[:1]
+        if open_orders:
+            order = open_orders[0]
+            order.qty_producing = qty
+            if batch_stage and order.product_tracking == "lot":
+                order.lot_producing_ids = self.env["stock.lot"].create({
+                    "name": batch_stage.batch_no,
+                    "product_id": order.product_id.id,
+                    "company_id": order.company_id.id,
+                    "expiration_date": datetime.combine(batch_stage.expiry_date, datetime.min.time()),
+                })
+            order.with_context(
+                skip_backorder=True, skip_consumption=True, skip_immediate=True,
+            ).button_mark_done()
+            self.message_post(
+                body=f"{product_line.product_id.display_name}: Packing selesai, {qty:g} masuk stok (MO {order.name})."
+                     + (f" Batch {batch_stage.batch_no}, expired {batch_stage.expiry_date}." if batch_stage else ""),
+                subtype_xmlid="mail.mt_note",
+            )
+        if all(
+            stage.state == "done" for stage in self.stage_ids
+        ) and all(
+            line.manufacturing_order_ids and all(mo.state in ("done", "cancel") for mo in line.manufacturing_order_ids)
+            for line in self._get_effective_product_lines()
+        ):
+            self.state = "done"
+
+    def _produced_quantities(self):
+        """(qty jadi, qty rencana): hasil bagus tahap terakhir tiap produk."""
+        self.ensure_one()
+        produced = 0.0
+        for product_line in self._get_effective_product_lines():
+            stages = self.stage_ids.filtered(lambda stage: stage.product_line_id == product_line)
+            last = stages.sorted(key=lambda stage: (stage.sequence, stage.id))[-1:]
+            if last and last.state == "done":
+                produced += last.qty_good
+        planned = sum(self._get_effective_product_lines().mapped("production_qty"))
+        return produced, planned
 
     def action_approve(self):
         self.action_validate_planning()
@@ -688,12 +870,14 @@ class ProductionPlan(models.Model):
         Production = self.env["mrp.production"]
 
         for plan in self:
-            if not plan.capacity_checked:
+            stage_mode = bool(plan.stage_ids)
+
+            if not stage_mode and not plan.capacity_checked:
                 raise ValidationError(
                     "Please check production capacity first."
                 )
 
-            if not plan.machine_schedule_ids:
+            if not stage_mode and not plan.machine_schedule_ids:
                 raise ValidationError(
                     "No machine schedule found."
                 )
@@ -745,20 +929,20 @@ class ProductionPlan(models.Model):
                     (
                         "product_tmpl_id",
                         "=",
-                        product_line.product_id.product_tmpl_id.id,
+                        product_line.bom_product_id.product_tmpl_id.id,
                     )
                 ], limit=1)
 
                 if not bom:
                     raise ValidationError(
                         f"No Bill of Materials found for "
-                        f"{product_line.product_id.display_name}."
+                        f"{product_line.bom_product_id.display_name}."
                     )
 
                 mo = Production.create({
-                    "product_id": product_line.product_id.id,
+                    "product_id": product_line.bom_product_id.id,
                     "product_qty": production_qty,
-                    "product_uom_id": product_line.product_id.uom_id.id,
+                    "product_uom_id": product_line.bom_product_id.uom_id.id,
                     "bom_id": bom.id,
                     "production_plan_id": plan.id,
                     "production_plan_product_line_id": product_line.id,
@@ -766,7 +950,7 @@ class ProductionPlan(models.Model):
 
                 mo.action_confirm()
 
-                if not mo.workorder_ids:
+                if not stage_mode and not mo.workorder_ids:
                     raise ValidationError(
                         f"Manufacturing Order for "
                         f"{product_line.product_id.display_name} "
@@ -897,14 +1081,20 @@ class ProductionPlan(models.Model):
                     (
                         "product_tmpl_id",
                         "=",
-                        product_line.product_id.product_tmpl_id.id,
+                        product_line.bom_product_id.product_tmpl_id.id,
                     )
                 ], limit=1)
 
                 if not bom:
+                    if plan.origin_type == "import":
+                        raise ValidationError(
+                            f"Produk Import {product_line.bom_product_id.display_name} belum punya BOM repack. "
+                            f"Pilih Produk Jadi (brand) di baris produk, atau buat BOM berisi produk asal, "
+                            f"label, dan kemasan agar stoknya bisa dicek."
+                        )
                     raise ValidationError(
                         f"BOM not found for "
-                        f"{product_line.product_id.display_name}."
+                        f"{product_line.bom_product_id.display_name}."
                     )
 
                 product_line.operation_line_ids.unlink()
@@ -952,9 +1142,14 @@ class ProductionPlan(models.Model):
         "manufacturing_order_ids",
         "manufacturing_order_ids.workorder_ids",
         "manufacturing_order_ids.workorder_ids.state",
+        "stage_ids.state",
     )
     def _compute_progress(self):
         for plan in self:
+            if plan.stage_ids:
+                plan.progress = len(plan.stage_ids.filtered(lambda stage: stage.state == "done")) \
+                    / len(plan.stage_ids) * 100
+                continue
             workorders = plan.manufacturing_order_ids.mapped(
                 "workorder_ids"
             )
@@ -1082,6 +1277,7 @@ class ProductionPlan(models.Model):
                 )
 
             plan.machine_schedule_ids.unlink()
+            plan.stage_ids.unlink()
             plan.material_shortage_ids.unlink()
 
             plan.capacity_checked = False
@@ -1104,6 +1300,21 @@ class ProductionPlan(models.Model):
                 errors.append(
                     "• No production products added."
                 )
+
+            stage_mode = bool(plan.stage_ids)
+
+            if stage_mode:
+                for stage in plan.stage_ids:
+                    if not stage.date_start or not stage.date_end:
+                        errors.append(
+                            f"• Tahap {stage.stage_id.name}: tanggal mulai/selesai belum diisi."
+                        )
+                dates = plan.stage_ids.mapped("date_start") + plan.stage_ids.mapped("date_end")
+                dates = [date for date in dates if date]
+                if dates and not plan.planned_start:
+                    plan.planned_start = min(dates)
+                if dates and not plan.planned_end:
+                    plan.planned_end = max(dates)
 
             if not plan.planned_start:
                 errors.append(
@@ -1139,7 +1350,7 @@ class ProductionPlan(models.Model):
                     )
 
                 # OPERATIONS
-                if not product_line.operation_line_ids:
+                if not stage_mode and not product_line.operation_line_ids:
                     errors.append(
                         f"• {product_name}: "
                         "No BOM operations loaded."
@@ -1150,7 +1361,7 @@ class ProductionPlan(models.Model):
                     (
                         "product_tmpl_id",
                         "=",
-                        product_line.product_id.product_tmpl_id.id,
+                        product_line.bom_product_id.product_tmpl_id.id,
                     )
                 ], limit=1)
 
@@ -1163,12 +1374,12 @@ class ProductionPlan(models.Model):
             # CAPACITY VALIDATION
             # ==========================================================
 
-            if not plan.capacity_checked:
+            if not stage_mode and not plan.capacity_checked:
                 errors.append(
                     "• Machine capacity has not been checked."
                 )
 
-            if not plan.machine_schedule_ids:
+            if not stage_mode and not plan.machine_schedule_ids:
                 errors.append(
                     "• Machine capacity planning has not been generated."
                 )
@@ -1199,7 +1410,7 @@ class ProductionPlan(models.Model):
                     else f"Line {product_line.sequence}"
                 )
 
-                for line in product_line.operation_line_ids:
+                for line in (product_line.operation_line_ids if not stage_mode else []):
 
                     operation_name = (
                             line.operation_id.name
@@ -1309,14 +1520,20 @@ class ProductionPlan(models.Model):
                     (
                         "product_tmpl_id",
                         "=",
-                        product_line.product_id.product_tmpl_id.id,
+                        product_line.bom_product_id.product_tmpl_id.id,
                     )
                 ], limit=1)
 
                 if not bom:
+                    if plan.origin_type == "import":
+                        raise ValidationError(
+                            f"Produk Import {product_line.bom_product_id.display_name} belum punya BOM repack. "
+                            f"Pilih Produk Jadi (brand) di baris produk, atau buat BOM berisi produk asal, "
+                            f"label, dan kemasan agar stoknya bisa dicek."
+                        )
                     raise ValidationError(
                         f"BOM not found for "
-                        f"{product_line.product_id.display_name}."
+                        f"{product_line.bom_product_id.display_name}."
                     )
 
                 # ======================================================
@@ -1429,15 +1646,22 @@ class DashboardTimeline(models.Model):
             ("sale_order_id.mou_id", "=", mou_id),
         ])
 
+        # Total kesepakatan MOU (semua produk), pembanding hasil Packing seluruh plan.
+        mou_qty_total = sum(self.env["draft.maklon"].browse(mou_id).maklon_line_ids.mapped("product_qty"))
+
         result = []
         for plan in plans:
             mo_ids = plan.manufacturing_order_ids
             mo_done = mo_ids.filtered(lambda m: m.state == "done")
+            qty_done, qty_plan = plan._produced_quantities()
 
             result.append({
                 "id": plan.id,
                 "name": plan.name,
-                "product": plan.product_id.display_name,
+                "product": plan.product_id.display_name or ", ".join(
+                    plan.product_line_ids.product_id.mapped("display_name")
+                ),
+                "origin_label": dict(plan._fields["origin_type"].selection).get(plan.origin_type, ""),
                 "state": plan.state,
                 "state_label": dict(
                     plan._fields["state"].selection
@@ -1453,6 +1677,9 @@ class DashboardTimeline(models.Model):
                     fields.Date.to_string(plan.planned_end)
                     if plan.planned_end else None
                 ),
+                "mou_qty_total": mou_qty_total,
+                "qty_done": qty_done if plan.state != "cancel" else 0.0,
+                "qty_plan": qty_plan,
                 "mo_count": len(mo_ids),
                 "mo_done": len(mo_done),
             })

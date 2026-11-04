@@ -738,14 +738,31 @@ class UsulanUsulanDanaLine(models.Model):
     line_type = fields.Selection([
         ('product', 'Product'),
         ('setup', 'Setup Item')
-    ], required=True)
+    ], required=True, compute='_compute_line_type', store=True, readonly=False, precompute=True)
+
+    @api.depends('product_id', 'setup_item_id')
+    def _compute_line_type(self):
+        """Jenis baris mengikuti isian: hanya Item Setup terisi -> setup, selainnya product."""
+        for line in self:
+            line.line_type = 'setup' if line.setup_item_id and not line.product_id else 'product'
     account_id = fields.Many2one(
         'account.account',
-        related='setup_item_id.account_id',
+        compute='_compute_account_id',
         string='COA',
         store=True,
-        readonly=True
+        readonly=False,
     )
+
+    @api.depends('setup_item_id.account_id', 'product_id')
+    def _compute_account_id(self):
+        """COA dari Item Setup; bila baris berisi Product, dari akun biaya produk (atau kategorinya)."""
+        for line in self:
+            product = line.product_id
+            line.account_id = (
+                line.setup_item_id.account_id
+                or product.property_account_expense_id
+                or product.categ_id.property_account_expense_categ_id
+            )
     is_ppn_exempt = fields.Boolean(
         string='Tidak Kena PPN',
         default=False,

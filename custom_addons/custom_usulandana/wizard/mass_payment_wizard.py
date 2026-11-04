@@ -26,12 +26,12 @@ class UsulanMassPaymentWizard(models.TransientModel):
 
                 invoice_line_values.append((0, 0, {
                     'name': f"[{usulan.name}] {line.product_id.display_name or line.setup_item_id.name or line.keterangan or ''}",
-                    'account_id': line.setup_item_id.account_id.id,
+                    'account_id': line.account_id.id,
                     'quantity': line.quantity or 1,
                     'price_unit': dpp_per_unit,
                     'tax_ids': [(6, 0, line.tax_ids.ids)],
                 }))
-                correct_accounts.append(line.setup_item_id.account_id.id)
+                correct_accounts.append(line.account_id.id)
 
         usulan_pertama = plans[0].usulan_dana_id
         currency = usulan_pertama.currency_id or self.env.company.currency_id
