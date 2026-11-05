@@ -41,3 +41,9 @@ class MrpProduction(models.Model):
             "res_id": self.production_plan_id.id,
             "target": "current",
         }
+
+    stage_ids = fields.One2many(
+        "mrp.production.plan.stage",
+        "production_id",
+        string="Proses Produksi",
+    )

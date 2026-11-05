@@ -173,6 +173,7 @@ class ProductionPlanSplitWizard(models.TransientModel):
         ].create({
             "plan_id": product_line.plan_id.id,
             "product_id": product_line.product_id.id,
+            "finished_product_id": product_line.finished_product_id.id,
             "product_qty": self.split_qty,
             "parent_product_line_id": product_line.id,
             "production_number": child_number,

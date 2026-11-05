@@ -8,7 +8,7 @@ class ProductionDashboard(models.Model):
     _order = "planned_start desc, mo_name"
 
     mo_name = fields.Char(
-        string="MO Number",
+        string="No. Perintah Produksi",
         readonly=True,
     )
 
@@ -77,7 +77,7 @@ class ProductionDashboard(models.Model):
         ("done", "Done"),
         ("cancel", "Cancelled"),
     ],
-        string="MO Status",
+        string="Status Perintah Produksi",
         readonly=True,
     )
 

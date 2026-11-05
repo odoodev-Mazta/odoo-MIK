@@ -31,6 +31,9 @@ export class CustomUpgradeDashboard extends Component {
             run: null,
             history: [],
             moduleCount: 0,
+            modules: [],
+            selected: {},
+            search: "",
             processing: false,
             waitingSeconds: 0,
             openErrors: {},
@@ -56,12 +59,39 @@ export class CustomUpgradeDashboard extends Component {
         this.state.run = data.run;
         this.state.history = data.history;
         this.state.moduleCount = data.module_count;
+        this.state.modules = data.modules;
     }
 
-    async start() {
-        const runId = await this.orm.call(MODEL, "action_start", []);
+    get visibleModules() {
+        const term = this.state.search.trim().toLowerCase();
+        return this.state.modules.filter(
+            (mod) => !term || mod.name.toLowerCase().includes(term) || mod.title.toLowerCase().includes(term)
+        );
+    }
+
+    get selectedIds() {
+        return this.state.modules.filter((mod) => this.state.selected[mod.id]).map((mod) => mod.id);
+    }
+
+    toggleModule(moduleId) {
+        this.state.selected[moduleId] = !this.state.selected[moduleId];
+    }
+
+    selectVisible(value) {
+        for (const mod of this.visibleModules) {
+            this.state.selected[mod.id] = value;
+        }
+    }
+
+    async start(moduleIds = null) {
+        const runId = await this.orm.call(MODEL, "action_start", [], { module_ids: moduleIds });
+        this.state.selected = {};
         await this.load(runId);
         await this.processQueue();
+    }
+
+    async startSelected() {
+        await this.start(this.selectedIds);
     }
 
     async retryFailed() {
@@ -102,7 +132,7 @@ export class CustomUpgradeDashboard extends Component {
             return;
         }
         if (this.state.run.state === "done") {
-            this.notification.add("Semua modul custom berhasil diupgrade. Tekan Ctrl+Shift+R untuk memuat tampilan terbaru.", {
+            this.notification.add("Modul yang dipilih berhasil diupgrade. Tekan Ctrl+Shift+R untuk memuat tampilan terbaru.", {
                 type: "success",
                 sticky: true,
             });

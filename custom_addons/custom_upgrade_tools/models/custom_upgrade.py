@@ -5,7 +5,7 @@ from datetime import timedelta
 import psycopg2
 
 from odoo import api, fields, models, _
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.modules.loading import reset_modules_state
 from odoo.modules.module import get_module_path
 from odoo.modules.registry import Registry
@@ -76,16 +76,28 @@ class CustomUpgradeRun(models.Model):
     # ─── Dipanggil dari dashboard ───────────────────────────────────────────
 
     @api.model
-    def action_start(self):
-        """Mulai upgrade baru, atau lanjutkan yang belum selesai."""
+    def action_start(self, module_ids=None):
+        """Mulai upgrade baru, atau lanjutkan yang belum selesai.
+
+        module_ids: hanya modul custom yang dipilih; kosong = semua modul custom.
+        """
         self._check_admin()
         run = self.search([('state', '=', 'running')], limit=1)
         if not run:
-            modules = self._sort_by_dependency(self._get_custom_modules())
-            run = self.create({'line_ids': [
-                (0, 0, {'module_id': mod.id, 'sequence': index})
-                for index, mod in enumerate(modules)
-            ]})
+            custom = self._get_custom_modules()
+            modules = custom.filtered(lambda mod: mod.id in module_ids) if module_ids else custom
+            if not modules:
+                raise UserError(_('Pilih minimal satu modul untuk diupgrade.'))
+            modules = self._sort_by_dependency(modules)
+            names = ', '.join(mod.name for mod in modules[:3]) + ('…' if len(modules) > 3 else '')
+            run = self.create({
+                'name': _('Upgrade %(n)s modul: %(names)s', n=len(modules), names=names)
+                if module_ids else _('Upgrade semua modul (%s)', fields.Datetime.now()),
+                'line_ids': [
+                    (0, 0, {'module_id': mod.id, 'sequence': index})
+                    for index, mod in enumerate(modules)
+                ],
+            })
         return run.id
 
     def action_retry_failed(self):
@@ -150,6 +162,12 @@ class CustomUpgradeRun(models.Model):
                 'date_start': fields.Datetime.to_string(rec.date_start),
             } for rec in history],
             'module_count': len(self._get_custom_modules()),
+            'modules': [{
+                'id': mod.id,
+                'name': mod.name,
+                'title': mod.shortdesc or mod.name,
+                'version': mod.installed_version or mod.latest_version or '',
+            } for mod in self._get_custom_modules().sorted('name')],
         }
 
     def _dashboard_values(self):

@@ -8,9 +8,42 @@
                 sesuai urutan ketergantungan. Biarkan halaman ini terbuka sampai selesai.
             </p>
 
+            <t t-set="run" t-value="state.run"/>
+            <t t-if="!(run and run.state === 'running')">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                            <strong>Pilih modul yang mau diupgrade</strong>
+                            <span class="text-muted small">(hanya yang berubah, supaya lebih cepat)</span>
+                            <input type="text" class="form-control form-control-sm ms-auto" style="max-width:240px;"
+                                   placeholder="Cari modul..." t-model="state.search"/>
+                            <a href="#" class="small" t-on-click.prevent="() => this.selectVisible(true)">Pilih semua</a>
+                            <a href="#" class="small" t-on-click.prevent="() => this.selectVisible(false)">Kosongkan</a>
+                        </div>
+                        <div class="border rounded p-2" style="max-height:260px;overflow:auto;">
+                            <t t-foreach="visibleModules" t-as="mod" t-key="mod.id">
+                                <label class="d-flex align-items-center gap-2 py-1 px-1 mb-0" style="cursor:pointer;">
+                                    <input type="checkbox" t-att-checked="state.selected[mod.id]"
+                                           t-on-change="() => this.toggleModule(mod.id)"/>
+                                    <span class="fw-semibold" t-esc="mod.title"/>
+                                    <span class="small text-muted" t-esc="mod.name"/>
+                                    <span class="small text-muted ms-auto" t-esc="mod.version"/>
+                                </label>
+                            </t>
+                            <div t-if="!visibleModules.length" class="text-muted small p-2">Tidak ada modul yang cocok.</div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
             <div class="d-flex flex-wrap gap-2 mb-3">
-                <t t-set="run" t-value="state.run"/>
-                <button class="btn btn-primary" t-on-click="() => this.start()" t-att-disabled="state.processing">
+                <button t-if="!(run and run.state === 'running')" class="btn btn-primary"
+                        t-on-click="() => this.startSelected()"
+                        t-att-disabled="state.processing or !selectedIds.length">
+                    <i class="fa fa-check-square-o me-1"/>Upgrade yang Dipilih (<t t-esc="selectedIds.length"/>)
+                </button>
+                <button t-attf-class="btn #{run and run.state === 'running' ? 'btn-primary' : 'btn-outline-primary'}"
+                        t-on-click="() => this.start()" t-att-disabled="state.processing">
                     <t t-if="run and run.state === 'running'"><i class="fa fa-play me-1"/>Lanjutkan</t>
                     <t t-else=""><i class="fa fa-refresh me-1"/>Upgrade Semua Modul Custom</t>
                 </button>

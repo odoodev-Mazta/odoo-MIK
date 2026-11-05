@@ -101,7 +101,7 @@ class ProductionPlan(models.Model):
     manufacturing_order_ids = fields.One2many(
         "mrp.production",
         "production_plan_id",
-        string="Manufacturing Orders"
+        string="Perintah Produksi"
     )
 
     # Produk ada di baris (product_line_ids); field ini hanya terisi untuk plan turunan (split).
@@ -129,7 +129,7 @@ class ProductionPlan(models.Model):
     manufacturing_order_ids = fields.One2many(
         "mrp.production",
         "production_plan_id",
-        string="Manufacturing Orders",
+        string="Perintah Produksi",
     )
 
     progress = fields.Float(
@@ -243,7 +243,7 @@ class ProductionPlan(models.Model):
     )
 
     has_pending_mo = fields.Boolean(
-        string="Has Pending MO",
+        string="Belum Dibuat Perintah Produksi",
         compute="_compute_has_pending_mo",
     )
 
@@ -439,7 +439,7 @@ class ProductionPlan(models.Model):
                 skip_backorder=True, skip_consumption=True, skip_immediate=True,
             ).button_mark_done()
             self.message_post(
-                body=f"{product_line.product_id.display_name}: Packing selesai, {qty:g} masuk stok (MO {order.name})."
+                body=f"{product_line.product_id.display_name}: Packing selesai, {qty:g} masuk stok (Perintah Produksi {order.name})."
                      + (f" Batch {batch_stage.batch_no}, expired {batch_stage.expiry_date}." if batch_stage else ""),
                 subtype_xmlid="mail.mt_note",
             )
@@ -566,7 +566,7 @@ class ProductionPlan(models.Model):
 
             if not pending_lines:
                 raise ValidationError(
-                    "Semua production batch sudah memiliki Manufacturing Order. "
+                    "Semua production batch sudah memiliki Perintah Produksi. "
                     "Tidak ada yang perlu di-check ulang."
                 )
 
@@ -901,7 +901,7 @@ class ProductionPlan(models.Model):
             if not pending_lines:
                 raise ValidationError(
                     "All production batches already have "
-                    "Manufacturing Orders."
+                    "Perintah Produksi."
                 )
 
             selected_lines = pending_lines.filtered(
@@ -911,7 +911,7 @@ class ProductionPlan(models.Model):
             if not selected_lines:
                 raise ValidationError(
                     "Please select at least one production batch "
-                    "to create a Manufacturing Order."
+                    "to create a Perintah Produksi."
                 )
 
             created_mos = self.env["mrp.production"]
@@ -952,7 +952,7 @@ class ProductionPlan(models.Model):
 
                 if not stage_mode and not mo.workorder_ids:
                     raise ValidationError(
-                        f"Manufacturing Order for "
+                        f"Perintah Produksi for "
                         f"{product_line.product_id.display_name} "
                         f"was created, but no Work Orders were generated."
                     )
@@ -1053,12 +1053,44 @@ class ProductionPlan(models.Model):
 
             if not created_mos:
                 raise ValidationError(
-                    "No Manufacturing Order was created."
+                    "No Perintah Produksi was created."
                 )
 
             plan.state = "running"
 
         return True
+
+    def _get_production_bom(self, product_line):
+        """BOM produk jadi. Lokal dibuat dari 0: BOM wajib gabungan
+        beberapa bahan yang diolah jadi 1 produk."""
+        self.ensure_one()
+        product = product_line.bom_product_id
+        bom = self.env["mrp.bom"].search([
+            ("product_tmpl_id", "=", product.product_tmpl_id.id),
+        ], limit=1)
+
+        if not bom:
+            if self.origin_type == "import":
+                raise ValidationError(
+                    f"Produk Import {product.display_name} belum punya BOM repack. "
+                    f"Pilih Produk Jadi (brand) di baris produk, atau buat BOM berisi produk asal, "
+                    f"label, dan kemasan agar stoknya bisa dicek."
+                )
+            raise ValidationError(
+                f"BOM not found for "
+                f"{product.display_name}."
+            )
+
+        if self.origin_type == "lokal":
+            materials = bom.bom_line_ids.product_id - product
+            if len(materials) < 2:
+                raise ValidationError(
+                    f"Produk Lokal {product.display_name} dibuat dari 0, jadi BOM-nya harus "
+                    f"berisi minimal 2 bahan berbeda yang digabung jadi 1 produk. "
+                    f"BOM {bom.display_name} baru berisi {len(materials)} bahan."
+                )
+
+        return bom
 
     def action_load_operations(self):
         OperationLine = self.env["mrp.production.plan.line"]
@@ -1077,25 +1109,7 @@ class ProductionPlan(models.Model):
                 if product_line.manufacturing_order_ids:
                     continue
 
-                bom = self.env["mrp.bom"].search([
-                    (
-                        "product_tmpl_id",
-                        "=",
-                        product_line.bom_product_id.product_tmpl_id.id,
-                    )
-                ], limit=1)
-
-                if not bom:
-                    if plan.origin_type == "import":
-                        raise ValidationError(
-                            f"Produk Import {product_line.bom_product_id.display_name} belum punya BOM repack. "
-                            f"Pilih Produk Jadi (brand) di baris produk, atau buat BOM berisi produk asal, "
-                            f"label, dan kemasan agar stoknya bisa dicek."
-                        )
-                    raise ValidationError(
-                        f"BOM not found for "
-                        f"{product_line.bom_product_id.display_name}."
-                    )
+                bom = plan._get_production_bom(product_line)
 
                 product_line.operation_line_ids.unlink()
 
@@ -1516,25 +1530,7 @@ class ProductionPlan(models.Model):
                 # FIND BOM
                 # ======================================================
 
-                bom = self.env["mrp.bom"].search([
-                    (
-                        "product_tmpl_id",
-                        "=",
-                        product_line.bom_product_id.product_tmpl_id.id,
-                    )
-                ], limit=1)
-
-                if not bom:
-                    if plan.origin_type == "import":
-                        raise ValidationError(
-                            f"Produk Import {product_line.bom_product_id.display_name} belum punya BOM repack. "
-                            f"Pilih Produk Jadi (brand) di baris produk, atau buat BOM berisi produk asal, "
-                            f"label, dan kemasan agar stoknya bisa dicek."
-                        )
-                    raise ValidationError(
-                        f"BOM not found for "
-                        f"{product_line.bom_product_id.display_name}."
-                    )
+                bom = plan._get_production_bom(product_line)
 
                 # ======================================================
                 # CHECK MATERIAL
