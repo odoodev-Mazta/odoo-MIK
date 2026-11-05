@@ -201,8 +201,10 @@ class PurchaseOrder(models.Model):
         return action
 
     @api.depends(
-        'purchase_request_ids.recommended_vendor_1',
-        'purchase_request_ids.recommended_vendor_2',
+        'purchase_request_id.recommended_vendor_1',
+        'purchase_request_id.recommended_vendor_2',
+        'customer_line_ids.request_id.recommended_vendor_1',
+        'customer_line_ids.request_id.recommended_vendor_2',
         'company_id',
     )
     def _compute_recommended_vendors(self):
