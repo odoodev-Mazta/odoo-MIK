@@ -11,12 +11,18 @@
                     Pilih satu atau beberapa PR. Barangnya ditambahkan ke PO ini; produk yang sama digabung,
                     dan rincian per customer/MOU tercatat di tab Customer PR.
                 </p>
+                <div class="alert alert-warning" role="alert" invisible="not warning">
+                    <field name="warning" nolabel="1"/>
+                </div>
                 <field name="request_ids" options="{'no_create': True}">
                     <list>
                         <field name="name"/>
+                        <field name="date_usulan"/>
                         <field name="customer_id"/>
                         <field name="mou_id"/>
                         <field name="product_summary"/>
+                        <field name="state" widget="badge"/>
+                        <field name="has_active_po" string="Sudah ada PO"/>
                     </list>
                 </field>
                 <footer>

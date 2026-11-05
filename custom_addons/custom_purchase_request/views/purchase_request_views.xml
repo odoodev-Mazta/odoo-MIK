@@ -36,6 +36,9 @@
                 <header>
                     <button name="action_submit" string="PR" type="object"
                             class="btn-primary" invisible="state != 'draft'"/>
+                    <field name="has_active_po" invisible="1"/>
+                    <button name="action_create_po" string="Buat PO" type="object"
+                            class="btn-primary" invisible="state != 'pr' or has_active_po"/>
                     <button name="action_cancel" string="Cancel PR"
                             type="object" class="btn-danger"
                             invisible="state not in ('draft', 'pr')" confirm="Apakah Anda yakin ingin membatalkan Purchase Request ini?"/>

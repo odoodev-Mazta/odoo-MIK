@@ -28,7 +28,7 @@ class PurchaseOrder(models.Model):
         'purchase.request',
         string='No. PR',
         copy=False,
-        domain="[('state', '=', 'pr'), ('has_active_po', '=', False), ('company_id', '=', company_id)]"
+        domain="[('state', '!=', 'cancelled'), ('company_id', '=', company_id)]"
     )
 
     recommended_vendor_ids = fields.Many2many(
@@ -358,6 +358,17 @@ class PurchaseOrder(models.Model):
                 order.purchase_request_id = requests[0]
             order.origin = ', '.join(requests.mapped('name')) or order.origin
 
+    def _warning_requests_in_use(self, requests):
+        """Teks peringatan bila PR sudah ada di RFQ/PO aktif lain (tidak memblokir)."""
+        lines = []
+        for request in requests:
+            others = request._active_orders().filtered(lambda po: po._origin.id != self._origin.id)
+            if others:
+                lines.append(f'{request.name} sudah ada di {", ".join(others.mapped("name"))}')
+        if not lines:
+            return False
+        return '\n'.join(lines) + '\nPastikan barangnya tidak dipesan dua kali.'
+
     def _autofill_vendor(self):
         """Vendor kosong diisi otomatis bila PR yang dipilih merekomendasikan tepat satu vendor terdaftar."""
         for order in self:
@@ -538,11 +549,14 @@ class PurchaseOrder(models.Model):
         self.currency_id = request.currency_id
         self.origin = request.name
 
+        warning = self._warning_requests_in_use(request)
         order_lines, setup_lines, customer_lines = self._prepare_request_lines(request)
         self.order_line = [(5, 0, 0)] + [(0, 0, vals) for vals in order_lines]
         self.setup_line_ids = [(5, 0, 0)] + [(0, 0, vals) for vals in setup_lines]
         self.customer_line_ids = [(5, 0, 0)] + [(0, 0, vals) for vals in customer_lines]
         self._autofill_vendor()
+        if warning:
+            return {'warning': {'title': 'PR sudah dipakai', 'message': warning}}
 
     def onchange(self, values, field_names, fields_spec):
         """Nomor diketik manual: form baru dibuka dengan nomor kosong."""

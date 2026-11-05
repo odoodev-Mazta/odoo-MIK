@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from markupsafe import Markup
+
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 
@@ -199,19 +201,20 @@ class ProductionPlanSplitWizard(models.TransientModel):
         })
 
         product_line.plan_id.message_post(
-            body=(
-                "<p><b>Production berhasil di-split.</b></p>"
-                f"<p>"
-                f"<b>Product:</b> "
-                f"{product_line.product_id.display_name}"
-                f"<br/>"
-                f"<b>Production:</b> "
-                f"{child_line.production_number}"
-                f"<br/>"
-                f"<b>Quantity:</b> "
-                f"{self.split_qty}"
-                f"</p>"
-            )
+            body=Markup(
+                "<p><b>Produksi berhasil dipecah.</b></p>"
+                "<p><b>Produk:</b> %s<br/>"
+                "<b>No. Produksi:</b> %s<br/>"
+                "<b>Qty:</b> %s<br/>"
+                "<b>Jadwal:</b> %s s/d %s</p>"
+            ) % (
+                product_line.product_id.display_name,
+                child_line.production_number,
+                f"{self.split_qty:g}",
+                self.production_start or "-",
+                self.production_end or "-",
+            ),
+            subtype_xmlid="mail.mt_note",
         )
 
         return {
