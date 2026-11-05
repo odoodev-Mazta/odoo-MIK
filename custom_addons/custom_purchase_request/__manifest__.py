@@ -2,7 +2,7 @@
     'name': 'Custom Purchase Request',
     'author': 'Staff Dev',
     'license': 'LGPL-3',
-    'version': '1.2',
+    'version': '1.3',
     'depends': ['purchase', 'web', 'base', 'hr', 'account', 'product', 'custom_usulandana', 'custom_ecatalogue', 'custom_mou', 'sale'],
     'data': [
         'security/ir.model.access.csv',

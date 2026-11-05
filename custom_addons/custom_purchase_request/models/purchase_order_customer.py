@@ -22,6 +22,9 @@ class PurchaseOrderCustomerLine(models.Model):
     qty = fields.Float(string='Qty', default=1.0)
     uom_id = fields.Many2one('uom.uom', string='Unit')
     po_qty = fields.Float(string='Total di PO', compute='_compute_po_qty')
+    recommended_vendor_1 = fields.Char(related='request_id.recommended_vendor_1', string='Rekomendasi Vendor 1')
+    recommended_vendor_2 = fields.Char(related='request_id.recommended_vendor_2', string='Rekomendasi Vendor 2')
+    vendor_id = fields.Many2one(related='order_id.partner_id', string='Vendor PO')
 
     @api.depends('mou_id')
     def _compute_customer_id(self):

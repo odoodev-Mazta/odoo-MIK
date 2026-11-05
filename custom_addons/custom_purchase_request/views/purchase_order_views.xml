@@ -8,9 +8,24 @@
         <field name="arch" type="xml">
 
             <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_undo_merge" string="Batalkan Merge" type="object"
+                        invisible="not merged_from_ids or state not in ('draft', 'sent')"
+                        confirm="RFQ hasil gabungan ini dibatalkan dan RFQ asalnya aktif kembali. Lanjutkan?"/>
                 <field name="has_active_usulan_dana" invisible="1"/>
                 <button name="action_create_usulan_dana" string="Buat Usulan Dana" type="object"
                         class="btn-primary" invisible="state != 'purchase' or has_active_usulan_dana"/>
+            </xpath>
+
+            <xpath expr="//sheet" position="before">
+                <field name="merged_into_id" invisible="1"/>
+                <field name="merged_from_ids" invisible="1"/>
+                <div class="alert alert-info mb-0" role="alert" invisible="not merged_into_id or state == 'cancel'">
+                    RFQ ini sudah digabung ke <field name="merged_into_id" readonly="1"/>.
+                    Batalkan merge di RFQ hasil gabungan untuk mengaktifkannya kembali.
+                </div>
+                <div class="alert alert-success mb-0" role="alert" invisible="not merged_from_ids">
+                    RFQ hasil gabungan dari: <field name="merged_from_ids" widget="many2many_tags" readonly="1"/>
+                </div>
             </xpath>
 
             <xpath expr="//div[@name='button_box']" position="inside">
@@ -23,7 +38,9 @@
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="purchase_request_id" string="Pilih PR" options="{'no_create': True}"
                        readonly="state not in ('draft', 'sent')" invisible="customer_line_ids"/>
-                <field name="purchase_request_ids" string="No. PR" widget="many2many_tags" readonly="1"
+                <field name="purchase_request_ids" string="No. PR" widget="many2many_tags"
+                       readonly="state not in ('draft', 'sent')" domain="[('id', '=', False)]"
+                       options="{'no_create': True, 'no_open': True}"
                        invisible="not customer_line_ids"/>
                 <field name="recommended_vendor_ids" invisible="1"/>
                 <field name="recommended_vendor_id" options="{'no_create': True, 'no_open': True}"
@@ -68,6 +85,9 @@
                     <field name="customer_line_ids" readonly="state not in ('draft', 'sent')">
                         <list editable="bottom">
                             <field name="request_id" options="{'no_create': True}"/>
+                            <field name="recommended_vendor_1" optional="show"/>
+                            <field name="recommended_vendor_2" optional="hide"/>
+                            <field name="vendor_id" optional="hide"/>
                             <field name="mou_id" options="{'no_create': True}"/>
                             <field name="customer_id"/>
                             <field name="sale_order_id" optional="hide" options="{'no_create': True}"/>
