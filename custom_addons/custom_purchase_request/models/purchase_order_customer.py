@@ -54,9 +54,15 @@ class PurchaseOrderAddRequestWizard(models.TransientModel):
     request_ids = fields.Many2many(
         'purchase.request',
         string='Purchase Request',
-        domain="[('state', '=', 'pr'), ('company_id', '=', company_id)]",
+        domain="[('state', '!=', 'cancelled'), ('company_id', '=', company_id)]",
     )
     company_id = fields.Many2one(related='order_id.company_id')
+    warning = fields.Text(compute='_compute_warning')
+
+    @api.depends('request_ids', 'order_id')
+    def _compute_warning(self):
+        for wizard in self:
+            wizard.warning = wizard.order_id._warning_requests_in_use(wizard.request_ids)
 
     def action_add(self):
         self.ensure_one()
