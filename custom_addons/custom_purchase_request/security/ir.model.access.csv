@@ -7,3 +7,5 @@ access_purchase_order_setup_line,purchase.order.setup.line,model_purchase_order_
 access_purchase_request_bulk_mou_line,purchase_request_bulk_mou_line,model_purchase_request_bulk_mou_line,base.group_user,1,1,1,1
 access_detail_export_file,detail.export.file,model_detail_export_file,base.group_user,1,1,1,1
 access_detail_export_wizard,detail.export.wizard,model_detail_export_wizard,base.group_user,1,1,1,1
+access_purchase_order_customer_line,purchase.order.customer.line,model_purchase_order_customer_line,base.group_user,1,1,1,1
+access_purchase_order_add_request_wizard,purchase.order.add.request.wizard,model_purchase_order_add_request_wizard,base.group_user,1,1,1,1

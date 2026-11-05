@@ -99,6 +99,10 @@
                                     <field name="doc_haki_certificate" filename="doc_haki_certificate_fname"/>
                                     <field name="doc_haki_certificate_fname" invisible="1"/>
                                 </group>
+                                <group string="4. Surat MOU">
+                                    <field name="doc_surat_mou" filename="doc_surat_mou_fname"/>
+                                    <field name="doc_surat_mou_fname" invisible="1"/>
+                                </group>
                             </group>
                         </page>
                     </notebook>

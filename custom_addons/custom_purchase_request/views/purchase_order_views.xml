@@ -21,7 +21,10 @@
             </xpath>
 
             <xpath expr="//field[@name='partner_id']" position="before">
-                <field name="purchase_request_id" options="{'no_create': True}" readonly="state not in ('draft', 'sent')"/>
+                <field name="purchase_request_id" string="Pilih PR" options="{'no_create': True}"
+                       readonly="state not in ('draft', 'sent')" invisible="customer_line_ids"/>
+                <field name="purchase_request_ids" string="No. PR" widget="many2many_tags" readonly="1"
+                       invisible="not customer_line_ids"/>
                 <field name="recommended_vendor_ids" invisible="1"/>
                 <field name="recommended_vendor_id" options="{'no_create': True, 'no_open': True}"
                        invisible="not recommended_vendor_ids"
@@ -36,7 +39,14 @@
                 <field name="sale_order_id" options="{'no_create': True}" invisible="not mou_id"/>
             </xpath>
 
-            <!-- input data hari-hari sebelumnya: tanggal konfirmasi bisa diubah selama PO belum di-lock -->
+            <!-- Tanggal purchase: bisa diketik sejak Quotation (input data hari sebelumnya) dan diubah selama PO belum di-lock -->
+            <xpath expr="//label[@for='date_approve']" position="attributes">
+                <attribute name="invisible">0</attribute>
+                <attribute name="string">Tanggal Purchase</attribute>
+            </xpath>
+            <xpath expr="//div[@name='date_approve']" position="attributes">
+                <attribute name="invisible">0</attribute>
+            </xpath>
             <xpath expr="//div[@name='date_approve']/field[@name='date_approve']" position="attributes">
                 <attribute name="readonly">locked</attribute>
             </xpath>
@@ -44,6 +54,30 @@
             <xpath expr="//div[hasclass('oe_title')]//field[@name='name']" position="attributes">
                 <attribute name="readonly">state not in ('draft', 'sent')</attribute>
                 <attribute name="placeholder">Ketik No. PQ/PO...</attribute>
+            </xpath>
+
+            <xpath expr="//page[field[@name='order_line']]" position="after">
+                <page string="Customer PR" name="customer_pr">
+                    <field name="customer_line_warning" invisible="1"/>
+                    <div class="alert alert-warning" role="alert" invisible="not customer_line_warning">
+                        <strong>Jumlah belum sama dengan tab Product:</strong>
+                        <field name="customer_line_warning" nolabel="1"/>
+                    </div>
+                    <button name="action_add_requests" type="object" string="Ambil dari PR"
+                            class="btn-primary" invisible="state not in ('draft', 'sent')"/>
+                    <field name="customer_line_ids" readonly="state not in ('draft', 'sent')">
+                        <list editable="bottom">
+                            <field name="request_id" options="{'no_create': True}"/>
+                            <field name="mou_id" options="{'no_create': True}"/>
+                            <field name="customer_id"/>
+                            <field name="sale_order_id" optional="hide" options="{'no_create': True}"/>
+                            <field name="product_id"/>
+                            <field name="qty"/>
+                            <field name="uom_id"/>
+                            <field name="po_qty" optional="show"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
 
             <xpath expr="//page[field[@name='order_line']]" position="after">

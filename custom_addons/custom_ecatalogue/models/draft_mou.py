@@ -24,6 +24,8 @@ class DraftMaklon(models.Model):
     doc_brand_statement_fname = fields.Char(string="Brand Statement Filename")
     doc_haki_certificate = fields.Binary(string="Sertifikat HAKI / Tanda Bukti HAKI", attachment=True)
     doc_haki_certificate_fname = fields.Char(string="HAKI Certificate Filename")
+    doc_surat_mou = fields.Binary(string="Surat MOU", attachment=True)
+    doc_surat_mou_fname = fields.Char(string="Surat MOU Filename")
 
     currency_id = fields.Many2one("res.currency", string="Currency",
                                   default=lambda self: self.env.company.currency_id.id)

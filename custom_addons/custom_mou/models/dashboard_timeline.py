@@ -274,8 +274,9 @@ class DashboardTimeline(models.Model):
         if 'usulan.usulan.dana' not in self.env:
             return []
         usulans = self.env['usulan.usulan.dana'].search([
-            '|', '|',
+            '|', '|', '|',
             ('purchase_order_id.mou_id', '=', mou.id),
+            ('purchase_order_id.customer_line_ids.mou_id', '=', mou.id),
             ('line_ids.mou_id', '=', mou.id),
             ('id', 'in', pr_records.usulan_dana_id.ids),
             ('state', '!=', 'cancel'),
@@ -460,6 +461,8 @@ class DashboardTimeline(models.Model):
                 # Cari PO terkait PR ini (relasi langsung, lalu via origin)
                 po = self.env['purchase.order'].search([
                     ('purchase_request_id', '=', pr.id),
+                ], limit=1) or self.env['purchase.order'].search([
+                    ('customer_line_ids.request_id', '=', pr.id),
                 ], limit=1) or self.env['purchase.order'].search([
                     ('origin', 'like', pr.name),
                 ], limit=1)
