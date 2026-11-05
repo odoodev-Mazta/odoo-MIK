@@ -106,9 +106,16 @@ class PurchaseRequest(models.Model):
 
     state = fields.Selection([
         ('draft', 'Draft'),
+        ('to_approve', 'Menunggu Approval'),
         ('pr', 'Purchase Request'),
         ('cancelled', 'Cancelled'),
     ], default='draft', tracking=True)
+
+    purchase_purpose = fields.Selection(
+        [('produksi', 'Produksi'), ('non_produksi', 'Non Produksi')],
+        string='Kebutuhan', required=True, default='produksi', tracking=True,
+        help='Produksi: bahan untuk produksi customer. Non Produksi: kebutuhan umum atau tambah stok.',
+    )
 
     is_urgent = fields.Boolean(
         string='Urgent'
@@ -412,8 +419,33 @@ class PurchaseRequest(models.Model):
             rec.total_qty = sum(rec.request_line_ids.mapped('product_qty'))
 
     def action_submit(self):
+        """Ajukan approval; PR baru jadi Purchase Request setelah disetujui."""
         for rec in self:
+            if not rec.request_line_ids and not rec.item_line_ids:
+                raise UserError('Isi minimal satu produk atau item setup sebelum diajukan.')
+            rec.state = 'to_approve'
+            rec.message_post(body='PR diajukan untuk approval.')
+
+    def action_approve(self):
+        if not self.env.user.has_group('custom_purchase_request.group_pr_approver'):
+            raise UserError('Hanya PR Approver yang boleh menyetujui PR.')
+        for rec in self.filtered(lambda r: r.state == 'to_approve'):
             rec.state = 'pr'
+            rec.message_post(body=f'PR disetujui oleh {self.env.user.name}.')
+
+    def action_reject(self):
+        if not self.env.user.has_group('custom_purchase_request.group_pr_approver'):
+            raise UserError('Hanya PR Approver yang boleh menolak PR.')
+        for rec in self.filtered(lambda r: r.state == 'to_approve'):
+            rec.state = 'draft'
+            rec.message_post(body=f'PR dikembalikan ke Draft oleh {self.env.user.name}.')
+
+    @api.onchange('purchase_purpose')
+    def _onchange_purchase_purpose(self):
+        if self.purchase_purpose == 'non_produksi':
+            self.mou_id = False
+            self.sale_order_id = False
+            self.customer_id = False
 
     def action_cancel(self):
         for rec in self:
@@ -515,6 +547,8 @@ class PurchaseRequest(models.Model):
                     'product_id': line.product_id.id,
                     'quantity': line.product_qty,
                     'price_unit': line.price_unit,
+                    'mou_id': self.mou_id.id,
+                    'sale_order_id': self.sale_order_id.id,
                 }))
             if line.setup_item_id:
                 lines.append((0, 0, {
@@ -522,6 +556,8 @@ class PurchaseRequest(models.Model):
                     'setup_item_id': line.setup_item_id.id,
                     'quantity': line.item_qty,
                     'price_unit': 0.0,
+                    'mou_id': self.mou_id.id,
+                    'sale_order_id': self.sale_order_id.id,
                 }))
 
         usulan = self.env['usulan.usulan.dana'].create({

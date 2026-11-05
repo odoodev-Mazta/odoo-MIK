@@ -24,6 +24,8 @@ class ProductionPlan(models.Model):
         "sale.order",
         required=True,
         tracking=True,
+        domain="[('state', '=', 'sale')]",
+        help="Hanya Sales Order yang sudah dikonfirmasi.",
     )
 
     origin_type = fields.Selection(
@@ -378,6 +380,14 @@ class ProductionPlan(models.Model):
         if not self and not field_names and "name" in fields_spec and not self.env.context.get("default_name"):
             result.setdefault("value", {})["name"] = False
         return result
+
+    @api.constrains("sale_order_id")
+    def _check_sale_order_confirmed(self):
+        for plan in self:
+            if plan.sale_order_id and plan.sale_order_id.state != "sale":
+                raise ValidationError(
+                    f"{plan.sale_order_id.name} belum berstatus Sales Order. Konfirmasi dulu SO-nya."
+                )
 
     @api.constrains("name")
     def _check_unique_number(self):
@@ -1654,6 +1664,8 @@ class DashboardTimeline(models.Model):
             result.append({
                 "id": plan.id,
                 "name": plan.name,
+                "sale_order_id": plan.sale_order_id.id or False,
+                "sale_order_name": plan.sale_order_id.name or False,
                 "product": plan.product_id.display_name or ", ".join(
                     plan.product_line_ids.product_id.mapped("display_name")
                 ),

@@ -225,9 +225,12 @@ class DashboardTimeline(models.Model):
 
         result = []
         for sched in schedules:
+            sale_order = sched.production_id.production_plan_id.sale_order_id
             result.append({
                 "id": sched.id,
                 "name": sched.name,
+                "sale_order_id": sale_order.id or False,
+                "sale_order_name": sale_order.name or False,
                 "production": sched.production_id.name,
                 "state": sched.state,
                 "state_label": dict(

@@ -202,7 +202,12 @@ class DashboardTimeline(models.Model):
             ('mou_id', '=', mou_id),
             ('picking_type_id.code', '=', 'outgoing'),
         ])
+        def sale_order_of(picking):
+            order = getattr(picking, 'sale_id', False) or picking.move_ids.sale_line_id.order_id[:1]
+            return order
+
         for picking in pickings:
+            sale_order = sale_order_of(picking)
             lines = []
             # Delivery dari SO tidak punya tab Deliveries, jadi pakai baris Operations.
             for line in picking.delivery_line_ids or picking.move_ids:
@@ -221,6 +226,8 @@ class DashboardTimeline(models.Model):
             result['picking'].append({
                 'id': picking.id,
                 'name': picking.name,
+                'sale_order_id': sale_order.id or False,
+                'sale_order_name': sale_order.name or False,
                 'state': picking.state,
                 'state_label': dict(picking._fields['state'].selection).get(picking.state, picking.state),
                 'is_done': picking.state == 'done',
@@ -237,6 +244,7 @@ class DashboardTimeline(models.Model):
         ])
         for ret in returns:
             origin_picking = ret.move_ids.mapped('origin_returned_move_id.picking_id')
+            sale_order = sale_order_of(origin_picking[:1]) if origin_picking else sale_order_of(ret)
             lines = []
             for move in ret.move_ids:
                 lines.append({
@@ -248,6 +256,8 @@ class DashboardTimeline(models.Model):
             result['retur'].append({
                 'id': ret.id,
                 'name': ret.name,
+                'sale_order_id': sale_order.id or False,
+                'sale_order_name': sale_order.name or False,
                 'state': ret.state,
                 'state_label': dict(ret._fields['state'].selection).get(ret.state, ret.state),
                 'is_done': ret.state == 'done',
@@ -261,9 +271,22 @@ class DashboardTimeline(models.Model):
         def done_qty(records):
             return sum(records.filtered(lambda p: p.state == 'done').move_ids.mapped('quantity'))
 
+        # Terkirim per SO: DO selesai dikurangi retur selesai (retur ikut SO dari DO asalnya).
+        by_so = {}
+        for picking in pickings.filtered(lambda p: p.state == 'done'):
+            so = sale_order_of(picking)
+            if so:
+                by_so[so.id] = by_so.get(so.id, 0.0) + sum(picking.move_ids.mapped('quantity'))
+        for ret in returns.filtered(lambda p: p.state == 'done'):
+            origin = ret.move_ids.mapped('origin_returned_move_id.picking_id')
+            so = sale_order_of(origin[:1]) if origin else sale_order_of(ret)
+            if so:
+                by_so[so.id] = by_so.get(so.id, 0.0) - sum(ret.move_ids.mapped('quantity'))
+
         result['summary'] = {
             'delivered': done_qty(pickings) - done_qty(returns),
             'total': sum(self.env['draft.maklon'].browse(mou_id).maklon_line_ids.mapped('product_qty')),
+            'by_so': {str(so_id): qty for so_id, qty in by_so.items()},
         }
         return result
     
@@ -321,6 +344,10 @@ class DashboardTimeline(models.Model):
                 'is_repeat_order': so.is_repeat_order,
                 'is_paid': bool(paid_invoice),
                 'amount_total': so.amount_total,
+                'qty_total': sum(
+                    line.product_uom_qty for line in so.order_line
+                    if not line.display_type and line.product_id and line.product_id.type != 'service'
+                ),
             })
         return result
 
