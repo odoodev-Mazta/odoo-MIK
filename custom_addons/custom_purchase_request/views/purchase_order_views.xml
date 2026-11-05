@@ -74,10 +74,15 @@
             </xpath>
 
             <xpath expr="//page[field[@name='order_line']]" position="after">
-                <page string="Customer PR" name="customer_pr">
+                <page string="Keterangan PR" name="customer_pr">
                     <field name="customer_line_warning" invisible="1"/>
+                    <field name="customer_line_stock_note" invisible="1"/>
+                    <div class="alert alert-info" role="alert" invisible="not customer_line_stock_note">
+                        <strong>Sisa yang tidak dialokasikan ke customer (masuk stok produknya sendiri):</strong>
+                        <field name="customer_line_stock_note" nolabel="1"/>
+                    </div>
                     <div class="alert alert-warning" role="alert" invisible="not customer_line_warning">
-                        <strong>Jumlah belum sama dengan tab Product:</strong>
+                        <strong>Alokasi melebihi jumlah di tab Product:</strong>
                         <field name="customer_line_warning" nolabel="1"/>
                     </div>
                     <button name="action_add_requests" type="object" string="Ambil dari PR"
@@ -85,21 +90,23 @@
                     <field name="customer_line_ids" readonly="state not in ('draft', 'sent')">
                         <list editable="bottom">
                             <field name="request_id" options="{'no_create': True}"/>
-                            <field name="recommended_vendor_1" optional="show"/>
-                            <field name="recommended_vendor_2" optional="hide"/>
-                            <field name="vendor_id" optional="hide"/>
+                            <field name="recommended_partner_ids" column_invisible="1"/>
+                            <field name="vendor_choice_id" string="Vendor"
+                                   options="{'no_create': True, 'no_open': True}"/>
                             <field name="mou_id" options="{'no_create': True}"/>
                             <field name="customer_id"/>
-                            <field name="sale_order_id" optional="hide" options="{'no_create': True}"/>
+                            <field name="sale_order_id" string="No. SO" options="{'no_create': True}"/>
                             <field name="product_id"/>
                             <field name="qty"/>
                             <field name="uom_id"/>
                             <field name="po_qty" optional="show"/>
                             <field name="allocate_product_id" options="{'no_create': True}"/>
                             <field name="allocated_qty"/>
+                            <field name="allocation_state" optional="show"/>
+                            <field name="can_allocate_now" column_invisible="1"/>
                             <button name="action_allocate" type="object" string="Alokasikan"
                                     class="btn btn-link" icon="fa-exchange"
-                                    invisible="not id or not allocate_product_id or allocated_qty >= qty"
+                                    invisible="not can_allocate_now"
                                     confirm="Stok produk umum dipindahkan ke produk customer sebanyak sisa qty. Lanjutkan?"/>
                         </list>
                     </field>

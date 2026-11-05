@@ -522,9 +522,11 @@ class AccountPayment(models.Model):
 
     def _get_invoice_outstanding(self):
         self.ensure_one()
-        return self.sale_invoice_id._origin._get_mou_outstanding(exclude_payments=self._origin)
+        # Payment yang masih draft belum dihitung (sedang diisi); yang sudah diproses ikut menjadi 'Sudah Dibayar'.
+        exclude = self._origin if self.state == 'draft' else None
+        return self.sale_invoice_id._origin._get_mou_outstanding(exclude_payments=exclude)
 
-    @api.depends('sale_invoice_id', 'timeline_stage')
+    @api.depends('sale_invoice_id', 'timeline_stage', 'state', 'amount')
     def _compute_so_outstanding_amount(self):
         for payment in self:
             payment.so_outstanding_amount = (

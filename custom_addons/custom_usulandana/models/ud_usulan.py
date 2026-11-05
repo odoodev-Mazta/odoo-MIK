@@ -825,6 +825,10 @@ class UsulanUsulanDanaLine(models.Model):
                                       currency_field='currency_id')
 
     mou_id = fields.Many2one('draft.maklon', string='No. MOU', domain=[('state', '=', 'mou')])
+    sale_order_id = fields.Many2one(
+        'sale.order', string='Sales Order', domain="[('mou_id', '=', mou_id)]",
+        help='Sumber SO dari pengeluaran ini (satu MOU bisa punya banyak SO).',
+    )
     # field pada cek tax
     pph_id = fields.Many2one('pph.setup', string="PPh")
     tax_amount = fields.Float(string="Tax Amount")

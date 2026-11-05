@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
 
+    <record id="group_pr_approver" model="res.groups">
+        <field name="name">PR Approver</field>
+        <field name="comment">Boleh menyetujui atau menolak Purchase Request.</field>
+    </record>
+
+    <!-- Administrator otomatis menjadi PR Approver -->
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_pr_approver'))]"/>
+    </record>
+
     <record id="purchase_request_company_rule" model="ir.rule">
         <field name="name">Purchase Request Multi Company</field>
         <field name="model_id" ref="model_purchase_request"/>

@@ -143,6 +143,7 @@
                                     <field name="is_ppn_exempt"/>
                                     <field name="keterangan"/>
                                     <field name="mou_id"/>
+                                    <field name="sale_order_id" options="{'no_create': True}" invisible="not mou_id"/>
                                     <field name="quantity"/>
                                     <field name="uom_id"/>
                                     <field name="price_unit"/>

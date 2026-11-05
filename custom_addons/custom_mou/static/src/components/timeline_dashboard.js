@@ -485,6 +485,7 @@ export class TimelineDashboard extends Component {
                     state_label: pr.state_label,
                     amount: this.formatCurrency(pr.total_amount),
                     sale_order_id: pr.sale_order_id,
+                    so_name: this._soName(mou, pr.sale_order_id),
                     popup: this._popup('purchase.request', pr.id, pr.name),
                 });
 
@@ -507,6 +508,7 @@ export class TimelineDashboard extends Component {
                         pr_ref: pr.name,
                         po_state: pr.po_state,
                         sale_order_id: pr.po_sale_order_id,
+                        so_name: this._soName(mou, pr.po_sale_order_id),
                         popup: this._popup('purchase.order', pr.po_id, pr.po_name),
                     });
                 }
@@ -557,6 +559,7 @@ export class TimelineDashboard extends Component {
                     is_done: pr.delivered,
                     pr_ref: pr.name,
                     sale_order_id: pr.po_sale_order_id || pr.sale_order_id,
+                    so_name: this._soName(mou, pr.po_sale_order_id || pr.sale_order_id),
                     popup: this._popup('stock.picking', pr.delivered_id, pr.delivered_name),
                 });
             });
@@ -570,6 +573,7 @@ export class TimelineDashboard extends Component {
                 amount: this.formatCurrency(ud.amount_total),
                 is_done: ud.is_done,
                 sale_order_id: ud.sale_order_id,
+                so_name: this._soName(mou, ud.sale_order_id),
                 popup: this._popup('usulan.usulan.dana', ud.id, ud.name),
             }));
 
@@ -625,6 +629,7 @@ export class TimelineDashboard extends Component {
             const deliverySummary = mou.delivery_data?.summary;
             if (deliverySummary && deliverySummary.total) {
                 deliveryStage.details.push({
+                    is_mou_total: true,
                     label: `Total terkirim MOU: ${deliverySummary.delivered}/${deliverySummary.total}`,
                     date: `${Math.round(deliverySummary.delivered / deliverySummary.total * 100)}%`,
                     is_done: deliverySummary.delivered >= deliverySummary.total,
@@ -632,9 +637,12 @@ export class TimelineDashboard extends Component {
                 });
             }
 
+            deliveryStage.so_delivered = deliverySummary?.by_so || {};
             (mou.delivery_data?.picking || []).forEach(pk => {
                 deliveryStage.sub_delivery.picking.push({
                     label: pk.name,
+                    sale_order_id: pk.sale_order_id,
+                    so_name: pk.sale_order_name,
                     state_label: pk.state_label,
                     is_done: pk.is_done,
                     popup: this._popup('stock.picking', pk.id, pk.name),
@@ -650,7 +658,8 @@ export class TimelineDashboard extends Component {
                 });
 
                 deliveryStage.details.push({
-                    label: `Pengiriman ${pk.name}`,
+                    label: `Pengiriman ${pk.name}${pk.sale_order_name ? ' · ' + pk.sale_order_name : ''}`,
+                    sale_order_id: pk.sale_order_id,
                     date: pk.date_done
                         ? this.formatDate(pk.date_done)
                         : (pk.scheduled_date ? `Estimasi: ${this.formatDate(pk.scheduled_date)}` : '-'),
@@ -661,6 +670,8 @@ export class TimelineDashboard extends Component {
             (mou.delivery_data?.retur || []).forEach(rt => {
                 deliveryStage.sub_delivery.retur.push({
                     label: rt.name,
+                    sale_order_id: rt.sale_order_id,
+                    so_name: rt.sale_order_name,
                     state_label: rt.state_label,
                     is_done: rt.is_done,
                     popup: this._popup('stock.picking', rt.id, rt.name),
@@ -698,6 +709,7 @@ export class TimelineDashboard extends Component {
                 const totalDone = produksiPlans.reduce((sum, p) => sum + (p.qty_done || 0), 0);
                 const totalQty = produksiPlans[0].mou_qty_total;
                 produksiStage.details.push({
+                    is_mou_total: true,
                     label: `Total produksi MOU: ${totalDone}/${totalQty}`,
                     date: `${Math.round(totalDone / totalQty * 100)}%`,
                     is_done: totalDone >= totalQty,
@@ -705,9 +717,15 @@ export class TimelineDashboard extends Component {
                 });
             }
 
+            produksiStage.so_produced = {};
             produksiPlans.forEach(p => {
+                if (p.sale_order_id) {
+                    produksiStage.so_produced[p.sale_order_id] =
+                        (produksiStage.so_produced[p.sale_order_id] || 0) + (p.qty_done || 0);
+                }
                 produksiStage.details.push({
-                    label: `${p.name} — ${p.product}${p.origin_label ? ' (' + p.origin_label + ')' : ''}${p.qty_plan ? ' · Jadi ' + p.qty_done + '/' + p.qty_plan : ''}`,
+                    sale_order_id: p.sale_order_id,
+                    label: `${p.name}${p.sale_order_name ? ' · ' + p.sale_order_name : ''} — ${p.product}${p.origin_label ? ' (' + p.origin_label + ')' : ''}${p.qty_plan ? ' · Jadi ' + p.qty_done + '/' + p.qty_plan : ''}`,
                     date: p.is_done
                         ? `Selesai${p.planned_end ? ': ' + this.formatDate(p.planned_end) : ''}`
                         : `Target: ${p.planned_end ? this.formatDate(p.planned_end) : '-'}`,
@@ -717,6 +735,8 @@ export class TimelineDashboard extends Component {
 
                 produksiStage.sub_produksi.plans.push({
                     label: p.name,
+                    sale_order_id: p.sale_order_id,
+                    so_name: p.sale_order_name,
                     product: p.product,
                     origin_label: p.origin_label,
                     state_label: p.state_label,
@@ -742,7 +762,8 @@ export class TimelineDashboard extends Component {
 
             (mou.qc_data || []).forEach(q => {
                 qcStage.details.push({
-                    label: `${q.name} (${q.production})`,
+                    sale_order_id: q.sale_order_id,
+                    label: `${q.name} (${q.production})${q.sale_order_name ? ' · ' + q.sale_order_name : ''}`,
                     date: q.inspection_date
                         ? `Diperiksa: ${this.formatDate(q.inspection_date)}`
                         : '-',
@@ -752,6 +773,8 @@ export class TimelineDashboard extends Component {
 
                 qcStage.sub_qc.schedules.push({
                     label: q.name,
+                    sale_order_id: q.sale_order_id,
+                    so_name: q.sale_order_name,
                     production: q.production,
                     state_label: q.state_label,
                     passed_count: q.passed_count,
@@ -958,23 +981,64 @@ export class TimelineDashboard extends Component {
         );
     }
 
-    filterProcurementBySo(stage, soId) {
-        if (!stage.sub_pengadaan) return stage;
+    _soName(mou, soId) {
+        if (!soId) return '';
+        const so = (mou.sale_orders || []).find(o => o.id === soId);
+        return so ? so.name : '';
+    }
 
+    _soTotalLine(prefix, so, done) {
+        const total = so.qty_total || 0;
+        return {
+            is_so_total: true,
+            label: `${prefix} SO ${so.name}: ${done}/${total}`,
+            date: total ? `${Math.round(done / total * 100)}%` : '-',
+            is_done: total > 0 && done >= total,
+            is_cancelled: false,
+        };
+    }
+
+    filterStageBySo(stage, so) {
+        const soId = so.id;
         // Data tanpa SO (data lama / pembelian bulk) tetap ditampilkan.
-        const sub = {};
-        const summary = { ...(stage.sub_summary_pengadaan || {}) };
-        for (const key of ['pr', 'po', 'ud', 'delivered']) {
-            sub[key] = (stage.sub_pengadaan[key] || []).filter(
-                item => !item.sale_order_id || item.sale_order_id === soId
-            );
-            summary[key] = {
-                ...(summary[key] || {}),
-                total: sub[key].length,
-                done: sub[key].filter(item => item.is_done).length,
-            };
+        const keep = item => !item.sale_order_id || item.sale_order_id === soId;
+        // Baris total MOU diganti total per SO yang dipilih.
+        const result = { ...stage, details: (stage.details || []).filter(d => !d.is_mou_total && keep(d)) };
+        if (stage.code === 'delivery' && stage.so_delivered) {
+            result.details.unshift(this._soTotalLine('Total terkirim', so, stage.so_delivered[String(soId)] || 0));
         }
-        return { ...stage, sub_pengadaan: sub, sub_summary_pengadaan: summary };
+        if (stage.code === 'produksi' && stage.so_produced) {
+            result.details.unshift(this._soTotalLine('Total produksi', so, stage.so_produced[soId] || 0));
+        }
+        const summarize = list => ({ total: list.length, done: list.filter(i => i.is_done).length });
+
+        if (stage.sub_pengadaan) {
+            const sub = {};
+            const summary = { ...(stage.sub_summary_pengadaan || {}) };
+            for (const key of ['pr', 'po', 'ud', 'delivered']) {
+                sub[key] = (stage.sub_pengadaan[key] || []).filter(keep);
+                summary[key] = { ...(summary[key] || {}), ...summarize(sub[key]) };
+            }
+            result.sub_pengadaan = sub;
+            result.sub_summary_pengadaan = summary;
+        }
+        if (stage.sub_delivery) {
+            const picking = (stage.sub_delivery.picking || []).filter(keep);
+            const retur = (stage.sub_delivery.retur || []).filter(keep);
+            result.sub_delivery = { picking, retur };
+            result.sub_summary_delivery = { picking: summarize(picking), retur: summarize(retur) };
+        }
+        if (stage.sub_produksi) {
+            const plans = (stage.sub_produksi.plans || []).filter(keep);
+            result.sub_produksi = { plans };
+            result.sub_summary_produksi = summarize(plans);
+        }
+        if (stage.sub_qc) {
+            const schedules = (stage.sub_qc.schedules || []).filter(keep);
+            result.sub_qc = { schedules };
+            result.sub_summary_qc = { ...summarize(schedules), failed: schedules.filter(i => i.is_failed).length };
+        }
+        return result;
     }
 
     get displayStages() {
@@ -983,7 +1047,7 @@ export class TimelineDashboard extends Component {
         if (!so) return this.state.selected_mou.stages;
 
         // Status dihitung ulang karena isi Pengadaan sudah mengikuti SO terpilih.
-        const stages = this.state.selected_mou.stages.map(stage => this.filterProcurementBySo(stage, so.id));
+        const stages = this.state.selected_mou.stages.map(stage => this.filterStageBySo(stage, so));
         stages.forEach((stage, index) => {
             stages[index] = { ...stage, ...this._computeStageStatus(stage) };
         });

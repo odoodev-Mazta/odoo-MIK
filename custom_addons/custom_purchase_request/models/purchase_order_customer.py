@@ -24,12 +24,46 @@ class PurchaseOrderCustomerLine(models.Model):
     po_qty = fields.Float(string='Total di PO', compute='_compute_po_qty')
     recommended_vendor_1 = fields.Char(related='request_id.recommended_vendor_1', string='Rekomendasi Vendor 1')
     recommended_vendor_2 = fields.Char(related='request_id.recommended_vendor_2', string='Rekomendasi Vendor 2')
+    recommended_partner_ids = fields.Many2many(
+        'res.partner', string='Vendor di PR', compute='_compute_recommended_partner_ids',
+    )
+    vendor_choice_id = fields.Many2one(
+        'res.partner', string='Vendor',
+        compute='_compute_vendor_choice_id', store=True, readonly=False,
+        domain="[('id', 'in', recommended_partner_ids)]",
+        help='Pilih salah satu vendor yang direkomendasikan di PR. Vendor PO mengikuti pilihan ini.',
+    )
     vendor_id = fields.Many2one(related='order_id.partner_id', string='Vendor PO')
     allocate_product_id = fields.Many2one(
         'product.product', string='Alokasi ke Produk',
         help='Produk milik customer (mis. Stiker Amerta 20gr). Stok produk di kolom Produk dipindahkan ke produk ini.',
     )
     allocated_qty = fields.Float(string='Sudah Dialokasikan', readonly=True, copy=False)
+
+    @api.depends('request_id.recommended_vendor_1', 'request_id.recommended_vendor_2', 'order_id.company_id')
+    def _compute_recommended_partner_ids(self):
+        for line in self:
+            partners = self.env['res.partner']
+            names = {
+                name.strip()
+                for name in (line.request_id.recommended_vendor_1, line.request_id.recommended_vendor_2)
+                if name and name.strip()
+            }
+            for name in sorted(names):
+                partners |= self.env['res.partner'].search([
+                    ('name', '=ilike', name),
+                    ('company_id', 'in', [False, line.order_id.company_id.id]),
+                ])
+            line.recommended_partner_ids = partners
+
+    @api.depends('request_id')
+    def _compute_vendor_choice_id(self):
+        """Terisi otomatis bila PR hanya punya satu vendor terdaftar; selain itu kosong untuk dipilih."""
+        for line in self:
+            partners = line.recommended_partner_ids
+            if line.vendor_choice_id in partners:
+                continue
+            line.vendor_choice_id = partners if len(partners) == 1 else False
 
     @api.depends('mou_id')
     def _compute_customer_id(self):
@@ -44,6 +78,29 @@ class PurchaseOrderCustomerLine(models.Model):
                 for order_line in line.order_id.order_line
                 if not order_line.display_type and order_line.product_id == line.product_id
             )
+
+    can_allocate_now = fields.Boolean(compute='_compute_allocation_state')
+    allocation_state = fields.Char(string='Status Alokasi', compute='_compute_allocation_state')
+
+    @api.depends('allocate_product_id', 'allocated_qty', 'qty', 'product_id',
+                 'order_id.order_line.qty_received')
+    def _compute_allocation_state(self):
+        for line in self:
+            target = line.allocate_product_id
+            line.can_allocate_now = False
+            if not target:
+                line.allocation_state = False
+            elif target == line.product_id:
+                line.allocation_state = 'Masuk stok produk ini'
+            elif line.allocated_qty >= line.qty > 0:
+                line.allocation_state = 'Selesai'
+            elif not line.id:
+                line.allocation_state = 'Simpan dulu'
+            elif line._allocatable_qty() > 0 and line._can_allocate():
+                line.can_allocate_now = True
+                line.allocation_state = 'Siap dialokasikan'
+            else:
+                line.allocation_state = 'Menunggu barang diterima'
 
     def _allocatable_qty(self):
         """Barang PO yang sudah diterima dan belum dialokasikan ke baris mana pun (satuan baris)."""
@@ -144,7 +201,7 @@ class PurchaseOrderAddRequestWizard(models.TransientModel):
     request_ids = fields.Many2many(
         'purchase.request',
         string='Purchase Request',
-        domain="[('state', '!=', 'cancelled'), ('company_id', '=', company_id)]",
+        domain="[('state', '=', 'pr'), ('company_id', '=', company_id)]",
     )
     company_id = fields.Many2one(related='order_id.company_id')
     warning = fields.Text(compute='_compute_warning')
