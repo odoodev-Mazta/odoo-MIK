@@ -2,7 +2,7 @@
     'name': 'Custom Purchase Request',
     'author': 'Staff Dev',
     'license': 'LGPL-3',
-    'version': '1.1',
+    'version': '1.3',
     'depends': ['purchase', 'web', 'base', 'hr', 'account', 'product', 'custom_usulandana', 'custom_ecatalogue', 'custom_mou', 'sale'],
     'data': [
         'security/ir.model.access.csv',
@@ -11,6 +11,7 @@
         'views/purchase_request_views.xml',
         'views/pr_timeline_views.xml',
         'views/purchase_order_views.xml',
+        'views/purchase_order_customer_views.xml',
         'views/detail_export_views.xml',
     ],
     'assets': {

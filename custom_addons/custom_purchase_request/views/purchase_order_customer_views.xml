@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_purchase_order_add_request_wizard" model="ir.ui.view">
+        <field name="name">purchase.order.add.request.wizard.form</field>
+        <field name="model">purchase.order.add.request.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="order_id" invisible="1"/>
+                <field name="company_id" invisible="1"/>
+                <p class="text-muted">
+                    Pilih satu atau beberapa PR. Barangnya ditambahkan ke PO ini; produk yang sama digabung,
+                    dan rincian per customer/MOU tercatat di tab Customer PR.
+                </p>
+                <field name="request_ids" options="{'no_create': True}">
+                    <list>
+                        <field name="name"/>
+                        <field name="customer_id"/>
+                        <field name="mou_id"/>
+                        <field name="product_summary"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_add" type="object" string="Tambahkan" class="btn-primary"/>
+                    <button string="Batal" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

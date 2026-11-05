@@ -54,6 +54,12 @@ class ProductionPlanStage(models.Model):
         string="Qty Rencana",
         related="product_line_id.production_qty",
     )
+    production_id = fields.Many2one(
+        "mrp.production",
+        string="Perintah Produksi",
+        compute="_compute_production_id",
+        store=True,
+    )
     sequence = fields.Integer(default=10)
     stage_id = fields.Many2one(
         "mrp.production.stage",
@@ -108,6 +114,11 @@ class ProductionPlanStage(models.Model):
     qc_user_id = fields.Many2one("res.users", string="Petugas QC", readonly=True, copy=False)
     qc_date = fields.Datetime(string="Waktu QC", readonly=True, copy=False)
 
+    @api.depends("product_line_id.manufacturing_order_ids")
+    def _compute_production_id(self):
+        for stage in self:
+            stage.production_id = stage.product_line_id.manufacturing_order_ids[:1]
+
     @api.depends("check_ids")
     def _compute_has_checks(self):
         for stage in self:
@@ -142,7 +153,7 @@ class ProductionPlanStage(models.Model):
     def action_start(self):
         for stage in self:
             if stage.plan_id.state != "running":
-                raise ValidationError("Buat MO dulu. Tahap baru bisa dikerjakan setelah plan berstatus Running.")
+                raise ValidationError("Buat Perintah Produksi dulu. Tahap baru bisa dikerjakan setelah plan berstatus Running.")
             if stage.state != "todo":
                 raise ValidationError(f"Tahap {stage._label()} sudah berjalan.")
             previous = stage._previous()

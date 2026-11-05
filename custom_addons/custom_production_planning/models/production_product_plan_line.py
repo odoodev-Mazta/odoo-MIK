@@ -34,8 +34,9 @@ class ProductionPlanProductLine(models.Model):
     finished_product_id = fields.Many2one(
         "product.product",
         string="Produk Jadi (brand)",
-        help="Import: produk brand client hasil kemas ulang. BOM, Check Material, MO, dan stok "
-             "memakai produk ini. Kosongkan bila produk di kolom Product sudah produk jadi.",
+        help="Produk yang akan dihasilkan, supaya jelas jadi produk apa. Lokal: produk baru hasil "
+             "produksi. Import: produk brand client hasil kemas ulang. BOM, Check Material, Perintah Produksi, "
+             "dan stok memakai produk ini. Kosongkan bila produk di kolom Product sudah produk jadi.",
     )
 
     bom_product_id = fields.Many2one(
@@ -81,7 +82,7 @@ class ProductionPlanProductLine(models.Model):
     manufacturing_order_ids = fields.One2many(
         "mrp.production",
         "production_plan_product_line_id",
-        string="Manufacturing Orders",
+        string="Perintah Produksi",
     )
 
     progress = fields.Float(
@@ -140,13 +141,13 @@ class ProductionPlanProductLine(models.Model):
     )
 
     create_mo = fields.Boolean(
-        string="Create MO",
+        string="Buat Perintah Produksi",
         default=False,
         readonly=False,
     )
 
     has_mo = fields.Boolean(
-        string="MO Created",
+        string="Sudah Ada Perintah Produksi",
         compute="_compute_has_mo",
         store=True,
     )
@@ -295,7 +296,7 @@ class ProductionPlanProductLine(models.Model):
         if self.manufacturing_order_ids:
             raise ValidationError(
                 "Production tidak dapat di-split karena "
-                "Manufacturing Order sudah dibuat."
+                "Perintah Produksi sudah dibuat."
             )
 
         if self.remaining_qty <= 0:

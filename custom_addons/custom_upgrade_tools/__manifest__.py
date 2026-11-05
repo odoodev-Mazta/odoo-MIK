@@ -1,7 +1,7 @@
 {
     'name': 'Custom Upgrade Tools',
-    'version': '19.0.1.0.0',
-    'summary': 'Upgrade semua modul custom sekaligus, dengan progress dan coba ulang',
+    'version': '19.0.1.0.1',
+    'summary': 'Upgrade modul custom yang dipilih atau semuanya, dengan progress dan coba ulang',
     'description': """
 Satu tombol di menu Apps untuk mengupgrade semua modul di folder custom_addons:
 
