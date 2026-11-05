@@ -1,11 +1,15 @@
 from odoo import Command, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 class PurchaseRequest(models.Model):
     _name = 'purchase.request'
     _description = 'Purchase Request'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _rec_name = 'name'
+    # Terbaru di atas: kotak pilihan PR (hanya 8 baris) dan daftar PR menampilkan PR terbaru lebih dulu.
+    _order = 'id desc'
+    # Cari PR lewat nomor, nama customer, atau nomor MOU (nomor PR sekarang bebas diketik).
+    _rec_names_search = ['name', 'customer_id.name', 'mou_id.draft_name']
 
     name = fields.Char(
         string='PR Number',
@@ -199,6 +203,8 @@ class PurchaseRequest(models.Model):
         string='Purchase Order',
     )
 
+    customer_line_ids = fields.One2many('purchase.order.customer.line', 'request_id', string='Rincian di PO')
+
     has_active_po = fields.Boolean(
         string='Sudah Ada PO',
         compute='_compute_has_active_po',
@@ -258,10 +264,36 @@ class PurchaseRequest(models.Model):
     #         'target': 'current',
     #     }
 
-    @api.depends('purchase_order_ids', 'purchase_order_ids.state')
+    def _active_orders(self):
+        """RFQ/PO aktif yang memuat PR ini, baik lewat kolom No. PR maupun tab Customer PR."""
+        self.ensure_one()
+        if not self._origin.id:
+            return self.env['purchase.order']
+        orders = self._origin.purchase_order_ids
+        lines = self.env['purchase.order.customer.line'].search([('request_id', '=', self._origin.id)])
+        return (orders | lines.order_id).filtered(lambda po: po.state != 'cancel')
+
+    @api.depends('purchase_order_ids', 'purchase_order_ids.state', 'customer_line_ids.order_id.state')
     def _compute_has_active_po(self):
         for rec in self:
-            rec.has_active_po = any(po.state != 'cancel' for po in rec.purchase_order_ids)
+            rec.has_active_po = bool(rec._active_orders())
+
+    def action_create_po(self):
+        """Buka form RFQ/PO baru; vendor dan baris terisi dari PR ini (onchange di PO)."""
+        self.ensure_one()
+        if self.state != 'pr':
+            raise UserError('PO hanya bisa dibuat dari PR yang berstatus Purchase Request.')
+        active = self._active_orders()
+        if active:
+            raise UserError(f'PR {self.name} sudah punya RFQ/PO aktif: {", ".join(active.mapped("name"))}.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Request for Quotation',
+            'res_model': 'purchase.order',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {'default_purchase_request_id': self.id, 'default_company_id': self.company_id.id},
+        }
 
     def onchange(self, values, field_names, fields_spec):
         """Nomor diketik manual: form baru dibuka dengan nomor kosong."""
