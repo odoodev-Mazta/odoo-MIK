@@ -1,6 +1,6 @@
 {
     "name": "Custom Production Planning",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.0.7",
     "category": "Manufacturing",
     "author": "William Purba",
 
@@ -19,6 +19,8 @@
         "data/production_stage_data.xml",
         "security/ir.model.access.csv",
         "views/production_plan_views.xml",
+        "views/sale_order_views.xml",
+        "views/purchase_deadline_views.xml",
         "views/production_machine_views.xml",
         "views/production_machine_schedule_views.xml",
         "views/mrp_production_views.xml",

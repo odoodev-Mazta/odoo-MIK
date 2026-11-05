@@ -9,6 +9,10 @@
 
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="mou_id" readonly="sale_id"/>
+                <field name="sale_id" string="Sales Order" options="{'no_create': True}"
+                       domain="[('mou_id', '=', mou_id), ('state', '=', 'sale')]"
+                       invisible="not mou_id and not sale_id"
+                       readonly="state == 'cancel'"/>
             </xpath>
 
             <xpath expr="//page[@name='operations']" position="after">

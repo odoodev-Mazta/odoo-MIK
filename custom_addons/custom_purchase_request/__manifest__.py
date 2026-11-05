@@ -3,7 +3,7 @@
     'author': 'Staff Dev',
     'license': 'LGPL-3',
     'version': '1.3',
-    'depends': ['purchase', 'web', 'base', 'hr', 'account', 'product', 'custom_usulandana', 'custom_ecatalogue', 'custom_mou', 'sale'],
+    'depends': ['purchase', 'web', 'base', 'hr', 'account', 'product', 'custom_usulandana', 'custom_ecatalogue', 'custom_mou', 'sale', 'purchase_stock'],
     'data': [
         'security/ir.model.access.csv',
         'security/security.xml',

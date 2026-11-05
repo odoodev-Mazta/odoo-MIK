@@ -28,7 +28,7 @@ class PurchaseOrder(models.Model):
         'purchase.request',
         string='No. PR',
         copy=False,
-        domain="[('state', '!=', 'cancelled'), ('company_id', '=', company_id)]"
+        domain="[('state', '=', 'pr'), ('company_id', '=', company_id)]"
     )
 
     recommended_vendor_ids = fields.Many2many(
@@ -123,12 +123,15 @@ class PurchaseOrder(models.Model):
 
     customer_line_warning = fields.Text(compute='_compute_customer_line_warning')
 
+    customer_line_stock_note = fields.Text(compute='_compute_customer_line_warning')
+
     @api.depends('customer_line_ids.qty', 'customer_line_ids.product_id',
                  'order_line.product_qty', 'order_line.product_id')
     def _compute_customer_line_warning(self):
         for order in self:
+            order.customer_line_warning = False
+            order.customer_line_stock_note = False
             if not order.customer_line_ids:
-                order.customer_line_warning = False
                 continue
             ordered = defaultdict(float)
             allocated = defaultdict(float)
@@ -137,12 +140,15 @@ class PurchaseOrder(models.Model):
                     ordered[line.product_id] += line.product_qty
             for line in order.customer_line_ids:
                 allocated[line.product_id] += line.qty
-            messages = [
-                f"{product.display_name}: qty PO {ordered[product]:g}, terbagi ke customer {allocated[product]:g}"
-                for product in (ordered.keys() | allocated.keys())
-                if abs(ordered[product] - allocated[product]) > 1e-6
-            ]
-            order.customer_line_warning = "\n".join(messages) or False
+            over, rest = [], []
+            for product in (ordered.keys() | allocated.keys()):
+                diff = ordered[product] - allocated[product]
+                if diff < -1e-6:
+                    over.append(f"{product.display_name}: qty PO {ordered[product]:g}, dialokasikan {allocated[product]:g}")
+                elif diff > 1e-6:
+                    rest.append(f"{product.display_name}: {diff:g} dari {ordered[product]:g}")
+            order.customer_line_warning = "\n".join(over) or False
+            order.customer_line_stock_note = "\n".join(rest) or False
 
     usulan_dana_ids = fields.One2many(
         'usulan.usulan.dana',
@@ -370,10 +376,23 @@ class PurchaseOrder(models.Model):
         return '\n'.join(lines) + '\nPastikan barangnya tidak dipesan dua kali.'
 
     def _autofill_vendor(self):
-        """Vendor kosong diisi otomatis bila PR yang dipilih merekomendasikan tepat satu vendor terdaftar."""
+        """Vendor PO mengikuti kolom Vendor di Keterangan PR (tanpa memeriksa Vendor sudah terisi atau belum).
+
+        Bila semua baris memilih vendor yang sama, itu menjadi Vendor PO. Bila belum ada pilihan dan PR
+        hanya merekomendasikan satu vendor terdaftar, vendor itu dipakai.
+        """
         for order in self:
-            if not order.partner_id and len(order.recommended_vendor_ids) == 1:
+            chosen = order.customer_line_ids.vendor_choice_id
+            if len(chosen) == 1:
+                order.partner_id = chosen
+            elif not chosen and len(order.recommended_vendor_ids) == 1:
                 order.partner_id = order.recommended_vendor_ids
+
+    @api.onchange('customer_line_ids')
+    def _onchange_customer_line_vendor(self):
+        chosen = self.customer_line_ids.vendor_choice_id
+        if len(chosen) == 1:
+            self.partner_id = chosen
 
     def _add_requests(self, requests):
         """Tambahkan barang beberapa PR ke PO ini. Produk yang sama digabung, rinciannya tetap per customer."""

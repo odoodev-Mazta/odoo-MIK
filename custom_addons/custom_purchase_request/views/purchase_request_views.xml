@@ -34,17 +34,23 @@
         <field name="arch" type="xml">
             <form string="Purchase Request">
                 <header>
-                    <button name="action_submit" string="PR" type="object"
+                    <button name="action_submit" string="Ajukan Approval" type="object"
                             class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-primary" invisible="state != 'to_approve'"
+                            groups="custom_purchase_request.group_pr_approver"/>
+                    <button name="action_reject" string="Tolak (Kembali ke Draft)" type="object"
+                            invisible="state != 'to_approve'"
+                            groups="custom_purchase_request.group_pr_approver"/>
                     <field name="has_active_po" invisible="1"/>
                     <button name="action_create_po" string="Buat PO" type="object"
                             class="btn-primary" invisible="state != 'pr' or has_active_po"/>
                     <button name="action_cancel" string="Cancel PR"
                             type="object" class="btn-danger"
-                            invisible="state not in ('draft', 'pr')" confirm="Apakah Anda yakin ingin membatalkan Purchase Request ini?"/>
+                            invisible="state not in ('draft', 'to_approve', 'pr')" confirm="Apakah Anda yakin ingin membatalkan Purchase Request ini?"/>
                     <button name="action_set_draft" string="Set to Draft" type="object"
                             invisible="state != 'cancelled'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,pr,cancelled"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,to_approve,pr,cancelled"/>
                 </header>
                 <sheet>
                     <widget name="web_ribbon"
@@ -58,6 +64,8 @@
                     </div>
                     <group>
                         <group>
+                            <field name="purchase_purpose" widget="radio" options="{'horizontal': true}"
+                                   readonly="state != 'draft'"/>
                             <field name="is_urgent" widget="boolean_toggle"/>
                             <field name="date_usulan" readonly="state != 'draft'"/>
                             <field name="department_id"/>
@@ -69,9 +77,9 @@
 
                         <group>
                             <field name="deliver_to"/>
-                            <field name="customer_id" invisible="is_bulk_purchase"/>
-                            <field name="mou_id" options="{'no_create': True}" invisible="is_bulk_purchase"/>
-                            <field name="sale_order_id" options="{'no_create': True}" invisible="is_bulk_purchase or not mou_id"/>
+                            <field name="customer_id" invisible="is_bulk_purchase or purchase_purpose == 'non_produksi'"/>
+                            <field name="mou_id" options="{'no_create': True}" invisible="is_bulk_purchase or purchase_purpose == 'non_produksi'"/>
+                            <field name="sale_order_id" options="{'no_create': True}" invisible="is_bulk_purchase or not mou_id or purchase_purpose == 'non_produksi'"/>
                             <field name="purchase_order_ids" widget="many2many_tags" readonly="1" invisible="not purchase_order_ids"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
                         </group>
