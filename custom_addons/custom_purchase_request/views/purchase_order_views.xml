@@ -95,6 +95,12 @@
                             <field name="qty"/>
                             <field name="uom_id"/>
                             <field name="po_qty" optional="show"/>
+                            <field name="allocate_product_id" options="{'no_create': True}"/>
+                            <field name="allocated_qty"/>
+                            <button name="action_allocate" type="object" string="Alokasikan"
+                                    class="btn btn-link" icon="fa-exchange"
+                                    invisible="not id or not allocate_product_id or allocated_qty >= qty"
+                                    confirm="Stok produk umum dipindahkan ke produk customer sebanyak sisa qty. Lanjutkan?"/>
                         </list>
                     </field>
                 </page>
