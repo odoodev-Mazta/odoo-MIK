@@ -230,7 +230,7 @@ class DashboardTimeline(models.Model):
                 "id": sched.id,
                 "name": sched.name,
                 "sale_order_id": sale_order.id or False,
-                "sale_order_name": sale_order.name or False,
+                "sale_order_name": sale_order.display_name or False,
                 "production": sched.production_id.name,
                 "state": sched.state,
                 "state_label": dict(

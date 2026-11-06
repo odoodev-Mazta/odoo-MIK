@@ -1689,7 +1689,7 @@ class DashboardTimeline(models.Model):
                 "id": plan.id,
                 "name": plan.name,
                 "sale_order_id": plan.sale_order_id.id or False,
-                "sale_order_name": plan.sale_order_id.name or False,
+                "sale_order_name": plan.sale_order_id.display_name or False,
                 "product": plan.product_id.display_name or ", ".join(
                     plan.product_line_ids.product_id.mapped("display_name")
                 ),

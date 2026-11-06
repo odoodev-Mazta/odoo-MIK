@@ -26,6 +26,25 @@
                 </button>
             </xpath>
 
+            <xpath expr="//div[@name='button_box']" position="after">
+                <widget name="web_ribbon" title="Repeat Order" bg_color="text-bg-warning"
+                        invisible="not is_repeat_order"/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="view_order_tree_inherit_repeat_order" model="ir.ui.view">
+        <field name="name">sale.order.list.inherit.repeat.order</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-warning">is_repeat_order</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="is_repeat_order" column_invisible="1"/>
+            </xpath>
         </field>
     </record>
 
