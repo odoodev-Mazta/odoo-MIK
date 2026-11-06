@@ -559,7 +559,8 @@ class PurchaseOrder(models.Model):
     def default_get(self, fields_list):
         """Form RFQ dari tombol Buat PO: isi sendiri, karena nilai default tidak memicu onchange."""
         res = super().default_get(fields_list)
-        request = self.env['purchase.request'].browse(res.get('purchase_request_id') or 0).exists()
+        request_id = self.env.context.get('default_purchase_request_id') or res.get('purchase_request_id')
+        request = self.env['purchase.request'].browse(request_id or 0).exists()
         if not request or not self.env.context.get('from_request_button'):
             return res
         order_lines, setup_lines, customer_lines = self.new({'company_id': request.company_id.id}) \

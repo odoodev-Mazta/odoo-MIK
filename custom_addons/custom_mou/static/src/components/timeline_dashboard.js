@@ -984,7 +984,7 @@ export class TimelineDashboard extends Component {
     _soName(mou, soId) {
         if (!soId) return '';
         const so = (mou.sale_orders || []).find(o => o.id === soId);
-        return so ? so.name : '';
+        return so ? (so.name + (so.is_repeat_order ? ' (Repeat Order)' : '')) : '';
     }
 
     _soTotalLine(prefix, so, done) {
