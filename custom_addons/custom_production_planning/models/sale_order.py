@@ -16,5 +16,5 @@ class SaleOrder(models.Model):
             "res_model": "mrp.production.plan",
             "view_mode": "form",
             "target": "current",
-            "context": {"default_sale_order_id": self.id},
+            "context": {"default_sale_order_id": self.id, "from_sale_order_button": True},
         }

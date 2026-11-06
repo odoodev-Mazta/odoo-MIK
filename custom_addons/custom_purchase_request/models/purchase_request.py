@@ -299,7 +299,11 @@ class PurchaseRequest(models.Model):
             'res_model': 'purchase.order',
             'view_mode': 'form',
             'target': 'current',
-            'context': {'default_purchase_request_id': self.id, 'default_company_id': self.company_id.id},
+            'context': {
+                'default_purchase_request_id': self.id,
+                'default_company_id': self.company_id.id,
+                'from_request_button': True,
+            },
         }
 
     def onchange(self, values, field_names, fields_spec):
