@@ -13,8 +13,8 @@
 
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="mou_id" options="{'no_create': True}"/>
+                <field name="no_so" placeholder="Ketik No. SO..."/>
                 <field name="brand_name"/>
-                <field name="timeline_stage" readonly="1" invisible="not timeline_stage"/>
                 <field name="is_repeat_order" widget="boolean_toggle"/>
             </xpath>
 

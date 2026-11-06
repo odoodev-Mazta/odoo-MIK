@@ -25,6 +25,13 @@ class SaleOrder(models.Model):
         copy=False,
     )
 
+    no_so = fields.Char(
+        string='No. SO',
+        copy=False,
+        index=True,
+        help='Nomor SO manual (terpisah dari penomoran otomatis seperti S00264).',
+    )
+
     brand_name = fields.Char(
         string='Nama Brand',
         compute='_compute_brand_name',
