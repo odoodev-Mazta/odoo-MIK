@@ -555,6 +555,39 @@ class PurchaseOrder(models.Model):
                 'uom_id': uoms[product].id,
             }) for product, qty in quantities.items()]
 
+    @api.model
+    def default_get(self, fields_list):
+        """Form RFQ dari tombol Buat PO: isi sendiri, karena nilai default tidak memicu onchange."""
+        res = super().default_get(fields_list)
+        request = self.env['purchase.request'].browse(res.get('purchase_request_id') or 0).exists()
+        if not request or not self.env.context.get('from_request_button'):
+            return res
+        order_lines, setup_lines, customer_lines = self.new({'company_id': request.company_id.id}) \
+            ._prepare_request_lines(request)
+        values = {
+            'customer_id': request.customer_id.id,
+            'mou_id': request.mou_id.id,
+            'sale_order_id': request.sale_order_id.id,
+            'currency_id': request.currency_id.id,
+            'origin': request.name,
+            'order_line': [(0, 0, vals) for vals in order_lines],
+            'setup_line_ids': [(0, 0, vals) for vals in setup_lines],
+            'customer_line_ids': [(0, 0, vals) for vals in customer_lines],
+        }
+        names = {
+            name.strip() for name in (request.recommended_vendor_1, request.recommended_vendor_2)
+            if name and name.strip()
+        }
+        partners = self.env['res.partner']
+        for name in names:
+            partners |= self.env['res.partner'].search([
+                ('name', '=ilike', name), ('company_id', 'in', [False, request.company_id.id]),
+            ])
+        if len(partners) == 1 and 'partner_id' in fields_list:
+            values['partner_id'] = partners.id
+        res.update({key: value for key, value in values.items() if key in fields_list})
+        return res
+
     @api.onchange('purchase_request_id')
     def _onchange_purchase_request(self):
         request = self.purchase_request_id

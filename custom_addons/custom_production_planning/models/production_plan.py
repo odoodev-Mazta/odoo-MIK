@@ -305,6 +305,30 @@ class ProductionPlan(models.Model):
         for plan in self:
             plan.production_po_number = ", ".join(plan.purchase_order_ids.mapped("name")) or False
 
+    @api.model
+    def default_get(self, fields_list):
+        """Plan dari tombol Send to Plan Production: isi produk dan PO sendiri (default tidak memicu onchange)."""
+        res = super().default_get(fields_list)
+        order = self.env["sale.order"].browse(res.get("sale_order_id") or 0).exists()
+        if not order or not self.env.context.get("from_sale_order_button"):
+            return res
+        draft = self.new({"sale_order_id": order.id})
+        purchase_orders = self.env["purchase.order"].search([
+            ("sale_order_id", "=", order.id), ("state", "!=", "cancel"),
+        ])
+        if len(purchase_orders) == 1:
+            draft.purchase_order_ids = purchase_orders
+        quantities = draft._quantities_from_purchase_orders() or draft._quantities_from_sale_order()
+        values = {
+            "purchase_order_ids": [Command.set(purchase_orders.ids)] if len(purchase_orders) == 1 else False,
+            "product_line_ids": [
+                Command.create({"product_id": product.id, "product_qty": qty, **draft._finished_product_vals(product)})
+                for product, qty in quantities.items()
+            ],
+        }
+        res.update({key: value for key, value in values.items() if value and key in fields_list})
+        return res
+
     def _finished_product_vals(self, product):
         self.ensure_one()
         line = self.env["mrp.production.plan.product.line"].new({"plan_id": self.id, "product_id": product.id})
