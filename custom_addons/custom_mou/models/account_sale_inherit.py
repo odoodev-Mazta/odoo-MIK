@@ -25,6 +25,12 @@ class SaleOrder(models.Model):
         copy=False,
     )
 
+    @api.depends('is_repeat_order')
+    def _compute_display_name(self):
+        super()._compute_display_name()
+        for order in self.filtered('is_repeat_order'):
+            order.display_name = f'{order.display_name} (Repeat Order)'
+
     no_so = fields.Char(
         string='No. SO',
         copy=False,

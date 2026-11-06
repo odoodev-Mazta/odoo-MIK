@@ -489,7 +489,7 @@
                                                                 <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#EAF3DE' : '#f8f9fa'}};color:{{item.is_done ? '#27500A' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#639922' : '#dee2e6'}};">
                                                                     <t t-esc="item.status_label"/>
                                                                 </span>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
                                                                 </div>
@@ -539,7 +539,7 @@
                                                                 <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#EAF3DE' : '#f8f9fa'}};color:{{item.is_done ? '#27500A' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#639922' : '#dee2e6'}};">
                                                                     <t t-esc="item.status_label"/>
                                                                 </span>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
                                                                 </div>
@@ -599,7 +599,7 @@
                                                                 <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#EAF3DE' : '#f8f9fa'}};color:{{item.is_done ? '#27500A' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#639922' : '#dee2e6'}};">
                                                                     <t t-esc="item.status_label"/>
                                                                 </span>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
                                                                 </div>
@@ -714,7 +714,7 @@
                                                                 <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#ede9ff' : '#f8f9fa'}};color:{{item.is_done ? '#3b1fa8' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#7048e8' : '#dee2e6'}};">
                                                                     <t t-esc="item.state_label"/>
                                                                 </span>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
                                                                 </div>
@@ -774,7 +774,7 @@
                                                                         <t t-esc="item.po_state"/>
                                                                     </span>
                                                                 </t>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i>
                                                                     <t t-if="item.date !== '-'"><t t-esc="item.date"/></t>
@@ -832,7 +832,7 @@
                                                                 <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#ffe5d0' : '#f8f9fa'}};color:{{item.is_done ? '#8a3c00' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#fd7e14' : '#dee2e6'}};">
                                                                     <t t-esc="item.state_label"/>
                                                                 </span>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
                                                                 </div>
@@ -899,7 +899,7 @@
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:1px;">
                                                                     Dari PR: <t t-esc="item.pr_ref"/>
                                                                 </div>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i>
                                                                     <t t-if="item.date !== '-'"><t t-esc="item.date"/></t>
@@ -972,7 +972,7 @@
                                                                     <i class="fa fa-wrench me-1"></i>Work Order: <t t-esc="plan.mo_done"/>/<t t-esc="plan.mo_count"/>
                                                                     <span style="margin-left:6px;color:#2563eb;font-weight:500;"><t t-esc="plan.progress"/>%</span>
                                                                 </div>
-                                                                <t t-if="plan.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="plan.so_name"/></span></div></t>
+                                                                <t t-if="plan.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{plan.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{plan.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{plan.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="plan.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="plan.date"/>
                                                                 </div>
@@ -1045,7 +1045,7 @@
                                                                     <i class="fa fa-times me-1" style="margin-left:6px;color:#dc3545;"></i><t t-esc="sched.failed_count"/>
                                                                     <i class="fa fa-clock-o me-1" style="margin-left:6px;color:#adb5bd;"></i><t t-esc="sched.pending_count"/>
                                                                 </div>
-                                                                <t t-if="sched.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="sched.so_name"/></span></div></t>
+                                                                <t t-if="sched.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{sched.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{sched.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{sched.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="sched.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="sched.date"/>
                                                                 </div>
@@ -1105,7 +1105,7 @@
                                                                 <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{pk.is_done ? '#fce4ec' : '#f8f9fa'}};color:{{pk.is_done ? '#7d1a4a' : '#6c757d'}};border:0.5px solid {{pk.is_done ? '#d63384' : '#dee2e6'}};">
                                                                     <t t-esc="pk.state_label"/>
                                                                 </span>
-                                                                <t t-if="pk.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="pk.so_name"/></span></div></t>
+                                                                <t t-if="pk.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{pk.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{pk.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{pk.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="pk.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="pk.date"/>
                                                                 </div>
@@ -1168,7 +1168,7 @@
                                                                 <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{rt.is_done ? '#f8d7da' : '#f8f9fa'}};color:{{rt.is_done ? '#842029' : '#6c757d'}};border:0.5px solid {{rt.is_done ? '#dc3545' : '#dee2e6'}};">
                                                                     <t t-esc="rt.state_label"/>
                                                                 </span>
-                                                                <t t-if="rt.so_name"><div style="margin-top:3px;"><span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="rt.so_name"/></span></div></t>
+                                                                <t t-if="rt.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{rt.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{rt.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{rt.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="rt.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="rt.date"/>
                                                                 </div>
