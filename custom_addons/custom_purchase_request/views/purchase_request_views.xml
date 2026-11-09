@@ -13,6 +13,7 @@
                 <field name="date_usulan" string="Tgl Usulan"/>
                 <field name="name"/>
                 <field name="department_id"/>
+                <field name="customer_id" string="Customer"/>
                 <field name="product_summary"/>
                 <field name="total_qty" string="Qty"/>
                 <field name="total_amount"
