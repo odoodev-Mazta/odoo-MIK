@@ -282,13 +282,14 @@ class PurchaseOrder(models.Model):
         default_date = request.estimated_date or fields.Date.context_today(self)
         order_lines, setup_lines, customer_lines = [], [], []
 
-        def customer_vals(product, qty, uom, mou=False, sale_order=False):
+        def customer_vals(product, qty, uom, mou=False, sale_order=False, description=False):
             return {
                 'request_id': request.id,
                 'mou_id': mou.id if mou else False,
                 'customer_id': mou.nama_cust.id if mou else request.customer_id.id,
                 'sale_order_id': sale_order.id if sale_order else False,
                 'product_id': product.id,
+                'description': description or False,
                 'qty': qty,
                 'uom_id': uom.id,
             }
@@ -313,7 +314,8 @@ class PurchaseOrder(models.Model):
                     'tax_ids': [(6, 0, line.tax_ids.ids)],
                 })
                 customer_lines.append(customer_vals(
-                    line.product_id, line.product_qty, uom, request.mou_id, request.sale_order_id))
+                    line.product_id, line.product_qty, uom, request.mou_id, request.sale_order_id,
+                    description=line.description))
         if request.is_bulk_purchase:
             for line in request.bulk_line_ids:
                 order_lines.append({
@@ -381,7 +383,7 @@ class PurchaseOrder(models.Model):
         Bila semua baris memilih vendor yang sama, itu menjadi Vendor PO. Bila belum ada pilihan dan PR
         hanya merekomendasikan satu vendor terdaftar, vendor itu dipakai.
         """
-        for order in self:
+        for order in self.filtered(lambda o: o.state in ('draft', 'sent')):
             chosen = order.customer_line_ids.vendor_choice_id
             if len(chosen) == 1:
                 order.partner_id = chosen

@@ -19,6 +19,7 @@ class PurchaseOrderCustomerLine(models.Model):
     )
     sale_order_id = fields.Many2one('sale.order', string='Sales Order', domain="[('mou_id', '=', mou_id)]")
     product_id = fields.Many2one('product.product', string='Produk', required=True)
+    description = fields.Char(string='Deskripsi', help='Deskripsi barang yang ditulis di PR (mis. ukuran/gramasi).')
     qty = fields.Float(string='Qty', default=1.0)
     uom_id = fields.Many2one('uom.uom', string='Unit')
     po_qty = fields.Float(string='Total di PO', compute='_compute_po_qty')
