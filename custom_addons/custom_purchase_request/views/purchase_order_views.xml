@@ -76,8 +76,8 @@
             <xpath expr="//page[field[@name='order_line']]" position="after">
                 <page string="Keterangan PR" name="customer_pr">
                     <button name="action_add_requests" type="object" string="Ambil dari PR"
-                            class="btn-primary" invisible="state not in ('draft', 'sent')"/>
-                    <field name="customer_line_ids" readonly="state not in ('draft', 'sent')">
+                            class="btn-primary" invisible="state not in ('draft', 'sent', 'purchase')"/>
+                    <field name="customer_line_ids" readonly="state not in ('draft', 'sent', 'purchase')">
                         <list editable="bottom">
                             <field name="request_id" options="{'no_create': True}"/>
                             <field name="recommended_partner_ids" column_invisible="1"/>
@@ -87,6 +87,7 @@
                             <field name="customer_id"/>
                             <field name="sale_order_id" string="No. SO" options="{'no_create': True}"/>
                             <field name="product_id"/>
+                            <field name="description"/>
                             <field name="qty"/>
                             <field name="uom_id"/>
                             <field name="po_qty" optional="show"/>
