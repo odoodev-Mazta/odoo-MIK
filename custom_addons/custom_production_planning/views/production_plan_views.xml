@@ -181,7 +181,7 @@
                             <field name="product_line_ids">
                                 <list editable="bottom">
                                     <field name="product_id" width="300px"/>
-                                    <field name="finished_product_id" width="300px"
+                                    <field name="finished_product_id" width="300px" optional="hide"
                                            options="{'no_create': True}"/>
                                     <field name="product_qty" string="Qty" width="110px"/>
                                     <field name="production_qty" string="Qty Produksi" readonly="1" width="130px"/>
