@@ -1095,8 +1095,7 @@ class ProductionPlan(models.Model):
         return True
 
     def _get_production_bom(self, product_line):
-        """BOM produk jadi. Lokal dibuat dari 0: BOM wajib gabungan
-        beberapa bahan yang diolah jadi 1 produk."""
+        """BOM produk jadi. Import maupun Lokal sama-sama wajib punya BOM; tipe hanya label."""
         self.ensure_one()
         product = product_line.bom_product_id
         bom = self.env["mrp.bom"].search([
@@ -1104,25 +1103,11 @@ class ProductionPlan(models.Model):
         ], limit=1)
 
         if not bom:
-            if self.origin_type == "import":
-                raise ValidationError(
-                    f"Produk Import {product.display_name} belum punya BOM repack. "
-                    f"Pilih Produk Jadi (brand) di baris produk, atau buat BOM berisi produk asal, "
-                    f"label, dan kemasan agar stoknya bisa dicek."
-                )
             raise ValidationError(
-                f"BOM not found for "
-                f"{product.display_name}."
+                f"Produk {product.display_name} belum punya BOM. "
+                f"Buat BOM-nya dulu di Manufaktur > Bills of Materials "
+                f"(isi komponen bahan, label, dan kemasan), lalu buat Perintah Produksi lagi."
             )
-
-        if self.origin_type == "lokal":
-            materials = bom.bom_line_ids.product_id - product
-            if len(materials) < 2:
-                raise ValidationError(
-                    f"Produk Lokal {product.display_name} dibuat dari 0, jadi BOM-nya harus "
-                    f"berisi minimal 2 bahan berbeda yang digabung jadi 1 produk. "
-                    f"BOM {bom.display_name} baru berisi {len(materials)} bahan."
-                )
 
         return bom
 
