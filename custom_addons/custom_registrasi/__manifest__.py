@@ -37,6 +37,7 @@
         'views/registrasi_produk_line_views.xml',
         'views/halal_registrasi_views.xml',
         'views/menu_views.xml',
+        'views/all_mou_views.xml',
         'views/dashboard_views.xml',
         'views/design_usulan_views.xml',
     ],

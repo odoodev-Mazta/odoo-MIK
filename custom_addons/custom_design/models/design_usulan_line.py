@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 
 
 KEMASAN_TYPE = [
@@ -29,3 +30,14 @@ class DesignUsulanLine(models.Model):
 
     attachment = fields.Binary(string='Attachment', attachment=True)
     attachment_fname = fields.Char(string='Nama File')
+
+    def action_preview_attachment(self):
+        """Buka file di tab baru untuk dilihat dulu (unduh lewat tombol di viewer browser)."""
+        self.ensure_one()
+        if not self.attachment:
+            raise UserError('Belum ada file yang diunggah.')
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/design.usulan.line/{self.id}/attachment?download=false',
+            'target': 'new',
+        }
