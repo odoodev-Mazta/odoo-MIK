@@ -126,8 +126,12 @@
                                     <field name="nama_produk"/>
                                     <field name="kemasan"/>
                                     <field name="keterangan"/>
-                                    <field name="attachment" widget="binary" optional="show"/>
+                                    <field name="attachment" widget="binary" optional="show"
+                                           column_invisible="parent.state not in ('draft','progress')"/>
                                     <field name="attachment_fname" optional="hide"/>
+                                    <button name="action_preview_attachment" type="object" string="Preview"
+                                            icon="fa-eye" class="btn btn-link"
+                                            invisible="not attachment or parent.state in ('draft','progress')"/>
                                 </list>
                             </field>
                         </page>
@@ -137,7 +141,12 @@
                                 <field name="attachment_design"
                                        widget="binary"
                                        filename="attachment_design_fname"
-                                       readonly="state not in ('progress',)"/>
+                                       invisible="state != 'progress'"/>
+                                <div invisible="state == 'progress' or not attachment_design">
+                                    <button name="action_preview_design" type="object" string="Preview File Design"
+                                            icon="fa-eye" class="btn btn-primary"/>
+                                    <span class="text-muted ms-2">Unduh lewat tombol download di halaman preview.</span>
+                                </div>
                                 <field name="attachment_design_fname"
                                        invisible="not attachment_design"/>
                             </group>

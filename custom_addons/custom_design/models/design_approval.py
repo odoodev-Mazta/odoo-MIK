@@ -157,6 +157,22 @@ class DesignApproval(models.Model):
     # ─────────────────────────────────────────────
     #  STATE MACHINE
     # ─────────────────────────────────────────────
+    def action_preview_design(self):
+        """Buka File Design (milik usulan) di tab baru untuk dilihat dulu."""
+        self.ensure_one()
+        return self.usulan_id.action_preview_design()
+
+    def action_preview_form(self):
+        """Buka Form Design Final di tab baru untuk dilihat dulu."""
+        self.ensure_one()
+        if not self.attachment_form:
+            raise UserError('Belum ada file yang diunggah.')
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/design.approval/{self.id}/attachment_form?download=false',
+            'target': 'new',
+        }
+
     def action_approve_marketing(self):
         for rec in self:
             rec.write({

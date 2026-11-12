@@ -158,17 +158,19 @@
                                     <field name="nama_produk"/>
                                     <field name="kemasan"/>
                                     <field name="keterangan"/>
-                                    <field name="attachment" widget="binary" optional="show"/>
+                                    <button name="action_preview_attachment" type="object" string="Preview"
+                                            icon="fa-eye" class="btn btn-link" invisible="not attachment"/>
                                 </list>
                             </field>
                         </page>
 
                         <page string="File Design" name="file_design">
                             <group>
-                                <field name="attachment_design"
-                                       widget="binary"
-                                       filename="attachment_design_fname"
-                                       readonly="1"/>
+                                <div invisible="not attachment_design">
+                                    <button name="action_preview_design" type="object" string="Preview File Design"
+                                            icon="fa-eye" class="btn btn-primary"/>
+                                    <span class="text-muted ms-2">Unduh lewat tombol download di halaman preview.</span>
+                                </div>
                                 <field name="attachment_design_fname"
                                        invisible="not attachment_design"/>
                             </group>
@@ -179,7 +181,12 @@
                                 <field name="attachment_form"
                                        widget="binary"
                                        filename="attachment_form_fname"
-                                       readonly="state != 'upload_form'"/>
+                                       invisible="state != 'upload_form'"/>
+                                <div invisible="state == 'upload_form' or not attachment_form">
+                                    <button name="action_preview_form" type="object" string="Preview Form Design Final"
+                                            icon="fa-eye" class="btn btn-primary"/>
+                                    <span class="text-muted ms-2">Unduh lewat tombol download di halaman preview.</span>
+                                </div>
                                 <field name="attachment_form_fname"
                                        invisible="not attachment_form"/>
                             </group>
