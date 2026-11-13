@@ -21,28 +21,35 @@ class DraftMaklon(models.Model):
 
     @api.model
     def _registrasi_pick(self, model, done_states, mou_ids):
-        """Per MOU: pendaftaran yang sudah selesai diutamakan, selain itu yang terbaru."""
+        """Per MOU: pendaftaran yang sudah selesai diutamakan, selain itu yang terbaru.
+
+        Hanya membaca kolom state/mou_id (search_fetch) supaya aman dijalankan saat upgrade modul
+        lain, ketika kolom baru di tabel registrasi belum dibuat.
+        """
         picked = {}
-        for rec in self.env[model].sudo().search([('mou_id', 'in', mou_ids)], order='id'):
+        records = self.env[model].sudo().search_fetch([('mou_id', 'in', mou_ids)], ['state', 'mou_id'], order='id')
+        for rec in records:
             current = picked.get(rec.mou_id.id)
             if not current or rec.state in done_states or current.state not in done_states:
                 picked[rec.mou_id.id] = rec
         return picked
 
-    @api.depends(
-        'brand_reg_ids.state', 'produk_reg_ids.state', 'halal_reg_ids.state',
-        'produk_reg_ids.product_line_ids.nie_number',
-    )
     def _compute_registrasi_status(self):
         ids = self.ids
         brands = self._registrasi_pick('registrasi.brand', ('approved',), ids)
         nies = self._registrasi_pick('registrasi.produk', ('nie_issued',), ids)
         halals = self._registrasi_pick('halal.registrasi', ('sertifikat_terbit',), ids)
+        lines = self.env['registrasi.produk.line'].sudo().search_fetch(
+            [('produk_id', 'in', [r.id for r in nies.values()])], ['produk_id', 'nie_number'])
+        numbers_by_produk = {}
+        for line in lines:
+            if line.nie_number:
+                numbers_by_produk.setdefault(line.produk_id.id, []).append(line.nie_number)
         for mou in self:
             mou.reg_brand_state = brands[mou.id].state if mou.id in brands else 'none'
             mou.reg_nie_state = nies[mou.id].state if mou.id in nies else 'none'
             mou.reg_halal_state = halals[mou.id].state if mou.id in halals else 'none'
-            numbers = nies[mou.id].product_line_ids.mapped('nie_number') if mou.id in nies else []
+            numbers = numbers_by_produk.get(nies[mou.id].id, []) if mou.id in nies else []
             mou.reg_nie_numbers = ', '.join(n for n in numbers if n)
 
     def write(self, vals):

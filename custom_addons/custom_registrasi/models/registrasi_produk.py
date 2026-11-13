@@ -1,4 +1,4 @@
-from odoo import api, fields, models, _
+from odoo import api, fields, models, _, Command
 from odoo.exceptions import UserError, ValidationError
 from datetime import timedelta, date
 
@@ -170,6 +170,11 @@ class RegistrasiProduk(models.Model):
         string='PNBP / Billing Notes',
     )
 
+    doc_payment = fields.Binary(string='Dokumen Pembayaran', attachment=True, copy=False)
+    doc_payment_fname = fields.Char(string='Nama File Pembayaran')
+    doc_nie = fields.Binary(string='Dokumen NIE', attachment=True, copy=False)
+    doc_nie_fname = fields.Char(string='Nama File NIE')
+
     # ─── BPOM Review Documents ──────────────────────────────────────────────
     doc_bpom_revision = fields.Binary(
         string='Revised Documents (BPOM Request)',
@@ -307,8 +312,27 @@ class RegistrasiProduk(models.Model):
 
     @api.onchange('mou_id')
     def _onchange_mou_id(self):
-        """Warn if selected MoU does not contain this product."""
-        pass  # Validation done in Python constraint]
+        """Produk di MOU otomatis masuk ke Product Lines (yang sudah ada tidak diduplikasi)."""
+        if not self.mou_id or self.state not in ('draft', 'form_request', 'ro_drafting'):
+            return
+        packaging = dict(self.env['registrasi.produk.line']._fields['primary_packaging'].selection)
+        existing = self.product_line_ids.product_template_id
+        commands = []
+        for line in self.mou_id.maklon_line_ids:
+            template = line.product.product_tmpl_id
+            if not template or template in existing:
+                continue
+            existing |= template
+            jenis = line.jenis_product or self.category or 'lokal'
+            digits = ''.join(ch for ch in (line.ukuran or '') if ch.isdigit())
+            commands.append(Command.create({
+                'product_template_id': template.id,
+                'description': f'formula_{jenis}',
+                'netto': int(digits) if digits else 0,
+                'primary_packaging': line.kemasan if line.kemasan in packaging else False,
+            }))
+        if commands:
+            self.product_line_ids = commands
 
     @api.onchange('brand_registration_id')
     def _onchange_brand_registration_id(self):
@@ -533,14 +557,7 @@ class RegistrasiProduk(models.Model):
 
     def action_confirm_official_name_and_submit(self):
         for rec in self:
-            if not rec.design_id:
-                raise UserError(_('A Design Reference must be selected before submitting to BPOM.'))
-            # # GANTI — design.usulan tidak punya state 'available'
-            if rec.design_id.state != 'done':
-                raise UserError(
-                    _('The linked Design must be in "Selesai" status. Current: %s')
-                    % dict(rec.design_id._fields['state'].selection).get(rec.design_id.state, '')
-                )
+            # Design Reference tidak lagi wajib saat submit; boleh diunggah/dipilih belakangan.
             invalid_lines = rec.product_line_ids.filtered(
                 lambda line: not line.official_product_name
             )
