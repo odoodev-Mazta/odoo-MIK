@@ -166,9 +166,9 @@
                         </group>
                     </group>
 
-                    <!-- ── MoU (Import only) ───────────────────────────── -->
-                    <group string="MoU Integration (Import)"
-                           invisible="category != 'import'">
+                    <!-- ── MoU (wajib untuk Import, opsional untuk Lokal) ─ -->
+                    <group string="MoU Integration"
+                           invisible="not category">
                         <field name="mou_id"
                                readonly="state not in ('draft',)"
                                required="category == 'import'"/>
@@ -207,7 +207,7 @@
                     <group string="Design &amp; Artwork">
                         <group>
                             <field name="design_id"
-                                   readonly="state not in ('draft', 'ro_drafting', 'submitted')"/>
+                                   readonly="state in ('nie_issued', 'failed')"/>
                             <field name="design_sla_type"
                                    readonly="state not in ('draft', 'ro_drafting')"/>
                         </group>
@@ -277,14 +277,18 @@
 
                         <!-- ── PNBP / Payment ─────────────────────────── -->
                         <page string="Payment &amp; PNBP"
-                              invisible="state not in ('submitted', 'payment_request', 'payment_verification', 'bpom_review', 'nie_issued', 'failed')"
                               name="payment">
                             <group string="PNBP Document">
                                 <field name="doc_pnbp"
                                        widget="binary"
-                                       filename="doc_pnbp_fname"
-                                       readonly="state not in ('submitted',)"/>
+                                       filename="doc_pnbp_fname"/>
                                 <field name="doc_pnbp_fname" invisible="1"/>
+                            </group>
+                            <group string="Dokumen Pembayaran">
+                                <field name="doc_payment"
+                                       widget="binary"
+                                       filename="doc_payment_fname"/>
+                                <field name="doc_payment_fname" invisible="1"/>
                             </group>
                             <group string="Payment Notes">
                                 <field name="pnbp_notes" nolabel="1"
@@ -313,6 +317,13 @@
 
                         <!-- ── NIE Output ─────────────────────────────── -->
                         <page string="NIE Details" name="nie" invisible="state not in ('bpom_review', 'nie_issued')">
+                            <group string="Dokumen NIE">
+                                <field name="doc_nie"
+                                       widget="binary"
+                                       filename="doc_nie_fname"
+                                       readonly="state == 'failed'"/>
+                                <field name="doc_nie_fname" invisible="1"/>
+                            </group>
                             <field name="product_line_ids" readonly="state != 'bpom_review'">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
