@@ -80,7 +80,7 @@ class PurchaseOrder(models.Model):
         """Batalkan PR dari PO ini: kurangi qty barangnya, hapus rinciannya, PR bebas dipakai lagi."""
         for order in self:
             lines = order.customer_line_ids.filtered(lambda l: l.request_id in requests)
-            for line in lines:
+            for line in lines.filtered(lambda l: not l.is_remainder):
                 for order_line in order.order_line.filtered(
                     lambda l: not l.display_type and l.product_id == line.product_id
                     and (not line.uom_id or l.product_uom_id == line.uom_id)
@@ -126,6 +126,7 @@ class PurchaseOrder(models.Model):
     customer_line_stock_note = fields.Text(compute='_compute_customer_line_warning')
 
     @api.depends('customer_line_ids.qty', 'customer_line_ids.product_id',
+                 'customer_line_ids.is_remainder',
                  'order_line.product_qty', 'order_line.product_id')
     def _compute_customer_line_warning(self):
         for order in self:
@@ -138,7 +139,7 @@ class PurchaseOrder(models.Model):
             for line in order.order_line:
                 if not line.display_type and line.product_id:
                     ordered[line.product_id] += line.product_qty
-            for line in order.customer_line_ids:
+            for line in order.customer_line_ids.filtered(lambda l: not l.is_remainder):
                 allocated[line.product_id] += line.qty
             over, rest = [], []
             for product in (ordered.keys() | allocated.keys()):
@@ -150,9 +151,11 @@ class PurchaseOrder(models.Model):
             order.customer_line_warning = "\n".join(over) or False
             order.customer_line_stock_note = "\n".join(rest) or False
 
-    usulan_dana_ids = fields.One2many(
+    usulan_dana_ids = fields.Many2many(
         'usulan.usulan.dana',
+        'usulan_dana_purchase_order_rel',
         'purchase_order_id',
+        'usulan_id',
         string='Usulan Dana',
     )
 
@@ -187,7 +190,7 @@ class PurchaseOrder(models.Model):
             'target': 'current',
             'context': {
                 'default_document_type': 'ud',
-                'default_purchase_order_id': self.id,
+                'default_purchase_order_ids': [(6, 0, [self.id])],
             },
         }
 
@@ -197,8 +200,8 @@ class PurchaseOrder(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Usulan Dana',
             'res_model': 'usulan.usulan.dana',
-            'domain': [('purchase_order_id', '=', self.id)],
-            'context': {'default_document_type': 'ud', 'default_purchase_order_id': self.id},
+            'domain': [('purchase_order_ids', 'in', [self.id])],
+            'context': {'default_document_type': 'ud', 'default_purchase_order_ids': [(6, 0, [self.id])]},
         }
         if self.usulan_dana_count == 1:
             action.update(view_mode='form', res_id=self.usulan_dana_ids.id)
@@ -291,6 +294,7 @@ class PurchaseOrder(models.Model):
                 'product_id': product.id,
                 'description': description or False,
                 'qty': qty,
+                'request_qty': qty,
                 'uom_id': uom.id,
             }
 
@@ -488,7 +492,10 @@ class PurchaseOrder(models.Model):
                 'customer_id': c.customer_id.id,
                 'sale_order_id': c.sale_order_id.id,
                 'product_id': c.product_id.id,
+                'description': c.description,
                 'qty': c.qty,
+                'request_qty': c.request_qty,
+                'is_remainder': c.is_remainder,
                 'uom_id': c.uom_id.id,
             }) for c in group.customer_line_ids],
             'setup_line_ids': [(0, 0, {
@@ -556,6 +563,14 @@ class PurchaseOrder(models.Model):
                 'qty': qty,
                 'uom_id': uoms[product].id,
             }) for product, qty in quantities.items()]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """PO baru disimpan dengan Qty Keterangan PR sudah diturunkan: qty barang PO ikut turun."""
+        orders = super().create(vals_list)
+        for line in orders.customer_line_ids.filtered(lambda l: l._shortfall() > 0):
+            line._adjust_order_qty(-line._shortfall())
+        return orders
 
     @api.model
     def default_get(self, fields_list):

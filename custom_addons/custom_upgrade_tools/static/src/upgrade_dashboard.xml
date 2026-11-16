@@ -47,6 +47,10 @@
                     <t t-if="run and run.state === 'running'"><i class="fa fa-play me-1"/>Lanjutkan</t>
                     <t t-else=""><i class="fa fa-refresh me-1"/>Upgrade Semua Modul Custom</t>
                 </button>
+                <button t-if="run and run.state === 'running'" class="btn btn-outline-danger"
+                        t-on-click="() => this.cancelRun()">
+                    <i class="fa fa-times me-1"/>Batalkan (Mulai dari Awal)
+                </button>
                 <button t-if="run and run.state === 'failed'" class="btn btn-warning"
                         t-on-click="() => this.retryFailed()" t-att-disabled="state.processing">
                     <i class="fa fa-repeat me-1"/>Coba Lagi yang Gagal
@@ -63,7 +67,7 @@
                                 <span class="text-muted ms-2">oleh <t t-esc="run.user"/></span>
                             </div>
                             <div>
-                                <span t-attf-class="badge #{run.state === 'done' ? 'text-bg-success' : run.state === 'failed' ? 'text-bg-danger' : 'text-bg-primary'}"
+                                <span t-attf-class="badge #{run.state === 'done' ? 'text-bg-success' : run.state === 'failed' ? 'text-bg-danger' : run.state === 'cancelled' ? 'text-bg-secondary' : 'text-bg-primary'}"
                                       t-esc="runLabels[run.state]"/>
                             </div>
                         </div>
@@ -74,7 +78,7 @@
                             </div>
                         </div>
                         <div class="small text-muted">
-                            <t t-esc="run.done"/> selesai · <t t-esc="run.failed"/> gagal · <t t-esc="run.skipped"/> ditunda · dari <t t-esc="run.total"/> modul
+                            <t t-esc="run.done"/> selesai · <t t-esc="run.failed"/> gagal · <t t-esc="run.skipped"/> ditunda<t t-if="run.cancelled"> · <t t-esc="run.cancelled"/> dibatalkan</t> · dari <t t-esc="run.total"/> modul
                             <t t-if="state.waitingSeconds"> · mencoba lagi dalam <t t-esc="state.waitingSeconds"/> detik</t>
                         </div>
                     </div>
@@ -109,7 +113,7 @@
                                 <td colspan="4" class="border-top-0 pt-0">
                                     <a href="#" class="small" t-on-click.prevent="() => this.toggleError(line.id)">
                                         <i t-attf-class="fa #{state.openErrors[line.id] ? 'fa-caret-down' : 'fa-caret-right'} me-1"/>
-                                        <t t-if="line.state === 'skipped'">Alasan ditunda</t>
+                                        <t t-if="line.state === 'skipped' or line.state === 'cancelled'">Keterangan</t>
                                         <t t-else="">Lihat error</t>
                                     </a>
                                     <pre t-if="state.openErrors[line.id]" class="small bg-light border rounded p-2 mt-1 mb-0"

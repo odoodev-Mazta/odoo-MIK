@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Tab "Keterangan PO" di Usulan Dana: padanan "Keterangan PR" di Purchase Order. -->
+    <record id="view_usulan_usulan_dana_form_keterangan_po" model="ir.ui.view">
+        <field name="name">usulan.usulan.dana.form.keterangan.po</field>
+        <field name="model">usulan.usulan.dana</field>
+        <field name="inherit_id" ref="custom_usulandana.view_usulan_usulan_dana_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='item_details']" position="after">
+                <page string="Keterangan PO" name="keterangan_po">
+                    <button name="action_add_orders" type="object" string="Ambil dari PO"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <field name="po_line_ids" readonly="1">
+                        <list create="0" delete="0" open_form_view="0" decoration-muted="is_remainder">
+                            <field name="purchase_order_id"/>
+                            <field name="vendor_id"/>
+                            <field name="request_id"/>
+                            <field name="mou_id"/>
+                            <field name="customer_id"/>
+                            <field name="sale_order_id"/>
+                            <field name="product_id"/>
+                            <field name="description"/>
+                            <field name="qty"/>
+                            <field name="uom_id"/>
+                            <field name="price_unit"/>
+                            <field name="currency_id"/>
+                            <field name="price_subtotal"/>
+                            <field name="allocate_product_id" optional="show"/>
+                            <field name="is_remainder" string="Sisa" optional="hide"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_usulan_dana_add_po_wizard" model="ir.ui.view">
+        <field name="name">usulan.dana.add.po.wizard.form</field>
+        <field name="model">usulan.dana.add.po.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="usulan_id" invisible="1"/>
+                <p class="text-muted">
+                    Pilih satu atau beberapa PO. Barangnya ditambahkan ke Item Details, dan rincian per
+                    PO / customer / PR tercatat di tab Keterangan PO.
+                </p>
+                <div class="alert alert-warning" role="alert" invisible="not warning">
+                    <field name="warning" nolabel="1"/>
+                </div>
+                <field name="order_ids" options="{'no_create': True}">
+                    <list>
+                        <field name="name"/>
+                        <field name="partner_id"/>
+                        <field name="date_order"/>
+                        <field name="origin"/>
+                        <field name="amount_total"/>
+                        <field name="state" widget="badge"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_add" type="object" string="Tambahkan" class="btn-primary"/>
+                    <button string="Batal" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

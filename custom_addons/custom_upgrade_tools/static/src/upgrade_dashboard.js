@@ -1,6 +1,7 @@
 import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
 const MODEL = "custom.upgrade.run";
 
@@ -10,12 +11,14 @@ const STATE_LABELS = {
     done: "Selesai",
     failed: "Gagal",
     skipped: "Ditunda",
+    cancelled: "Dibatalkan",
 };
 
 const RUN_LABELS = {
     running: "Berjalan",
     done: "Selesai",
     failed: "Ada yang Gagal",
+    cancelled: "Dibatalkan",
 };
 
 export class CustomUpgradeDashboard extends Component {
@@ -25,6 +28,7 @@ export class CustomUpgradeDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
+        this.dialog = useService("dialog");
         this.stateLabels = STATE_LABELS;
         this.runLabels = RUN_LABELS;
         this.state = useState({
@@ -100,6 +104,29 @@ export class CustomUpgradeDashboard extends Component {
         await this.processQueue();
     }
 
+    cancelRun() {
+        const run = this.state.run;
+        if (!run || run.state !== "running") {
+            return;
+        }
+        this.dialog.add(ConfirmationDialog, {
+            title: "Batalkan upgrade?",
+            body:
+                "Modul yang belum diupgrade dibatalkan dan status modul yang macet direset. " +
+                "Modul yang sudah selesai tidak diulang otomatis. Setelah itu Anda bisa memilih modul " +
+                "dan memulai upgrade dari awal. Bila server sedang mengupgrade satu modul, modul itu " +
+                "tetap diselesaikan dulu.",
+            confirmLabel: "Batalkan Upgrade",
+            cancelLabel: "Kembali",
+            confirm: async () => {
+                await this.orm.call(MODEL, "action_cancel", [[run.id]]);
+                await this.load(run.id);
+                this.notification.add("Upgrade dibatalkan. Silakan mulai dari awal.", { type: "info" });
+            },
+            cancel: () => {},
+        });
+    }
+
     async processQueue() {
         if (this.state.processing) {
             return;
@@ -169,6 +196,7 @@ export class CustomUpgradeDashboard extends Component {
             done: "text-bg-success",
             failed: "text-bg-danger",
             skipped: "text-bg-warning",
+            cancelled: "text-bg-secondary",
         }[state] || "text-bg-light";
     }
 }

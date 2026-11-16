@@ -247,4 +247,48 @@ class DashboardTimeline(models.Model):
                 ),
             })
 
+        # QC per tahap produksi (Plan Produksi) ikut tampil, tanpa perlu input jadwal QC manual.
+        stage_state = {
+            'passed': ('done', 'Lulus'),
+            'failed': ('failed', 'Gagal'),
+        }
+        stages = self.env["mrp.production.plan.stage"].search([
+            "|",
+            ("plan_id.mou_id", "=", mou_id),
+            ("plan_id.sale_order_id.mou_id", "=", mou_id),
+        ])
+        # Jadwal QC baru muncul setelah tahap itu mulai dikerjakan (atau pernah gagal QC).
+        stages = stages.filtered(lambda s: s.state != 'todo' or s.qc_state == 'failed')
+        for stage in stages:
+            plan = stage.plan_id
+            sale_order = plan.sale_order_id
+            if stage.state == 'waiting_qc':
+                state, label = 'progress', 'Menunggu QC'
+            else:
+                state, label = stage_state.get(stage.qc_state, (
+                    'progress', 'Sedang Dikerjakan') if stage.state == 'in_progress' else ('waiting', 'Belum QC'))
+            checks = stage.check_ids
+            batch = f" · {stage.batch_label}" if stage.batch_label else ""
+            result.append({
+                "id": stage.id,
+                "model": "mrp.production.plan.stage",
+                "name": f"QC {stage.stage_id.name}{batch}",
+                "sale_order_id": sale_order.id or False,
+                "sale_order_name": sale_order.display_name or False,
+                "production": stage.production_id.name or plan.name,
+                "state": state,
+                "state_label": label,
+                "is_done": state == "done",
+                "is_failed": state == "failed",
+                "passed_count": len(checks.filtered(lambda c: c.result == "passed")),
+                "failed_count": len(checks.filtered(lambda c: c.result == "failed")),
+                "pending_count": len(checks.filtered(lambda c: c.result == "pending")),
+                # Selesai diperiksa: waktu QC sebenarnya. Belum: tanggal rencana tahap dari plan.
+                "inspection_date": (
+                    fields.Datetime.to_string(stage.qc_date) if stage.qc_date
+                    else fields.Date.to_string(stage.date_end or stage.date_start)
+                    if (stage.date_end or stage.date_start) else None
+                ),
+            })
+
         return result

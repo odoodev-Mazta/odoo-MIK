@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_product_from_description_wizard" model="ir.ui.view">
+        <field name="name">product.from.description.wizard.form</field>
+        <field name="model">product.from.description.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="state" invisible="1"/>
+                <p class="text-muted" invisible="state != 'draft'">
+                    Description PR/PO yang berbeda dari nama produknya (mis. produk "STIKER YUPO" dengan
+                    description "STIKER GLYDHERMA 10 GR - YOSOE KAWAI - YUPO") diubah menjadi produk baru
+                    bernama sama dengan description-nya. Produk baru disalin dari produk induk dan stoknya
+                    terpisah. Klik Preview dulu untuk melihat daftarnya; belum ada data yang diubah.
+                </p>
+                <group invisible="state != 'draft'">
+                    <field name="skip_received"/>
+                </group>
+                <field name="summary" invisible="state == 'draft'" readonly="1"/>
+                <footer>
+                    <button name="action_preview" type="object" string="Preview"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_convert" type="object" string="Buat Produk &amp; Ubah Data"
+                            class="btn-primary" invisible="state != 'preview'"
+                            confirm="Produk baru akan dibuat dan baris PR/PO diubah. Lanjutkan?"/>
+                    <button string="Tutup" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_product_from_description_wizard" model="ir.actions.act_window">
+        <field name="name">Buat Produk dari Description PR/PO</field>
+        <field name="res_model">product.from.description.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_product_from_description_wizard"
+              name="Buat Produk dari Description"
+              parent="purchase.menu_purchase_root"
+              action="action_product_from_description_wizard"
+              sequence="99"/>
+
+    <!-- hapus grup lama (Purchase / Administrator) yang tersisa dari versi sebelumnya -->
+    <record id="menu_product_from_description_wizard" model="ir.ui.menu">
+        <field name="group_ids" eval="[(5, 0, 0)]"/>
+    </record>
+</odoo>

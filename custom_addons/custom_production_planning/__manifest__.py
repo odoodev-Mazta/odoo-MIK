@@ -7,6 +7,7 @@
     "depends": [
         "mrp",
         "sale_management",
+        "sale_stock",
         "product",
         "mail",
         "product_expiry",
@@ -17,6 +18,9 @@
     "data": [
         "data/ir_sequence.xml",
         "data/production_stage_data.xml",
+        "data/production_workcenter_data.xml",
+        "data/production_machine_data.xml",
+        "security/security.xml",
         "security/ir.model.access.csv",
         "views/production_plan_views.xml",
         "views/sale_order_views.xml",
@@ -29,6 +33,7 @@
         "views/production_plan_menus.xml",
         "views/production_stage_views.xml",
         "wizard/production_plan_split_wizard_views.xml",
+        "wizard/production_plan_shortage_wizard_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

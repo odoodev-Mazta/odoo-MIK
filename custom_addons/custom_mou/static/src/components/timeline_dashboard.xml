@@ -973,6 +973,25 @@
                                                                     <span style="margin-left:6px;color:#2563eb;font-weight:500;"><t t-esc="plan.progress"/>%</span>
                                                                 </div>
                                                                 <t t-if="plan.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{plan.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{plan.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{plan.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="plan.so_name"/></span></div></t>
+                                                                <t t-foreach="plan.mos" t-as="mo" t-key="mo.label">
+                                                                    <div class="o_trk_link" style="font-size:10px;color:#495057;margin-top:3px;padding-left:8px;border-left:2px solid #dbeafe;"
+                                                                         t-on-click.stop="() => this.openRecord(mo.popup)">
+                                                                        <i class="fa fa-cog me-1"></i><t t-esc="mo.label"/> — <t t-esc="mo.product"/> · <t t-esc="mo.qty"/>
+                                                                        <span t-attf-style="margin-left:4px;font-size:9px;padding:0 5px;border-radius:3px;background:{{mo.is_done ? '#d1e7dd' : '#f8f9fa'}};border:0.5px solid #dee2e6;"><t t-esc="mo.state_label"/></span>
+                                                                        <t t-if="mo.so_name"> · SO: <t t-esc="mo.so_name"/></t>
+                                                                    </div>
+                                                                </t>
+                                                                <div style="font-size:10px;color:#495057;margin-top:3px;">
+                                                                    <i class="fa fa-truck me-1"></i>Pengiriman:
+                                                                    <span t-attf-style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500;background:{{plan.delivery_state == 'done' ? '#d1e7dd' : (plan.delivery_state == 'none' ? '#f8f9fa' : '#fff3cd')}};border:0.5px solid #dee2e6;"><t t-esc="plan.delivery_label"/></span>
+                                                                </div>
+                                                                <t t-foreach="plan.deliveries" t-as="dlv" t-key="dlv.label">
+                                                                    <div class="o_trk_link" style="font-size:10px;color:#495057;margin-top:2px;padding-left:8px;border-left:2px solid #fde68a;"
+                                                                         t-on-click.stop="() => this.openRecord(dlv.popup)">
+                                                                        <i class="fa fa-truck me-1"></i><t t-esc="dlv.label"/>
+                                                                        <span t-attf-style="margin-left:4px;font-size:9px;padding:0 5px;border-radius:3px;background:{{dlv.is_done ? '#d1e7dd' : '#f8f9fa'}};border:0.5px solid #dee2e6;"><t t-esc="dlv.state_label"/></span>
+                                                                    </div>
+                                                                </t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="plan.date"/>
                                                                 </div>

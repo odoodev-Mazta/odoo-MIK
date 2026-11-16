@@ -743,6 +743,23 @@ export class TimelineDashboard extends Component {
                     progress: p.progress,
                     mo_count: p.mo_count,
                     mo_done: p.mo_done,
+                    mos: (p.mos || []).map(m => ({
+                        label: m.name,
+                        product: m.product,
+                        qty: m.qty,
+                        state_label: m.state_label,
+                        is_done: m.is_done,
+                        so_name: m.so_name,
+                        popup: this._popup('mrp.production', m.id, m.name),
+                    })),
+                    delivery_state: p.delivery_state,
+                    delivery_label: p.delivery_label,
+                    deliveries: (p.deliveries || []).map(d => ({
+                        label: d.name,
+                        state_label: d.state_label,
+                        is_done: d.is_done,
+                        popup: this._popup('stock.picking', d.id, d.name),
+                    })),
                     is_done: p.is_done,
                     popup: this._popup('mrp.production.plan', p.id, p.name),
                     is_cancelled: p.is_cancelled,
@@ -765,7 +782,7 @@ export class TimelineDashboard extends Component {
                     sale_order_id: q.sale_order_id,
                     label: `${q.name} (${q.production})${q.sale_order_name ? ' · ' + q.sale_order_name : ''}`,
                     date: q.inspection_date
-                        ? `Diperiksa: ${this.formatDate(q.inspection_date)}`
+                        ? `${q.is_done || q.is_failed ? 'Diperiksa' : 'Jadwal QC'}: ${this.formatDate(q.inspection_date)}`
                         : '-',
                     is_done: q.is_done,
                     is_failed: q.is_failed,
@@ -781,7 +798,7 @@ export class TimelineDashboard extends Component {
                     failed_count: q.failed_count,
                     pending_count: q.pending_count,
                     is_done: q.is_done,
-                    popup: this._popup('production.qc.schedule', q.id, q.name),
+                    popup: this._popup(q.model || 'production.qc.schedule', q.id, q.name),
                     is_failed: q.is_failed,
                     date: q.inspection_date ? this.formatDate(q.inspection_date) : '-',
                 });

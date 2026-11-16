@@ -1,0 +1,34 @@
+<odoo>
+    <!-- Satu Work Center per tahap proses. Work Order tiap tahap dibuat di Work Center ini. -->
+    <data noupdate="1">
+        <record id="wc_penimbangan" model="mrp.workcenter">
+            <field name="name">Penimbangan</field>
+            <field name="code">WC-PNB</field>
+        </record>
+        <record id="wc_mixing" model="mrp.workcenter">
+            <field name="name">Mixing</field>
+            <field name="code">WC-MIX</field>
+        </record>
+        <record id="wc_filling" model="mrp.workcenter">
+            <field name="name">Filling</field>
+            <field name="code">WC-FIL</field>
+        </record>
+        <record id="wc_labeling" model="mrp.workcenter">
+            <field name="name">Labeling</field>
+            <field name="code">WC-LBL</field>
+        </record>
+        <record id="wc_coding" model="mrp.workcenter">
+            <field name="name">Coding</field>
+            <field name="code">WC-COD</field>
+        </record>
+        <record id="wc_packing" model="mrp.workcenter">
+            <field name="name">Packing</field>
+            <field name="code">WC-PCK</field>
+        </record>
+    </data>
+
+    <!-- Hubungkan tahap -> Work Center (hanya bila belum diisi). Berjalan tiap Upgrade. -->
+    <data noupdate="0">
+        <function model="mrp.production.stage" name="_link_default_workcenters"/>
+    </data>
+</odoo>

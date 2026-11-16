@@ -25,6 +25,7 @@
                             <field name="name"/>
                             <field name="code"/>
                             <field name="workcenter_id"/>
+                            <field name="stage_ids" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>
 
                         <group>

@@ -33,6 +33,12 @@ class ProductionMachine(models.Model):
 
     note = fields.Text()
 
+    stage_ids = fields.Many2many(
+        "mrp.production.stage",
+        string="Dipakai di Tahap",
+        help="Mesin hanya muncul sebagai pilihan di tahap ini. Kosongkan bila boleh dipilih di tahap mana pun.",
+    )
+
     capacity_ids = fields.One2many(
         "mrp.production.machine.capacity",
         "machine_id",
