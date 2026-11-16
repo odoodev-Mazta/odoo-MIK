@@ -1,6 +1,6 @@
 {
     'name': 'Maklon Inventory Integration',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.0.2',
     'summary': 'Integrasi Draft MOU dengan Inventory',
     'description': """
 Integrasi Draft Maklon ke Stock Picking
@@ -25,11 +25,14 @@ Fitur:
         'custom_mou',
     ],
 
+    'external_dependencies': {'python': ['openpyxl', 'xlsxwriter']},
+
     'data': [
 
         'security/ir.model.access.csv',
         'views/stock_picking_views.xml',
         'views/stock_move_views.xml',
+        'views/picking_import_export_views.xml',
 
     ],
 

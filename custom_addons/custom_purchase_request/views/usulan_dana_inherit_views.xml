@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Tab "Keterangan PO" di Usulan Dana: sama seperti "Keterangan PR" di Purchase Order. -->
+    <record id="view_usulan_usulan_dana_form_keterangan_po" model="ir.ui.view">
+        <field name="name">usulan.usulan.dana.form.keterangan.po</field>
+        <field name="model">usulan.usulan.dana</field>
+        <field name="inherit_id" ref="custom_usulandana.view_usulan_usulan_dana_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='item_details']" position="after">
+                <page string="Keterangan PO" name="keterangan_po" invisible="not purchase_order_id">
+                    <field name="po_customer_line_ids" readonly="1">
+                        <list create="0" delete="0" edit="0" open_form_view="0">
+                            <field name="request_id"/>
+                            <field name="customer_id"/>
+                            <field name="mou_id"/>
+                            <field name="sale_order_id"/>
+                            <field name="product_id"/>
+                            <field name="description"/>
+                            <field name="qty"/>
+                            <field name="uom_id"/>
+                            <field name="allocate_product_id" string="Alokasi ke Produk"/>
+                            <field name="allocation_state" string="Status Alokasi"/>
+                        </list>
+                    </field>
+                    <div class="text-muted">
+                        Rincian ini diambil dari Keterangan PR pada Purchase Order: barang PO dibagi untuk customer / PR mana saja.
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

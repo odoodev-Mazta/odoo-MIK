@@ -208,7 +208,8 @@ class UsulanUsulanDana(models.Model):
 
         self.vendor_id = self.purchase_order_id.partner_id.id
         self.currency_id = self.purchase_order_id.currency_id.id
-        self.description = f"Tagihan atas PO: {self.purchase_order_id.name}"
+        origin = self.purchase_order_id.origin
+        self.description = f"Tagihan atas PO: {self.purchase_order_id.name}" + (f" (PR: {origin})" if origin else "")
 
         new_lines = []
         for line in self.purchase_order_id.order_line:

@@ -40,6 +40,125 @@ class PurchaseOrderCustomerLine(models.Model):
         help='Produk milik customer (mis. Stiker Amerta 20gr). Stok produk di kolom Produk dipindahkan ke produk ini.',
     )
     allocated_qty = fields.Float(string='Sudah Dialokasikan', readonly=True, copy=False)
+    request_qty = fields.Float(
+        string='Qty di PR',
+        help='Qty asli barang ini di PR. Bila Qty diturunkan di bawah angka ini, sisanya otomatis '
+             'dibuatkan baris baru.',
+    )
+    is_remainder = fields.Boolean(
+        string='Sisa',
+        readonly=True,
+        help='Baris otomatis berisi sisa qty PR yang tidak diambil di PO ini. '
+             'Tidak ikut dihitung sebagai alokasi dan tidak mengubah qty barang PO.',
+    )
+
+    # ------------------------------------------------------------------
+    # Sisa qty PR: Qty diturunkan (mis. 216 -> 82) => baris sisa (134) dibuat otomatis
+    # ------------------------------------------------------------------
+    def _remainder_key(self):
+        """Baris 'sama' = PR, produk, unit, MOU, SO, dan deskripsi yang sama dalam satu PO."""
+        self.ensure_one()
+        return (
+            self.order_id.id, self.request_id.id, self.product_id.id, self.uom_id.id,
+            self.mou_id.id, self.sale_order_id.id, self.description or False,
+        )
+
+    def _shortfall(self):
+        """Qty PR yang belum diambil oleh baris ini."""
+        self.ensure_one()
+        if self.is_remainder or not self.request_id or self.request_qty <= 0:
+            return 0.0
+        return max(self.request_qty - self.qty, 0.0)
+
+    @api.model
+    def _sync_remainders(self, keys):
+        """Samakan baris sisa dengan selisih qty PR untuk tiap kelompok baris."""
+        for key in keys:
+            if not key[0]:
+                continue
+            group = self.search([('order_id', '=', key[0])]).filtered(lambda l: l._remainder_key() == key)
+            mains = group.filtered(lambda l: not l.is_remainder)
+            remainders = group - mains
+            short = sum(line._shortfall() for line in mains)
+            if short <= 1e-6:
+                remainders.unlink()
+                continue
+            if remainders:
+                remainders[0].with_context(skip_remainder_sync=True).write({'qty': short})
+                (remainders - remainders[0]).unlink()
+                continue
+            main = mains.filtered(lambda l: l._shortfall() > 0)[:1]
+            self.with_context(skip_remainder_sync=True).create({
+                'order_id': main.order_id.id,
+                'sequence': main.sequence,
+                'request_id': main.request_id.id,
+                'mou_id': main.mou_id.id,
+                'customer_id': main.customer_id.id,
+                'sale_order_id': main.sale_order_id.id,
+                'product_id': main.product_id.id,
+                'description': main.description,
+                'uom_id': main.uom_id.id,
+                'qty': short,
+                'request_qty': 0.0,
+                'is_remainder': True,
+            })
+
+    def _adjust_order_qty(self, delta):
+        """Qty barang di tab Item Barang ikut berubah sebesar `delta`.
+
+        Saat turun, qty tidak pernah lebih rendah dari total qty yang diambil di Keterangan PR,
+        jadi tidak terpotong dua kali bila Item Barang sudah diturunkan manual.
+        """
+        self.ensure_one()
+        order_line = self.order_id.order_line.filtered(
+            lambda l: not l.display_type and l.product_id == self.product_id
+            and (not self.uom_id or l.product_uom_id == self.uom_id)
+        )[:1]
+        if not order_line or not delta:
+            return
+        new_qty = order_line.product_qty + delta
+        if delta < 0:
+            taken = sum(
+                l.qty for l in self.search([('order_id', '=', self.order_id.id)])
+                if not l.is_remainder and l.product_id == self.product_id and l.uom_id == self.uom_id
+            )
+            new_qty = max(new_qty, min(taken, order_line.product_qty))
+        order_line.product_qty = max(new_qty, 0.0)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('is_remainder') and not vals.get('request_qty'):
+                vals['request_qty'] = vals.get('qty', 1.0)
+        lines = super().create(vals_list)
+        if not self.env.context.get('skip_remainder_sync'):
+            self._sync_remainders({line._remainder_key() for line in lines})
+        return lines
+
+    def write(self, vals):
+        watched = {'qty', 'request_qty', 'request_id', 'product_id', 'uom_id', 'mou_id',
+                   'sale_order_id', 'description'}
+        if self.env.context.get('skip_remainder_sync') or not watched & vals.keys():
+            return super().write(vals)
+        before = {line.id: (line._remainder_key(), line._shortfall()) for line in self}
+        result = super().write(vals)
+        keys = set()
+        for line in self:
+            old_key, old_short = before[line.id]
+            new_key = line._remainder_key()
+            keys.update((old_key, new_key))
+            if old_key == new_key and not line.is_remainder:
+                line._adjust_order_qty(old_short - line._shortfall())
+        self._sync_remainders(keys)
+        return result
+
+    def unlink(self):
+        keys = set()
+        if not self.env.context.get('skip_remainder_sync'):
+            keys = {line._remainder_key() for line in self if not line.is_remainder}
+        result = super().unlink()
+        self._sync_remainders(keys)
+        return result
 
     @api.depends('request_id.recommended_vendor_1', 'request_id.recommended_vendor_2', 'order_id.company_id')
     def _compute_recommended_partner_ids(self):
@@ -228,3 +347,13 @@ class StockPicking(models.Model):
         orders = self.filtered(lambda p: p.state == 'done').move_ids.purchase_line_id.order_id
         orders.customer_line_ids.filtered('allocate_product_id')._auto_allocate()
         return result
+
+
+class UsulanUsulanDana(models.Model):
+    _inherit = 'usulan.usulan.dana'
+
+    po_customer_line_ids = fields.One2many(
+        related='purchase_order_id.customer_line_ids',
+        string='Keterangan PO',
+        readonly=True,
+    )

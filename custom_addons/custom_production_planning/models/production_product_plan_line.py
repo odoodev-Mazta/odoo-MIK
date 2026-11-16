@@ -85,6 +85,47 @@ class ProductionPlanProductLine(models.Model):
         string="Perintah Produksi",
     )
 
+    stage_ids = fields.One2many(
+        "mrp.production.plan.stage",
+        "product_line_id",
+        string="Tahapan",
+    )
+
+    stage_start = fields.Date(string="Mulai Tahap", compute="_compute_stage_summary")
+    stage_end = fields.Date(string="Selesai Tahap", compute="_compute_stage_summary")
+    stage_progress = fields.Char(string="Tahap Berjalan", compute="_compute_stage_summary")
+
+    @api.depends("stage_ids.state", "stage_ids.date_start", "stage_ids.date_end", "stage_ids.sequence")
+    def _compute_stage_summary(self):
+        labels = {"todo": "Belum Mulai", "in_progress": "Berjalan", "waiting_qc": "Menunggu QC", "done": "Selesai"}
+        for line in self:
+            stages = line.stage_ids.sorted(key=lambda s: (s.sequence, s.id))
+            starts = [d for d in stages.mapped("date_start") if d]
+            ends = [d for d in stages.mapped("date_end") if d]
+            line.stage_start = min(starts) if starts else False
+            line.stage_end = max(ends) if ends else False
+            if not stages:
+                line.stage_progress = False
+                continue
+            done = len(stages.filtered(lambda s: s.state == "done"))
+            current = stages.filtered(lambda s: s.state != "done")[:1]
+            line.stage_progress = (
+                f"{done}/{len(stages)} selesai"
+                + (f" · {current.stage_id.name} ({labels.get(current.state, current.state)})" if current else "")
+            )
+
+    def action_open_stage_popup(self):
+        """Popup untuk mengatur tanggal, PIC, dan mesin tiap tahap produk ini."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": f"Tahapan {self.bom_product_id.display_name}",
+            "res_model": self._name,
+            "res_id": self.id,
+            "views": [(self.env.ref("custom_production_planning.view_production_plan_product_line_stage_form").id, "form")],
+            "target": "new",
+        }
+
     progress = fields.Float(
         string="Progress",
         compute="_compute_progress",
@@ -172,6 +213,19 @@ class ProductionPlanProductLine(models.Model):
     def _onchange_product_id_suggest_finished(self):
         for line in self:
             line.finished_product_id = line._suggest_finished_product()
+
+    def action_open_mo(self):
+        self.ensure_one()
+        mo = self.manufacturing_order_ids[:1]
+        if not mo:
+            raise ValidationError("Perintah Produksi untuk produk ini belum dibuat.")
+        return {
+            "type": "ir.actions.act_window",
+            "name": mo.name,
+            "res_model": "mrp.production",
+            "res_id": mo.id,
+            "views": [(False, "form")],
+        }
 
     @api.depends("manufacturing_order_ids")
     def _compute_has_mo(self):

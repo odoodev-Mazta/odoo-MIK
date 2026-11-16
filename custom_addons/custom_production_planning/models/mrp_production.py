@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 class MrpProduction(models.Model):
     _inherit = "mrp.production"
@@ -47,3 +47,14 @@ class MrpProduction(models.Model):
         "production_id",
         string="Proses Produksi",
     )
+
+    plan_sibling_mo_ids = fields.Many2many(
+        "mrp.production",
+        compute="_compute_plan_sibling_mo_ids",
+        string="Produk Lain di Plan",
+    )
+
+    @api.depends("production_plan_id.manufacturing_order_ids")
+    def _compute_plan_sibling_mo_ids(self):
+        for mo in self:
+            mo.plan_sibling_mo_ids = mo.production_plan_id.manufacturing_order_ids - mo

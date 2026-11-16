@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_stock_picking_import_wizard_form" model="ir.ui.view">
+        <field name="name">stock.picking.import.wizard.form</field>
+        <field name="model">stock.picking.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Delivery">
+                <div class="alert alert-info" role="alert">
+                    Belum punya filenya? Klik <b>Download Format</b> untuk mengunduh contoh file Excel
+                    beserta petunjuk pengisiannya. Satu baris = satu produk di Delivery.
+                    Delivery dibuat dengan status Draft, dan No. Delivery yang sudah ada dilewati.
+                    Semua baris diperiksa dulu; bila ada satu saja yang salah, tidak ada yang diimpor.
+                </div>
+                <group>
+                    <field name="file" filename="filename"/>
+                    <field name="filename" invisible="1"/>
+                </group>
+                <footer>
+                    <button string="Import" name="action_import" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Download Format" name="action_download_format" type="object" class="btn-secondary"/>
+                    <button string="Batal" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_stock_picking_list_import_export" model="ir.ui.view">
+        <field name="name">stock.picking.list.import.export</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_import_picking" type="object" string="Import Delivery" display="always"/>
+                <button name="action_export_picking" type="object" string="Export Delivery" display="always"/>
+                <button name="action_download_picking_format" type="object" string="Format Import" display="always"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

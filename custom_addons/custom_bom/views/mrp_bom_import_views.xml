@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mrp_bom_import_wizard_form" model="ir.ui.view">
+        <field name="name">mrp.bom.import.wizard.form</field>
+        <field name="model">mrp.bom.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import BoM">
+                <div class="alert alert-info" role="alert">
+                    Belum punya filenya? Klik <b>Download Format</b> untuk mengunduh contoh file Excel
+                    beserta petunjuk pengisiannya. Satu baris di sheet BoM = satu komponen.
+                    Semua baris diperiksa dulu; bila ada satu saja yang salah, tidak ada yang diimpor.
+                </div>
+                <group>
+                    <field name="file" filename="filename"/>
+                    <field name="filename" invisible="1"/>
+                    <field name="mode" widget="radio"/>
+                </group>
+                <footer>
+                    <button string="Import" name="action_import" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Download Format" name="action_download_format" type="object" class="btn-secondary"/>
+                    <button string="Batal" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_mrp_bom_list_import_export" model="ir.ui.view">
+        <field name="name">mrp.bom.list.import.export</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <header>
+                    <button name="action_import_bom" type="object" string="Import BoM"
+                            display="always"/>
+                    <button name="action_export_bom" type="object" string="Export BoM"
+                            display="always"/>
+                    <button name="action_download_import_format" type="object" string="Format Import"
+                            display="always"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

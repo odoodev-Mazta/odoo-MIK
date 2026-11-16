@@ -1,7 +1,8 @@
+import math
 from datetime import datetime, timedelta
 
 from odoo import Command, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class ProductionStage(models.Model):
@@ -26,7 +27,41 @@ class ProductionStage(models.Model):
         help="Tahap ini menentukan nomor batch dan tanggal kedaluwarsa (Coding).",
     )
     parameter_ids = fields.One2many("mrp.production.stage.parameter", "stage_id", string="Parameter QC")
+    workcenter_id = fields.Many2one(
+        "mrp.workcenter",
+        string="Work Center",
+        help="Work Center bawaan untuk Work Order tahap ini. "
+             "Bila mesin yang dipilih punya Work Center sendiri, itu yang dipakai.",
+    )
     active = fields.Boolean(default=True)
+
+    @api.model
+    def _link_default_workcenters(self):
+        """Isi Work Center bawaan tiap tahap dari data (hanya yang masih kosong)."""
+        mapping = {
+            "stage_penimbangan": "wc_penimbangan",
+            "stage_mixing": "wc_mixing",
+            "stage_filling": "wc_filling",
+            "stage_labeling": "wc_labeling",
+            "stage_coding": "wc_coding",
+            "stage_packing": "wc_packing",
+        }
+        for stage_xmlid, wc_xmlid in mapping.items():
+            stage = self.env.ref(f"custom_production_planning.{stage_xmlid}", raise_if_not_found=False)
+            workcenter = self.env.ref(f"custom_production_planning.{wc_xmlid}", raise_if_not_found=False)
+            if workcenter and workcenter.company_id:
+                # Dipakai semua perusahaan; kalau terkunci di satu perusahaan, Work Center
+                # tidak tampil bagi user yang sedang aktif di perusahaan lain.
+                # Jam kerja juga harus tidak terikat perusahaan, kalau tidak Odoo menolak.
+                calendar = self.env["resource.calendar"].sudo().search([("company_id", "=", False)], limit=1)
+                if not calendar:
+                    calendar = self.env["resource.calendar"].sudo().create({
+                        "name": "Jam Kerja Standar (40 jam/minggu)",
+                        "company_id": False,
+                    })
+                workcenter.write({"company_id": False, "resource_calendar_id": calendar.id})
+            if stage and workcenter and not stage.workcenter_id:
+                stage.workcenter_id = workcenter
 
 
 class ProductionPlanStage(models.Model):
@@ -54,6 +89,18 @@ class ProductionPlanStage(models.Model):
         string="Qty Rencana",
         related="product_line_id.production_qty",
     )
+    batch_label = fields.Char(string="Batch", compute="_compute_batch_label")
+
+    @api.depends("plan_id.stage_ids.product_line_id", "product_line_id")
+    def _compute_batch_label(self):
+        for stage in self:
+            lines = stage.plan_id.stage_ids.product_line_id.sorted("id")
+            same = lines.filtered(lambda l: l.bom_product_id == stage.product_line_id.bom_product_id)
+            if len(same) > 1 and stage.product_line_id in same:
+                stage.batch_label = f"Batch {list(same.ids).index(stage.product_line_id.id) + 1}/{len(same)}"
+            else:
+                stage.batch_label = False
+
     production_id = fields.Many2one(
         "mrp.production",
         string="Perintah Produksi",
@@ -74,10 +121,23 @@ class ProductionPlanStage(models.Model):
         string="Mesin",
         help="Kosongkan bila tahap ini dikerjakan manual.",
     )
+    machine_operator_count = fields.Integer(related="machine_id.operator_count", string="Pekerja")
+    machine_capacity = fields.Float(
+        string="Kapasitas/Hari", compute="_compute_machine_capacity",
+        help="Kapasitas terbesar mesin ini per hari.",
+    )
+
+    @api.depends("machine_id.capacity_ids.capacity_per_day")
+    def _compute_machine_capacity(self):
+        for stage in self:
+            caps = stage.machine_id.capacity_ids.mapped("capacity_per_day")
+            stage.machine_capacity = max(caps) if caps else 0.0
+
     state = fields.Selection(
         [
             ("todo", "Belum Mulai"),
             ("in_progress", "Berjalan"),
+            ("waiting_qc", "Menunggu QC"),
             ("done", "Selesai"),
         ],
         string="Status",
@@ -113,6 +173,140 @@ class ProductionPlanStage(models.Model):
     qc_note = fields.Char(string="Catatan QC")
     qc_user_id = fields.Many2one("res.users", string="Petugas QC", readonly=True, copy=False)
     qc_date = fields.Datetime(string="Waktu QC", readonly=True, copy=False)
+    qc_submit_date = fields.Datetime(string="Diajukan QC", readonly=True, copy=False)
+
+    capacity_id = fields.Many2one(
+        "mrp.production.machine.capacity",
+        string="Kapasitas",
+        domain="[('machine_id', '=', machine_id)]",
+        help="Pilih jenis dan ukuran kemasan yang dikerjakan mesin ini, mis. Tube 20 gr.",
+    )
+    capacity_per_day = fields.Float(related="capacity_id.capacity_per_day", string="Kapasitas/Hari")
+    capacity_uom = fields.Many2one(related="capacity_id.uom_id", string="Satuan")
+    capacity_qty = fields.Float(
+        string="Qty Dihitung",
+        help="Qty yang dibagi kapasitas. Isi sesuai satuan kapasitas (mis. kg untuk Mixing).",
+    )
+    days_needed = fields.Integer(string="Hari Dibutuhkan", compute="_compute_capacity_check")
+    days_available = fields.Integer(string="Hari Tersedia", compute="_compute_capacity_check")
+    capacity_warning = fields.Boolean(string="Kapasitas Kurang", compute="_compute_capacity_check")
+
+    @api.depends("capacity_id.capacity_per_day", "capacity_qty", "date_start", "date_end")
+    def _compute_capacity_check(self):
+        for stage in self:
+            needed = available = 0
+            if stage.capacity_per_day and stage.capacity_qty:
+                needed = math.ceil(stage.capacity_qty / stage.capacity_per_day)
+            if stage.date_start and stage.date_end:
+                available = (stage.date_end - stage.date_start).days + 1
+            stage.days_needed = needed
+            stage.days_available = available
+            stage.capacity_warning = bool(needed and available and needed > available)
+
+    @api.onchange("machine_id")
+    def _onchange_machine_id_capacity(self):
+        for stage in self:
+            capacities = stage.machine_id.capacity_ids
+            if stage.capacity_id.machine_id != stage.machine_id:
+                stage.capacity_id = capacities if len(capacities) == 1 else False
+
+    @api.onchange("capacity_id")
+    def _onchange_capacity_id_qty(self):
+        for stage in self:
+            if stage.capacity_id and not stage.capacity_qty:
+                stage.capacity_qty = stage.qty_plan
+
+    workorder_id = fields.Many2one("mrp.workorder", string="Work Order", copy=False, ondelete="set null")
+
+    def _get_workcenter(self):
+        self.ensure_one()
+        return self.machine_id.workcenter_id or self.stage_id.workcenter_id
+
+    def _ensure_workorder(self):
+        """Buat Work Order untuk tahap ini di Perintah Produksi produknya (bila belum ada)."""
+        for stage in self:
+            order = stage.production_id
+            if stage.workorder_id or not order or order.state in ("done", "cancel"):
+                continue
+            workcenter = stage._get_workcenter()
+            if not workcenter:
+                continue
+            days = (stage.date_end - stage.date_start).days + 1 if stage.date_start and stage.date_end else 0
+            name = stage.stage_id.name + (f" · {stage.batch_label}" if stage.batch_label else "")
+            stage.workorder_id = self.env["mrp.workorder"].create({
+                "name": name,
+                "production_id": order.id,
+                "workcenter_id": workcenter.id,
+                "sequence": stage.sequence,
+                "duration_expected": (days or 1) * 480.0,
+            })
+
+    def _sync_workorder(self, action):
+        """Samakan status Work Order dengan tahap: start / pending / finish / reset."""
+        for stage in self:
+            workorder = stage.workorder_id
+            if not workorder or workorder.state in ("done", "cancel"):
+                continue
+            if action == "start":
+                workcenter = stage._get_workcenter()
+                if workcenter and workorder.workcenter_id != workcenter and not workorder.leave_id:
+                    workorder.workcenter_id = workcenter
+                workorder.button_start()
+            elif action == "pending":
+                workorder.button_pending()
+            elif action == "finish":
+                workorder.qty_produced = stage.qty_good
+                workorder.button_finish()
+            elif action == "reset":
+                workorder.button_pending()
+                workorder.write({"state": "ready"})
+
+    is_late = fields.Boolean(
+        string="Terlambat", compute="_compute_is_late",
+        help="Tanggal selesai rencana sudah lewat tetapi tahap belum selesai.",
+    )
+
+    @api.depends("date_end", "state")
+    def _compute_is_late(self):
+        today = fields.Date.context_today(self)
+        for stage in self:
+            stage.is_late = bool(stage.date_end and stage.date_end < today and stage.state != "done")
+
+    def action_open_mo(self):
+        self.ensure_one()
+        if not self.production_id:
+            raise ValidationError("Perintah Produksi untuk produk ini belum dibuat.")
+        return {
+            "type": "ir.actions.act_window",
+            "name": self.production_id.name,
+            "res_model": "mrp.production",
+            "res_id": self.production_id.id,
+            "views": [(False, "form")],
+        }
+
+    def _notify_qc_users(self):
+        """Beri tugas (to-do) ke tiap petugas QC supaya tahap ini muncul di daftar aktivitas mereka."""
+        self.ensure_one()
+        qc_users = self.env.ref("custom_production_planning.group_production_qc").sudo().all_user_ids
+        for user in qc_users:
+            self.plan_id.activity_schedule(
+                "mail.mail_activity_data_todo",
+                user_id=user.id,
+                summary=self._qc_activity_summary(),
+                note=f"Qty bagus {self.qty_good:g}. Buka menu Produksi > Antrean QC untuk memeriksa.",
+                date_deadline=fields.Date.context_today(self),
+            )
+
+    def _qc_activity_summary(self):
+        self.ensure_one()
+        return f"QC: {self._label()}"
+
+    def _close_qc_activities(self):
+        for stage in self:
+            summary = stage._qc_activity_summary()
+            stage.plan_id.activity_ids.filtered(lambda act: act.summary == summary).sudo().action_feedback(
+                feedback="Pemeriksaan QC selesai."
+            )
 
     @api.depends("product_line_id.manufacturing_order_ids")
     def _compute_production_id(self):
@@ -151,6 +345,26 @@ class ProductionPlanStage(models.Model):
         return siblings[index - 1] if index else self.browse()
 
     def action_start(self):
+        today = fields.Date.context_today(self)
+        early = self.filtered(lambda s: s.date_start and s.date_start > today and s.state == "todo")
+        result = self._start_stages()
+        if early:
+            labels = ", ".join(early.mapped(lambda s: s._label()))
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": "Dimulai lebih awal dari jadwal",
+                    "message": f"{labels} dijadwalkan mulai {min(early.mapped('date_start'))}. "
+                               "Tahap tetap dijalankan, jadwal hanya rencana.",
+                    "type": "warning",
+                    "sticky": False,
+                    "next": {"type": "ir.actions.client", "tag": "reload"},
+                },
+            }
+        return result
+
+    def _start_stages(self):
         for stage in self:
             if stage.plan_id.state != "running":
                 raise ValidationError("Buat Perintah Produksi dulu. Tahap baru bisa dikerjakan setelah plan berstatus Running.")
@@ -179,14 +393,63 @@ class ProductionPlanStage(models.Model):
             product = stage.product_id
             if stage.set_batch and not stage.expiry_date and product.use_expiration_date and product.expiration_time:
                 stage.expiry_date = fields.Date.context_today(stage) + timedelta(days=product.expiration_time)
+            stage._ensure_workorder()
+            stage._sync_workorder("start")
         return True
 
-    def action_qc_pass(self):
+    def _check_qc_access(self):
+        """Hanya petugas QC (atau Administrator) yang boleh menyatakan lulus / gagal."""
+        user = self.env.user
+        if not (user.has_group("custom_production_planning.group_production_qc") or user.has_group("base.group_system")):
+            raise AccessError("Hanya petugas QC yang boleh menyatakan QC lulus atau gagal.")
+
+    def _check_batch_fields(self):
+        self.ensure_one()
+        if self.set_batch:
+            if not self.batch_no or not self.expiry_date:
+                raise ValidationError(f"Isi No. Batch dan Tanggal Expired tahap {self._label()} sebelum diajukan QC.")
+            if self.expiry_date <= fields.Date.context_today(self):
+                raise ValidationError(f"Tanggal Expired tahap {self._label()} harus setelah hari ini.")
+
+    def _check_qty_limit(self):
+        self.ensure_one()
+        previous = self._previous()
+        limit = previous.qty_good if previous else self.qty_plan
+        if limit and self.qty_good > limit:
+            raise ValidationError(
+                f"Tahap {self._label()}: Qty Bagus ({self.qty_good:g}) melebihi "
+                f"{'hasil tahap sebelumnya' if previous else 'qty rencana'} ({limit:g})."
+            )
+
+    def action_submit_qc(self):
+        """Operator menyatakan tahap selesai dikerjakan; QC yang memeriksa."""
         for stage in self:
             if stage.state != "in_progress":
                 raise ValidationError(f"Tahap {stage._label()} belum berjalan.")
             if stage.qty_good <= 0:
-                raise ValidationError(f"Isi Qty Bagus tahap {stage._label()} sebelum QC.")
+                raise ValidationError(f"Isi Qty Bagus tahap {stage._label()} sebelum diajukan QC.")
+            stage._check_batch_fields()
+            stage._check_qty_limit()
+            stage.write({
+                "state": "waiting_qc",
+                "qc_state": "pending",
+                "qc_submit_date": fields.Datetime.now(),
+            })
+            qc_users = self.env.ref("custom_production_planning.group_production_qc").sudo().all_user_ids
+            stage.plan_id.message_post(
+                body=f"Tahap {stage._label()} diajukan ke QC ({stage.qty_good:g} bagus). Menunggu pemeriksaan.",
+                subtype_xmlid="mail.mt_note",
+                partner_ids=qc_users.partner_id.ids,
+            )
+            stage._sync_workorder("pending")
+            stage._notify_qc_users()
+        return True
+
+    def action_qc_pass(self):
+        self._check_qc_access()
+        for stage in self:
+            if stage.state != "waiting_qc":
+                raise ValidationError(f"Tahap {stage._label()} belum diajukan ke QC.")
             if stage.check_ids:
                 missing = stage.check_ids.filtered(lambda check: check.required and check.result == "pending")
                 if missing:
@@ -200,16 +463,26 @@ class ProductionPlanStage(models.Model):
                     )
                     stage.action_qc_fail()
                     continue
-            if stage.set_batch:
-                if not stage.batch_no or not stage.expiry_date:
-                    raise ValidationError(f"Isi No. Batch dan Tanggal Expired tahap {stage._label()} sebelum QC.")
-                if stage.expiry_date <= fields.Date.context_today(stage):
-                    raise ValidationError(f"Tanggal Expired tahap {stage._label()} harus setelah hari ini.")
+            stage._check_qty_limit()
             stage.write({
                 "qc_state": "passed",
                 "qc_user_id": self.env.user.id,
                 "qc_date": fields.Datetime.now(),
+                "state": "done",
+                "date_end_actual": fields.Datetime.now(),
             })
+            stage._sync_workorder("finish")
+            stage._close_qc_activities()
+            following = stage._siblings().filtered(lambda s: s.sequence > stage.sequence or (s.sequence == stage.sequence and s.id > stage.id))[:1]
+            partners = (stage.user_id | following.user_id).partner_id.ids
+            stage.plan_id.message_post(
+                body=f"QC lulus: {stage._label()}."
+                     + (f" Tahap berikutnya: {following._label()}." if following else " Semua tahap produk ini selesai."),
+                subtype_xmlid="mail.mt_note",
+                partner_ids=partners,
+            )
+            if stage.product_line_id and stage == stage._siblings()[-1]:
+                stage.plan_id._finish_product_line(stage.product_line_id, stage.qty_good)
         return True
 
     def action_open_checks(self):
@@ -224,15 +497,18 @@ class ProductionPlanStage(models.Model):
         }
 
     def action_qc_fail(self):
+        self._check_qc_access()
         for stage in self:
-            if stage.state != "in_progress":
-                raise ValidationError(f"Tahap {stage._label()} belum berjalan.")
+            if stage.state != "waiting_qc":
+                raise ValidationError(f"Tahap {stage._label()} belum diajukan ke QC.")
             if not stage.qc_note:
                 raise ValidationError(f"Isi Catatan QC tahap {stage._label()} sebelum menyatakan gagal.")
             stage.plan_id.message_post(
                 body=f"QC gagal di tahap {stage._label()}: {stage.qc_note}. Tahap diulang.",
                 subtype_xmlid="mail.mt_note",
+                partner_ids=stage.user_id.partner_id.ids,
             )
+            stage._close_qc_activities()
             stage.write({
                 "state": "todo",
                 "qc_state": "failed",
@@ -240,25 +516,9 @@ class ProductionPlanStage(models.Model):
                 "qc_date": fields.Datetime.now(),
                 "attempts": stage.attempts + 1,
                 "date_start_actual": False,
+                "qc_submit_date": False,
             })
-        return True
-
-    def action_done(self):
-        for stage in self:
-            if stage.state != "in_progress":
-                raise ValidationError(f"Tahap {stage._label()} belum berjalan.")
-            if stage.qc_state != "passed":
-                raise ValidationError(f"Tahap {stage._label()} belum lulus QC.")
-            previous = stage._previous()
-            limit = previous.qty_good if previous else stage.qty_plan
-            if limit and stage.qty_good > limit:
-                raise ValidationError(
-                    f"Tahap {stage._label()}: Qty Bagus ({stage.qty_good:g}) melebihi "
-                    f"{'hasil tahap sebelumnya' if previous else 'qty rencana'} ({limit:g})."
-                )
-            stage.write({"state": "done", "date_end_actual": fields.Datetime.now()})
-            if stage.product_line_id and stage == stage._siblings()[-1]:
-                stage.plan_id._finish_product_line(stage.product_line_id, stage.qty_good)
+            stage._sync_workorder("reset")
         return True
 
 

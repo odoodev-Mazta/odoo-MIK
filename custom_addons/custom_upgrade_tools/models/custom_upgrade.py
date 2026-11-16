@@ -35,6 +35,7 @@ class CustomUpgradeRun(models.Model):
         ('running', 'Berjalan'),
         ('done', 'Selesai'),
         ('failed', 'Ada yang Gagal'),
+        ('cancelled', 'Dibatalkan'),
     ], default='running', required=True)
     date_start = fields.Datetime(default=fields.Datetime.now)
     date_end = fields.Datetime()
@@ -106,6 +107,35 @@ class CustomUpgradeRun(models.Model):
             'state': 'pending', 'attempts': 0, 'waits': 0, 'error': False,
         })
         self.write({'state': 'running', 'date_end': False})
+        return True
+
+    def action_cancel(self):
+        """Batalkan upgrade yang sedang berjalan/menggantung supaya bisa mulai dari awal.
+
+        Modul yang belum diupgrade ditandai Dibatalkan. Bila tidak ada upgrade yang sedang
+        berjalan di server, baris 'Berjalan' yang tertinggal dan modul yang macet di status
+        'to upgrade' ikut dipulihkan.
+        """
+        self._check_admin()
+        cr = self.env.cr
+        for run in self.filtered(lambda r: r.state == 'running'):
+            cr.execute("SELECT pg_try_advisory_lock(hashtext(%s))", [LOCK_KEY])
+            idle = cr.fetchone()[0]
+            try:
+                states = ('pending', 'running') if idle else ('pending',)
+                run.line_ids.filtered(lambda line: line.state in states).write({
+                    'state': 'cancelled',
+                    'error': _('Dibatalkan oleh %s.', self.env.user.name),
+                })
+                run.write({'state': 'cancelled', 'date_end': fields.Datetime.now()})
+                if idle and self.env['ir.module.module'].search_count([
+                    ('state', 'in', ('to upgrade', 'to install', 'to remove')),
+                ]):
+                    _logger.warning("Upgrade dibatalkan: status modul yang macet direset")
+                    reset_modules_state(cr.dbname)
+            finally:
+                if idle:
+                    cr.execute("SELECT pg_advisory_unlock(hashtext(%s))", [LOCK_KEY])
         return True
 
     def action_process_next(self):
@@ -184,6 +214,7 @@ class CustomUpgradeRun(models.Model):
             'done': len(lines.filtered(lambda line: line.state == 'done')),
             'failed': len(lines.filtered(lambda line: line.state == 'failed')),
             'skipped': len(lines.filtered(lambda line: line.state == 'skipped')),
+            'cancelled': len(lines.filtered(lambda line: line.state == 'cancelled')),
             'lines': [{
                 'id': line.id,
                 'module': line.module_id.name,
@@ -210,6 +241,7 @@ class CustomUpgradeRunLine(models.Model):
         ('done', 'Selesai'),
         ('failed', 'Gagal'),
         ('skipped', 'Ditunda'),
+        ('cancelled', 'Dibatalkan'),
     ], default='pending', required=True)
     attempts = fields.Integer()
     waits = fields.Integer(help="Berapa kali menunggu Odoo selesai menjalankan proses lain.")

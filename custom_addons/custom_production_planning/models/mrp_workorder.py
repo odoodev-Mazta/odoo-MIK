@@ -27,7 +27,8 @@ class MrpWorkorder(models.Model):
 
             plan = wo.production_id.production_plan_id
 
-            if plan:
+            # Plan berbasis tahap proses: status Done ditentukan oleh tahap & QC, bukan Work Order.
+            if plan and not plan.stage_ids:
 
                 workorders = plan.manufacturing_order_ids.mapped(
                     "workorder_ids"

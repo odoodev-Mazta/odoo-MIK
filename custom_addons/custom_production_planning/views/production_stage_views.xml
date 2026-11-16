@@ -9,6 +9,7 @@
                 <field name="name"/>
                 <field name="origin_type"/>
                 <field name="set_batch"/>
+                <field name="workcenter_id"/>
                 <field name="active" column_invisible="1"/>
             </list>
         </field>
@@ -25,6 +26,7 @@
                         <field name="sequence"/>
                         <field name="origin_type"/>
                         <field name="set_batch"/>
+                        <field name="workcenter_id"/>
                     </group>
                     <separator string="Parameter QC tahap ini"/>
                     <field name="parameter_ids">
@@ -50,8 +52,12 @@
         <field name="arch" type="xml">
             <form create="0" delete="0">
                 <header>
-                    <button name="action_qc_pass" type="object" string="Selesaikan QC" class="btn-primary"
-                            invisible="state != 'in_progress' or qc_state == 'passed'"/>
+                    <button name="action_qc_pass" type="object" string="QC Lulus" class="btn-primary"
+                            invisible="state != 'waiting_qc'"
+                            groups="custom_production_planning.group_production_qc,base.group_system"/>
+                    <button name="action_qc_fail" type="object" string="QC Gagal"
+                            invisible="state != 'waiting_qc'"
+                            groups="custom_production_planning.group_production_qc,base.group_system"/>
                 </header>
                 <sheet>
                     <group>
@@ -61,13 +67,13 @@
                             <field name="state" widget="badge"/>
                         </group>
                         <group>
-                            <field name="qty_good" readonly="state != 'in_progress'"/>
+                            <field name="qty_good" readonly="1"/>
                             <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'" decoration-danger="qc_state == 'failed'"/>
-                            <field name="qc_note"/>
+                            <field name="qc_note" readonly="state != 'waiting_qc'"/>
                         </group>
                     </group>
                     <separator string="Pemeriksaan"/>
-                    <field name="check_ids" readonly="state != 'in_progress'">
+                    <field name="check_ids" readonly="state != 'waiting_qc'">
                         <list editable="bottom" create="0" delete="0">
                             <field name="parameter_type" column_invisible="1"/>
                             <field name="name" readonly="1"/>
@@ -85,6 +91,36 @@
         </field>
     </record>
 
+    <record id="view_production_plan_stage_qc_list" model="ir.ui.view">
+        <field name="name">mrp.production.plan.stage.qc.list</field>
+        <field name="model">mrp.production.plan.stage</field>
+        <field name="arch" type="xml">
+            <list create="0" delete="0" edit="0">
+                <field name="qc_submit_date" string="Diajukan"/>
+                <field name="plan_id"/>
+                <field name="production_id"/>
+                <field name="product_id"/>
+                <field name="batch_label"/>
+                <field name="stage_id"/>
+                <field name="qty_good"/>
+                <field name="state" widget="badge" decoration-warning="state == 'waiting_qc'"
+                       decoration-success="state == 'done'"/>
+                <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'"
+                       decoration-danger="qc_state == 'failed'"/>
+                <button name="action_open_checks" type="object" string="Periksa" icon="fa-list-alt"
+                        invisible="state != 'waiting_qc'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_production_qc_queue" model="ir.actions.act_window">
+        <field name="name">Antrean QC</field>
+        <field name="res_model">mrp.production.plan.stage</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_production_plan_stage_qc_list')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_production_plan_stage_form')})]"/>
+        <field name="domain">[('state', '=', 'waiting_qc')]</field>
+    </record>
+
     <record id="action_production_stage" model="ir.actions.act_window">
         <field name="name">Tahap Proses</field>
         <field name="res_model">mrp.production.stage</field>
@@ -97,5 +133,14 @@
         parent="menu_production_planning_root"
         action="action_production_stage"
         sequence="40"
+    />
+
+    <menuitem
+        id="menu_production_qc_queue"
+        name="Antrean QC"
+        parent="menu_production_planning_root"
+        action="action_production_qc_queue"
+        sequence="45"
+        groups="custom_production_planning.group_production_qc,base.group_system"
     />
 </odoo>

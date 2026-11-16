@@ -100,6 +100,17 @@ class ProductionPlan(models.Model):
         string="Jadwal Proses",
     )
 
+    stage_product_line_ids = fields.Many2many(
+        "mrp.production.plan.product.line",
+        compute="_compute_stage_product_line_ids",
+        string="Produk di Jadwal Proses",
+    )
+
+    @api.depends("stage_ids.product_line_id")
+    def _compute_stage_product_line_ids(self):
+        for plan in self:
+            plan.stage_product_line_ids = plan.stage_ids.product_line_id
+
     manufacturing_order_ids = fields.One2many(
         "mrp.production",
         "production_plan_id",
@@ -243,6 +254,76 @@ class ProductionPlan(models.Model):
         compute='_compute_production_type',
         store=True,
     )
+
+    mo_count = fields.Integer(string="Perintah Produksi", compute="_compute_mo_count")
+
+    @api.depends("manufacturing_order_ids")
+    def _compute_mo_count(self):
+        for plan in self:
+            plan.mo_count = len(plan.manufacturing_order_ids)
+
+    delivery_picking_ids = fields.Many2many(
+        "stock.picking", string="Pengiriman", compute="_compute_delivery",
+        help="Delivery Order dari Sales Order plan ini.",
+    )
+    delivery_count = fields.Integer(string="Pengiriman", compute="_compute_delivery")
+    delivery_state = fields.Selection(
+        [
+            ("none", "Belum ada Delivery Order"),
+            ("waiting", "Menunggu Kirim"),
+            ("partial", "Terkirim Sebagian"),
+            ("done", "Terkirim"),
+        ],
+        string="Status Pengiriman",
+        compute="_compute_delivery",
+    )
+
+    def _compute_delivery(self):
+        for plan in self:
+            pickings = plan.sale_order_id.picking_ids.filtered(
+                lambda p: p.picking_type_code == "outgoing" and p.state != "cancel"
+            )
+            plan.delivery_picking_ids = pickings
+            plan.delivery_count = len(pickings)
+            done = pickings.filtered(lambda p: p.state == "done")
+            if not pickings:
+                plan.delivery_state = "none"
+            elif len(done) == len(pickings):
+                plan.delivery_state = "done"
+            elif done:
+                plan.delivery_state = "partial"
+            else:
+                plan.delivery_state = "waiting"
+
+    def action_open_deliveries(self):
+        self.ensure_one()
+        if not self.delivery_picking_ids:
+            raise ValidationError(
+                "Belum ada Delivery Order untuk Sales Order ini. Konfirmasi Sales Order atau buat pengiriman dari Sales Order."
+            )
+        action = {
+            "type": "ir.actions.act_window",
+            "name": f"Pengiriman {self.sale_order_id.name}",
+            "res_model": "stock.picking",
+            "domain": [("id", "in", self.delivery_picking_ids.ids)],
+            "views": [(False, "list"), (False, "form")],
+        }
+        if len(self.delivery_picking_ids) == 1:
+            action.update(res_id=self.delivery_picking_ids.id, views=[(False, "form")])
+        return action
+
+    def action_open_manufacturing_orders(self):
+        self.ensure_one()
+        action = {
+            "type": "ir.actions.act_window",
+            "name": f"Perintah Produksi {self.name}",
+            "res_model": "mrp.production",
+            "domain": [("id", "in", self.manufacturing_order_ids.ids)],
+            "views": [(False, "list"), (False, "form")],
+        }
+        if len(self.manufacturing_order_ids) == 1:
+            action.update(res_id=self.manufacturing_order_ids.id, views=[(False, "form")])
+        return action
 
     has_pending_mo = fields.Boolean(
         string="Belum Dibuat Perintah Produksi",
@@ -428,11 +509,24 @@ class ProductionPlan(models.Model):
         for plan in self:
             if plan.state != "draft":
                 raise ValidationError("Jadwal Proses hanya bisa disusun saat plan masih Draft.")
-            if plan.material_check_state != "available":
+            if not plan.material_checked:
                 raise ValidationError(
-                    "Cek ketersediaan material dulu. Jadwal Proses baru bisa "
-                    "disusun setelah bahan cukup."
+                    "Cek ketersediaan material dulu (tombol Check Material Availability). "
+                    "Jadwal Proses tetap bisa disusun walau stok bahan masih kurang."
                 )
+            if plan.material_check_state == "shortage":
+                if not self.env.context.get("skip_shortage_confirm"):
+                    wizard = self.env["mrp.production.plan.shortage.wizard"].create({"plan_id": plan.id})
+                    return {
+                        "type": "ir.actions.act_window",
+                        "name": "Stok Bahan Kurang",
+                        "res_model": "mrp.production.plan.shortage.wizard",
+                        "res_id": wizard.id,
+                        "view_mode": "form",
+                        "target": "new",
+                    }
+                plan.message_post(body="Jadwal Proses disusun walau stok bahan masih kurang. "
+                                       "Lihat tab Material Availability.")
             product_lines = plan._get_effective_product_lines()
             if not product_lines:
                 raise ValidationError("Tambahkan produk dulu sebelum menyusun Jadwal Proses.")
@@ -500,7 +594,7 @@ class ProductionPlan(models.Model):
     def action_approve(self):
         self.action_validate_planning()
         for plan in self:
-            if plan.material_check_state != "available":
+            if not plan.material_checked:
                 raise ValidationError(
                     "Please check material availability first."
                 )
@@ -790,14 +884,24 @@ class ProductionPlan(models.Model):
                         # ------------------------------------------------
 
                         if schedule_date > production_end:
+                            total_qty = product_line.production_qty
+                            days_available = (production_end - production_start).days + 1
+                            days_needed = -(-total_qty // capacity) if capacity else 0
                             raise ValidationError(
-                                f"Production for product "
-                                f"'{product_line.product_id.display_name}' "
-                                f"and operation "
-                                f"'{line.operation_id.display_name}' "
-                                f"cannot be completed within the "
-                                f"production period "
-                                f"{production_start} - {production_end}."
+                                f"Kapasitas mesin tidak cukup untuk periode produksi.\n\n"
+                                f"Produk: {product_line.product_id.display_name}\n"
+                                f"Proses: {line.operation_id.display_name}\n"
+                                f"Mesin: {line.machine_id.display_name} "
+                                f"(kapasitas {capacity:g} per hari)\n"
+                                f"Qty produksi: {total_qty:g}, baru terjadwal "
+                                f"{total_qty - remaining_qty:g}, masih sisa {remaining_qty:g}\n"
+                                f"Periode: {production_start} s/d {production_end} "
+                                f"({days_available} hari)\n"
+                                f"Perkiraan hari dibutuhkan: {days_needed:g} hari "
+                                f"(lebih lama jika mesin dipakai plan lain)\n\n"
+                                f"Solusi: perpanjang Selesai (Production End) dan Planning End, "
+                                f"naikkan kapasitas mesin di master Machine Capacity, "
+                                f"atau Split produksi menjadi beberapa batch."
                             )
 
                         # ------------------------------------------------
@@ -894,7 +998,31 @@ class ProductionPlan(models.Model):
             if plan.state == "draft":
                 plan.state = "planned"
 
-        return True
+        messages = []
+        for plan in self:
+            for op in plan.line_ids:
+                if not op.schedule_ids:
+                    continue
+                start = min(op.schedule_ids.mapped("planned_start"))
+                end = max(op.schedule_ids.mapped("planned_end"))
+                days = len(set(op.schedule_ids.mapped("planned_start")))
+                messages.append(
+                    f"{op.product_id.display_name} · {op.operation_id.display_name} · "
+                    f"{op.machine_id.display_name}: {op.qty_plan:g} "
+                    f"(kapasitas {op.capacity_per_day:g}/hari) → "
+                    f"{start:%d %b} s/d {end:%d %b} ({days} hari)"
+                )
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Kapasitas mesin OK",
+                "message": "\n".join(messages) or "Jadwal mesin dibuat.",
+                "type": "success",
+                "sticky": True,
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
 
     def action_create_mo(self):
         _logger.warning(
@@ -983,6 +1111,10 @@ class ProductionPlan(models.Model):
                 })
 
                 mo.action_confirm()
+
+                if stage_mode:
+                    # Tiap tahap proses jadi satu Work Order di Perintah Produksi ini.
+                    product_line.stage_ids._ensure_workorder()
 
                 if not stage_mode and not mo.workorder_ids:
                     raise ValidationError(
@@ -1426,11 +1558,7 @@ class ProductionPlan(models.Model):
                     "• Material availability has not been checked."
                 )
 
-            elif plan.material_check_state == "shortage":
-                errors.append(
-                    "• Material shortage found. "
-                    "Please resolve material shortage before approval."
-                )
+            # Stok bahan kurang tidak lagi menghalangi: plan tetap boleh disusun/disetujui.
 
             # ==========================================================
             # PROCESS VALIDATION
@@ -1551,6 +1679,12 @@ class ProductionPlan(models.Model):
 
                 bom = plan._get_production_bom(product_line)
 
+                if not bom.bom_line_ids:
+                    raise ValidationError(
+                        f"BOM {bom.display_name} belum punya komponen bahan, jadi stok tidak bisa dicek. "
+                        f"Isi komponennya dulu (bahan, label, kemasan) di Manufaktur > Bills of Materials."
+                    )
+
                 # ======================================================
                 # CHECK MATERIAL
                 # ======================================================
@@ -1561,15 +1695,20 @@ class ProductionPlan(models.Model):
 
                     required_qty = (
                             bom_line.product_qty
-                            * product_line.product_qty
+                            * product_line.production_qty
                             / bom.product_qty
                     )
 
-                    available_qty = material.qty_available
+                    # Stok tersedia = on hand dikurangi kebutuhan keluar yang sudah
+                    # terkonfirmasi (Perintah Produksi / pengiriman lain), tanpa
+                    # menghitung barang yang masih akan datang (PO belum diterima).
+                    # Jadi stok "berkurang" begitu Perintah Produksi dibuat.
+                    available_raw = material.virtual_available - material.incoming_qty
+                    available_qty = max(available_raw, 0.0)
 
                     shortage_qty = (
                             required_qty
-                            - available_qty
+                            - available_raw
                     )
 
                     if shortage_qty > 0:
@@ -1699,6 +1838,23 @@ class DashboardTimeline(models.Model):
                 "qty_plan": qty_plan,
                 "mo_count": len(mo_ids),
                 "mo_done": len(mo_done),
+                "delivery_state": plan.delivery_state,
+                "delivery_label": dict(plan._fields["delivery_state"].selection).get(plan.delivery_state),
+                "deliveries": [{
+                    "id": picking.id,
+                    "name": picking.name,
+                    "state_label": dict(picking._fields["state"].selection).get(picking.state, picking.state),
+                    "is_done": picking.state == "done",
+                } for picking in plan.delivery_picking_ids],
+                "mos": [{
+                    "id": mo.id,
+                    "name": mo.name,
+                    "product": mo.product_id.display_name,
+                    "qty": mo.product_qty,
+                    "state_label": dict(mo._fields["state"].selection).get(mo.state, mo.state),
+                    "is_done": mo.state == "done",
+                    "so_name": plan.sale_order_id.display_name or False,
+                } for mo in mo_ids],
             })
 
         return result
