@@ -88,20 +88,24 @@
                     <button name="action_add_requests" type="object" string="Ambil dari PR"
                             class="btn-primary" invisible="state not in ('draft', 'sent', 'purchase')"/>
                     <field name="customer_line_ids" readonly="state not in ('draft', 'sent', 'purchase')">
-                        <list editable="bottom">
-                            <field name="request_id" options="{'no_create': True}"/>
+                        <list editable="bottom" decoration-muted="is_remainder">
+                            <field name="request_id" options="{'no_create': True}" readonly="is_remainder"/>
                             <field name="recommended_partner_ids" column_invisible="1"/>
+                            <field name="request_qty" column_invisible="1"/>
                             <field name="vendor_choice_id" string="Vendor"
-                                   options="{'no_create': True, 'no_open': True}"/>
-                            <field name="mou_id" options="{'no_create': True}"/>
-                            <field name="customer_id"/>
-                            <field name="sale_order_id" string="No. SO" options="{'no_create': True}"/>
-                            <field name="product_id"/>
-                            <field name="description"/>
-                            <field name="qty"/>
-                            <field name="uom_id"/>
+                                   options="{'no_create': True, 'no_open': True}" readonly="is_remainder"/>
+                            <field name="mou_id" options="{'no_create': True}" readonly="is_remainder"/>
+                            <field name="customer_id" readonly="is_remainder"/>
+                            <field name="sale_order_id" string="No. SO" options="{'no_create': True}"
+                                   readonly="is_remainder"/>
+                            <field name="product_id" readonly="is_remainder"/>
+                            <field name="description" readonly="is_remainder"/>
+                            <field name="qty" readonly="is_remainder"/>
+                            <field name="is_remainder" string="Sisa PR"/>
+                            <field name="uom_id" readonly="is_remainder"/>
                             <field name="po_qty" optional="show"/>
-                            <field name="allocate_product_id" options="{'no_create': True}"/>
+                            <field name="allocate_product_id" options="{'no_create': True}"
+                                   readonly="is_remainder"/>
                             <field name="allocated_qty" optional="hide"/>
                             <field name="allocation_state" optional="show"/>
                             <field name="can_allocate_now" column_invisible="1"/>

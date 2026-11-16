@@ -107,6 +107,55 @@ class ProductionPlanLine(models.Model):
         compute="_compute_capacity_warning"
     )
 
+    qty_plan = fields.Float(
+        string="Qty Produksi",
+        related="product_line_id.production_qty",
+    )
+
+    production_start = fields.Date(
+        string="Mulai",
+        related="product_line_id.production_start",
+    )
+
+    production_end = fields.Date(
+        string="Selesai",
+        related="product_line_id.production_end",
+    )
+
+    days_needed = fields.Float(
+        string="Hari Dibutuhkan",
+        compute="_compute_days",
+        digits=(16, 0),
+        help="Perkiraan = Qty Produksi / Kapasitas per hari (dibulatkan ke atas).",
+    )
+
+    days_available = fields.Integer(
+        string="Hari Tersedia",
+        compute="_compute_days",
+        help="Jumlah hari antara Mulai dan Selesai produk ini.",
+    )
+
+    @api.depends(
+        "qty_plan",
+        "capacity_id.capacity_per_day",
+        "production_start",
+        "production_end",
+        "plan_id.planned_start",
+        "plan_id.planned_end",
+    )
+    def _compute_days(self):
+        for line in self:
+            cap = line.capacity_id.capacity_per_day
+            qty = line.qty_plan or 0.0
+            line.days_needed = -(-qty // cap) if cap > 0 else 0.0
+            start = line.production_start or (
+                line.plan_id.planned_start and line.plan_id.planned_start.date()
+            )
+            end = line.production_end or (
+                line.plan_id.planned_end and line.plan_id.planned_end.date()
+            )
+            line.days_available = (end - start).days + 1 if start and end else 0
+
     @api.depends(
         "schedule_ids.planned_start",
         "schedule_ids.planned_end",

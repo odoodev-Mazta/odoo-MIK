@@ -30,7 +30,7 @@
                         type="object"
                         string="Buat Jadwal Proses"
                         class="btn-primary"
-                        invisible="state != 'draft' or material_check_state != 'available'"
+                        invisible="state != 'draft' or not material_checked"
                     />
 
                     <button
@@ -38,7 +38,7 @@
                         type="object"
                         string="Check Capacity"
                         class="btn-secondary"
-                        invisible="state in ('done', 'cancel') or stage_ids"
+                        invisible="1"
                     />
 
                     <button
@@ -62,7 +62,7 @@
                         type="object"
                         string="Load Operations"
                         class="btn-secondary"
-                        invisible="state != 'draft' or stage_ids"
+                        invisible="1"
                     />
 
                     <button
@@ -78,7 +78,7 @@
                         type="object"
                         string="Check Machine Availability"
                         class="btn-info"
-                        invisible="state != 'draft' or stage_ids"
+                        invisible="1"
                     />
 
                     <button
@@ -112,7 +112,19 @@
 
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-
+                        <button name="action_open_manufacturing_orders" type="object"
+                                class="oe_stat_button" icon="fa-cogs"
+                                invisible="not mo_count">
+                            <field name="mo_count" widget="statinfo" string="Perintah Produksi"/>
+                        </button>
+                        <button name="action_open_deliveries" type="object"
+                                class="oe_stat_button" icon="fa-truck"
+                                invisible="not sale_order_id">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value"><field name="delivery_count"/></span>
+                                <span class="o_stat_text"><field name="delivery_state"/></span>
+                            </div>
+                        </button>
                     </div>
 
                     <group>
@@ -179,20 +191,20 @@
                     <notebook>
                         <page string="Products">
                             <field name="product_line_ids">
-                                <list editable="bottom">
+                                <list editable="bottom" decoration-muted="production_qty &lt;= 0 and child_product_line_ids">
                                     <field name="product_id" width="300px"/>
-                                    <field name="finished_product_id" width="300px" optional="hide"
-                                           options="{'no_create': True}"/>
+                                    <field name="finished_product_id" string="Produk Jadi" width="300px"
+                                           optional="show" options="{'no_create': True}"/>
                                     <field name="product_qty" string="Qty" width="110px"/>
                                     <field name="production_qty" string="Qty Produksi" readonly="1" width="130px"/>
                                     <field name="product_uom_id" optional="hide"/>
-                                    <field name="production_start" string="Mulai" optional="hide"/>
-                                    <field name="production_end" string="Selesai" optional="hide"/>
+                                    <field name="production_start" string="Mulai" optional="show"/>
+                                    <field name="production_end" string="Selesai" optional="show"/>
                                     <field name="child_allocated_qty" string="Dipecah" optional="hide"/>
                                     <field name="remaining_qty" string="Sisa Split" optional="hide"/>
-                                    <field name="production_type" string="Tipe" optional="hide"/>
+                                    <field name="production_type" string="Tipe" optional="show"/>
 
-                                    <field name="create_mo" string="Buat Perintah" width="130px"/>
+                                    <field name="create_mo" string="Buat Perintah" width="130px" readonly="production_qty &lt;= 0"/>
                                     <field name="has_mo" string="Sudah Dibuat" readonly="1" optional="hide"/>
                                     <field name="progress" widget="progressbar" width="120px"/>
 
@@ -215,24 +227,73 @@
                         </page>
 
                         <page string="Jadwal Proses">
-                            <field name="stage_ids" readonly="state in ('done', 'cancel')">
-                                <list editable="bottom" create="0" delete="0">
-                                    <field name="sequence" widget="handle"/>
-                                    <field name="product_id"/>
-                                    <field name="stage_id" readonly="1"/>
-                                    <field name="date_start" readonly="state == 'done'"/>
-                                    <field name="date_end" readonly="state == 'done'"/>
-                                    <field name="user_id" readonly="state == 'done'"/>
-                                    <field name="machine_id" readonly="state == 'done'"/>
-                                    <field name="state" widget="badge" decoration-success="state == 'done'" decoration-info="state == 'in_progress'"/>
-                                    <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'" decoration-danger="qc_state == 'failed'"/>
-                                    <field name="qty_good" readonly="1" optional="hide"/>
-                                    <field name="note" optional="hide"/>
+                            <field name="stage_product_line_ids" readonly="1">
+                                <list create="0" delete="0" edit="0"
+                                      open_form_view="0">
+                                    <field name="bom_product_id" string="Produk"/>
+                                    <field name="production_qty" string="Qty"/>
+                                    <field name="stage_start" string="Mulai"/>
+                                    <field name="stage_end" string="Selesai"/>
+                                    <field name="stage_progress" string="Tahap"/>
+                                    <field name="has_mo" column_invisible="1"/>
+                                    <button name="action_open_stage_popup" type="object"
+                                            string="Atur Tahapan" icon="fa-calendar"
+                                            class="btn btn-link"/>
+                                    <button name="action_open_mo" type="object"
+                                            string="Buka MO" icon="fa-external-link"
+                                            class="btn btn-link" invisible="not has_mo"/>
                                 </list>
                             </field>
                             <div class="text-muted">
-                                Tahap dikerjakan (Mulai, isi qty, QC, Selesai) dari tab Proses Produksi
-                                di Perintah Produksi tiap produk.
+                                Klik Atur Tahapan di tiap produk untuk mengisi tanggal, PIC, dan mesin per tahap.
+                                Setelah Perintah Produksi dibuat, tahap dijalankan dari tab Eksekusi Produksi.
+                            </div>
+                        </page>
+
+                        <page string="Eksekusi Produksi" invisible="state not in ('running', 'done')">
+                            <field name="stage_ids">
+                                <list editable="bottom" create="0" delete="0"
+                                      decoration-danger="is_late"
+                                      decoration-muted="state == 'done'">
+                                    <field name="product_id" string="Produk" readonly="1"/>
+                                    <field name="batch_label" readonly="1" optional="hide"/>
+                                    <field name="stage_id" readonly="1"/>
+                                    <field name="date_start" readonly="1"/>
+                                    <field name="date_end" readonly="1"/>
+                                    <field name="is_late" column_invisible="1"/>
+                                    <field name="user_id" readonly="1" string="PIC"/>
+                                    <field name="machine_id" readonly="1"/>
+                                    <field name="workorder_id" readonly="1" optional="show"/>
+                                    <field name="qty_good" readonly="state != 'in_progress'"/>
+                                    <field name="qty_reject" readonly="state != 'in_progress'"/>
+                                    <field name="set_batch" column_invisible="1"/>
+                                    <field name="batch_no" readonly="not set_batch or state != 'in_progress'" optional="hide"/>
+                                    <field name="expiry_date" readonly="not set_batch or state != 'in_progress'" optional="hide"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'done'"
+                                           decoration-info="state == 'in_progress'" decoration-warning="state == 'waiting_qc'"/>
+                                    <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'"
+                                           decoration-danger="qc_state == 'failed'"/>
+                                    <field name="has_checks" column_invisible="1"/>
+                                    <button name="action_start" type="object" string="Mulai" icon="fa-play"
+                                            invisible="state != 'todo'"/>
+                                    <button name="action_submit_qc" type="object" string="Ajukan QC" icon="fa-paper-plane"
+                                            invisible="state != 'in_progress'"/>
+                                    <button name="action_open_checks" type="object" string="Isi Parameter QC" icon="fa-list-alt"
+                                            invisible="state != 'waiting_qc' or not has_checks"
+                                            groups="custom_production_planning.group_production_qc,base.group_system"/>
+                                    <button name="action_qc_pass" type="object" string="QC Lulus" icon="fa-check"
+                                            invisible="state != 'waiting_qc'"
+                                            groups="custom_production_planning.group_production_qc,base.group_system"/>
+                                    <button name="action_qc_fail" type="object" string="QC Gagal" icon="fa-times"
+                                            invisible="state != 'waiting_qc'"
+                                            groups="custom_production_planning.group_production_qc,base.group_system"/>
+                                    <button name="action_open_mo" type="object" string="Buka MO" icon="fa-external-link"/>
+                                </list>
+                            </field>
+                            <div class="text-muted">
+                                Semua produk dalam plan ini dikerjakan dari sini. Tahap dikerjakan berurutan per produk,
+                                dan setelah Ajukan QC, petugas QC memeriksa dari Antrean QC. QC lulus membuka tahap berikutnya.
+                                Baris merah = melewati tanggal selesai rencana.
                             </div>
                         </page>
 
@@ -256,6 +317,13 @@
 
                                     <field name="machine_id"/>
                                     <field name="capacity_id"/>
+                                    <field name="qty_plan"/>
+                                    <field name="capacity_per_day" string="Kapasitas/Hari"/>
+                                    <field name="production_start" optional="show"/>
+                                    <field name="production_end" optional="show"/>
+                                    <field name="days_needed"
+                                           decoration-danger="days_needed &gt; days_available"/>
+                                    <field name="days_available"/>
                                     <field
                                         name="capacity_warning"
                                         decoration-danger="capacity_warning"
@@ -270,8 +338,8 @@
                             <field name="material_shortage_ids" readonly="1">
                                 <list>
                                     <field
-                                        name="product_line_id"
-                                        string="Production Product"
+                                        name="finished_product_id"
+                                        string="Produk Jadi"
                                     />
                                     <field
                                         name="product_id"

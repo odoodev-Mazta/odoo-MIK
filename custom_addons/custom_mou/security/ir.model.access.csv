@@ -4,3 +4,4 @@ access_dashboard_progress_mou,dashboard.progress.mou,model_dashboard_progress_mo
 access_dashboard_timeline_mou,dashboard.timeline.mou,model_dashboard_timeline_mou,base.group_user,1,1,1,1
 access_mou_setup,mou.setup,model_mou_setup,base.group_user,1,1,1,1
 access_mou_container,mou.container,model_mou_container,base.group_user,1,1,1,1
+access_sale_order_import_wizard,sale.order.import.wizard,model_sale_order_import_wizard,base.group_user,1,1,1,1

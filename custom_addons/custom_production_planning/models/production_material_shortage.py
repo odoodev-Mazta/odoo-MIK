@@ -17,6 +17,12 @@ class ProductionMaterialShortage(models.Model):
         ondelete="cascade",
     )
 
+    finished_product_id = fields.Many2one(
+        "product.product",
+        string="Produk Jadi",
+        related="product_line_id.bom_product_id",
+    )
+
     product_id = fields.Many2one(
         "product.product",
         string="Material"

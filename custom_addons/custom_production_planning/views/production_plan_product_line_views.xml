@@ -88,6 +88,53 @@
         </field>
     </record>
 
+    <record id="view_production_plan_product_line_stage_form" model="ir.ui.view">
+        <field name="name">mrp.production.plan.product.line.stage.form</field>
+        <field name="model">mrp.production.plan.product.line</field>
+        <field name="arch" type="xml">
+            <form string="Atur Tahapan" create="0" delete="0">
+                <group>
+                    <group>
+                        <field name="bom_product_id" string="Produk"/>
+                        <field name="production_qty" string="Qty Produksi"/>
+                    </group>
+                    <group>
+                        <field name="production_start"/>
+                        <field name="production_end"/>
+                    </group>
+                </group>
+                <field name="stage_ids">
+                    <list editable="bottom" create="0" delete="0" decoration-danger="capacity_warning">
+                        <field name="sequence" widget="handle"/>
+                        <field name="stage_id" readonly="1"/>
+                        <field name="date_start" readonly="state == 'done'"/>
+                        <field name="date_end" readonly="state == 'done'"/>
+                        <field name="user_id" string="PIC" readonly="state == 'done'"/>
+                        <field name="machine_id" readonly="state == 'done'"
+                               options="{'no_create': True}"
+                               domain="['|', ('stage_ids', '=', False), ('stage_ids', 'in', stage_id)]"/>
+                        <field name="machine_operator_count" string="Pekerja"/>
+                        <field name="capacity_id" readonly="state == 'done' or not machine_id"
+                               options="{'no_create': True}" placeholder="mis. Tube 20 gr"/>
+                        <field name="capacity_per_day" string="Kapasitas/Hari"/>
+                        <field name="capacity_qty" readonly="state == 'done' or not capacity_id"/>
+                        <field name="days_needed" string="Hari Perlu"/>
+                        <field name="days_available" string="Hari Ada"/>
+                        <field name="capacity_warning" column_invisible="1"/>
+                        <field name="state" widget="badge" decoration-success="state == 'done'"
+                               decoration-info="state == 'in_progress'" decoration-warning="state == 'waiting_qc'"/>
+                        <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'"
+                               decoration-danger="qc_state == 'failed'"/>
+                        <field name="note" optional="hide"/>
+                    </list>
+                </field>
+                <div class="text-muted">
+                    Tahap boleh dimulai lebih awal dari jadwal. Tanggal ini hanya rencana.
+                </div>
+            </form>
+        </field>
+    </record>
+
     <record id="view_production_plan_product_line_list" model="ir.ui.view">
         <field name="name">mrp.production.plan.product.line.list</field>
         <field name="model">mrp.production.plan.product.line</field>

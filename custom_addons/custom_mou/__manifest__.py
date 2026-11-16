@@ -1,10 +1,11 @@
 {
     'name': 'MOU',
-    'version': '1.1',
+    'version': '1.2',
     'category': 'Memorandum Of Understanding',
     'summary': 'Modul Custom untuk keperluan MOU',
     'author': 'staff dev',
     'depends': ['base', 'web', 'account', 'custom_ecatalogue', 'sale'],
+    'external_dependencies': {'python': ['openpyxl', 'xlsxwriter']},
     'data': [
         'security/ir.model.access.csv',
         'views/dashboard_mou_views.xml',
@@ -12,6 +13,7 @@
         'views/timeline_dashboard_views.xml',
         'views/mou_setup_views.xml',
         'views/account_sale_inherit_views.xml',
+        'views/so_import_export_views.xml',
         'views/mou_container_views.xml',
         'views/mou_menus.xml',
     ],

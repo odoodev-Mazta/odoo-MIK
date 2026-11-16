@@ -12,3 +12,4 @@ access_production_stage,mrp.production.stage,model_mrp_production_stage,base.gro
 access_production_plan_stage,mrp.production.plan.stage,model_mrp_production_plan_stage,base.group_user,1,1,1,1
 access_production_stage_parameter,mrp.production.stage.parameter,model_mrp_production_stage_parameter,base.group_user,1,1,1,1
 access_production_plan_stage_check,mrp.production.plan.stage.check,model_mrp_production_plan_stage_check,base.group_user,1,1,1,1
+access_production_plan_shortage_wizard,mrp.production.plan.shortage.wizard,model_mrp_production_plan_shortage_wizard,base.group_user,1,1,1,1

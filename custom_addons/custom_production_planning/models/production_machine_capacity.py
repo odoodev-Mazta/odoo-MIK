@@ -17,13 +17,14 @@ class ProductionMachineCapacity(models.Model):
             ("jar", "Jar"),
             ("bottle", "Bottle"),
             ("sachet", "Sachet"),
+            ("umum", "Umum / Tanpa Kemasan"),
         ],
         required=True,
     )
 
     package_size = fields.Float(
         string="Package Size",
-        required=True,
+        default=0.0,
     )
 
     package_uom = fields.Selection(

@@ -12,7 +12,9 @@
         'views/pr_timeline_views.xml',
         'views/purchase_order_views.xml',
         'views/purchase_order_customer_views.xml',
+        'views/usulan_dana_inherit_views.xml',
         'views/detail_export_views.xml',
+        'views/product_from_description_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
