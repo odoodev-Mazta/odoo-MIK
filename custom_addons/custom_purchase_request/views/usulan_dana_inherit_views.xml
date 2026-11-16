@@ -10,23 +10,23 @@
                 <page string="Keterangan PO" name="keterangan_po">
                     <button name="action_add_orders" type="object" string="Ambil dari PO"
                             class="btn-primary" invisible="state != 'draft'"/>
-                    <field name="po_line_ids" readonly="1">
-                        <list create="0" delete="0" open_form_view="0" decoration-muted="is_remainder">
-                            <field name="purchase_order_id"/>
-                            <field name="vendor_id"/>
-                            <field name="request_id"/>
-                            <field name="mou_id"/>
-                            <field name="customer_id"/>
-                            <field name="sale_order_id"/>
-                            <field name="product_id"/>
-                            <field name="description"/>
-                            <field name="qty"/>
-                            <field name="uom_id"/>
-                            <field name="price_unit"/>
-                            <field name="currency_id"/>
-                            <field name="price_subtotal"/>
-                            <field name="allocate_product_id" optional="show"/>
-                            <field name="is_remainder" string="Sisa" optional="hide"/>
+                    <field name="po_line_ids" readonly="state != 'draft'">
+                        <list create="0" delete="1" no_open="1" decoration-muted="is_remainder">
+                            <field name="purchase_order_id" readonly="1"/>
+                            <field name="vendor_id" readonly="1"/>
+                            <field name="request_id" readonly="1"/>
+                            <field name="mou_id" readonly="1"/>
+                            <field name="customer_id" readonly="1"/>
+                            <field name="sale_order_id" readonly="1"/>
+                            <field name="product_id" readonly="1"/>
+                            <field name="description" readonly="1"/>
+                            <field name="qty" readonly="1"/>
+                            <field name="uom_id" readonly="1"/>
+                            <field name="price_unit" readonly="1"/>
+                            <field name="currency_id" readonly="1"/>
+                            <field name="price_subtotal" readonly="1"/>
+                            <field name="allocate_product_id" readonly="1" optional="show"/>
+                            <field name="is_remainder" string="Sisa" readonly="1" optional="hide"/>
                         </list>
                     </field>
                 </page>
