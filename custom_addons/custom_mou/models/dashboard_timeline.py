@@ -298,8 +298,8 @@ class DashboardTimeline(models.Model):
             return []
         usulans = self.env['usulan.usulan.dana'].search([
             '|', '|', '|',
-            ('purchase_order_id.mou_id', '=', mou.id),
-            ('purchase_order_id.customer_line_ids.mou_id', '=', mou.id),
+            ('purchase_order_ids.mou_id', '=', mou.id),
+            ('purchase_order_ids.customer_line_ids.mou_id', '=', mou.id),
             ('line_ids.mou_id', '=', mou.id),
             ('id', 'in', pr_records.usulan_dana_id.ids),
             ('state', '!=', 'cancel'),
@@ -307,7 +307,8 @@ class DashboardTimeline(models.Model):
         state_labels = dict(usulans._fields['state'].selection)
         result = []
         for usulan in usulans:
-            po = usulan.purchase_order_id
+            pos = usulan.purchase_order_ids or usulan.purchase_order_id
+            po = pos[:1]
             request = pr_records.filtered(lambda pr: pr.usulan_dana_id == usulan)[:1]
             result.append({
                 'id': usulan.id,
@@ -317,8 +318,8 @@ class DashboardTimeline(models.Model):
                 'is_done': usulan.status_payment == 'paid',
                 'date': fields.Date.to_string(usulan.tgl_usulan) if usulan.tgl_usulan else None,
                 'amount_total': usulan.amount_total,
-                'po_name': po.name or False,
-                'sale_order_id': po.sale_order_id.id or request.sale_order_id.id or False,
+                'po_name': ', '.join(pos.mapped('name')) or False,
+                'sale_order_id': (pos.sale_order_id[:1].id or request.sale_order_id.id or False),
             })
         return result
 

@@ -84,7 +84,7 @@
                         </group>
 
                         <group string="Data Vendor">
-                            <field name="purchase_order_id" options="{'no_create': True}" placeholder="Pilih No. PO jika ada..."/>
+                            <field name="purchase_order_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Pilih satu atau lebih No. PO..."/>
                             <field name="vendor_id" widget="res_partner_many2one" context="{'res_partner_search_mode': 'supplier'}"/>
                             <field name="vendor_address"/>
                             <field name="vendor_phone" widget="phone"/>
@@ -137,6 +137,7 @@
                                    readonly="state != 'draft' and not can_edit_lines">
                                 <list editable="bottom">
                                     <!--                                    <field name="item_name"/>-->
+                                    <field name="purchase_order_id" optional="show"/>
                                     <field name="product_id"/>
                                     <field name="setup_item_id"/>
                                     <field name="account_id" options="{'no_open': True}"/>

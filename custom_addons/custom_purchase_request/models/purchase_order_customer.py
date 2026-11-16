@@ -352,8 +352,20 @@ class StockPicking(models.Model):
 class UsulanUsulanDana(models.Model):
     _inherit = 'usulan.usulan.dana'
 
-    po_customer_line_ids = fields.One2many(
-        related='purchase_order_id.customer_line_ids',
-        string='Keterangan PO',
-        readonly=True,
+    po_order_line_ids = fields.Many2many(
+        'purchase.order.line',
+        string='Item PO',
+        compute='_compute_po_details',
     )
+    po_customer_line_ids = fields.Many2many(
+        'purchase.order.customer.line',
+        string='Keterangan PR',
+        compute='_compute_po_details',
+    )
+
+    @api.depends('purchase_order_ids')
+    def _compute_po_details(self):
+        for rec in self:
+            orders = rec.purchase_order_ids
+            rec.po_order_line_ids = orders.order_line.filtered(lambda l: not l.display_type)
+            rec.po_customer_line_ids = orders.customer_line_ids

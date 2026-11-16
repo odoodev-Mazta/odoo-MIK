@@ -1,5 +1,6 @@
 from odoo import models, fields, api, exceptions
 from odoo.tools import float_round
+from odoo.tools.sql import table_exists
 
 
 class UsulanUsulanDana(models.Model):
@@ -102,9 +103,18 @@ class UsulanUsulanDana(models.Model):
 
     purchase_order_id = fields.Many2one(
         'purchase.order',
+        string='PO Utama',
+        domain=[('state', 'in', ['purchase', 'done'])],
+        help="PO pertama dari daftar Purchase Order. Dipakai modul lain; diisi otomatis."
+    )
+    purchase_order_ids = fields.Many2many(
+        'purchase.order',
+        'usulan_dana_purchase_order_rel',
+        'usulan_id',
+        'purchase_order_id',
         string='Purchase Order',
         domain=[('state', 'in', ['purchase', 'done'])],
-        help="Pilih PO untuk mengisi usulan secara otomatis"
+        help="Pilih satu atau lebih PO untuk mengisi usulan secara otomatis"
     )
 
     req_head = fields.Boolean(string='Req Head', copy=False)
@@ -201,32 +211,72 @@ class UsulanUsulanDana(models.Model):
         for rec in self:
             rec.currency_id = idr
 
-    @api.onchange('purchase_order_id')
-    def _onchange_purchase_order_id(self):
-        if not self.purchase_order_id:
+    @api.onchange('purchase_order_ids')
+    def _onchange_purchase_order_ids(self):
+        orders = self.purchase_order_ids
+        if not orders:
             return
-
-        self.vendor_id = self.purchase_order_id.partner_id.id
-        self.currency_id = self.purchase_order_id.currency_id.id
-        origin = self.purchase_order_id.origin
-        self.description = f"Tagihan atas PO: {self.purchase_order_id.name}" + (f" (PR: {origin})" if origin else "")
+        first = orders[0]
+        self.purchase_order_id = first
+        self.vendor_id = first.partner_id.id
+        self.currency_id = first.currency_id.id
+        origins = ", ".join(filter(None, orders.mapped('origin')))
+        self.description = (
+            f"Tagihan atas PO: {', '.join(orders.mapped('name'))}" + (f" (PR: {origins})" if origins else "")
+        )
 
         new_lines = []
-        for line in self.purchase_order_id.order_line:
-            if line.display_type:
-                continue
-            line_values = {
-                'line_type': 'product',
-                'product_id': line.product_id.id,
-                'uom_id': line.product_uom_id.id,
-                'keterangan': line.name,
-                'quantity': line.product_qty,
-                'price_unit': line.price_unit,
-                'tax_ids': [(6, 0, line.tax_ids.ids)],
-            }
-            new_lines.append((0, 0, line_values))
-
+        for order in orders:
+            for line in order.order_line:
+                if line.display_type:
+                    continue
+                new_lines.append((0, 0, {
+                    'line_type': 'product',
+                    'purchase_order_id': order.id,
+                    'product_id': line.product_id.id,
+                    'uom_id': line.product_uom_id.id,
+                    'keterangan': line.name,
+                    'quantity': line.product_qty,
+                    'price_unit': line.price_unit,
+                    'tax_ids': [(6, 0, line.tax_ids.ids)],
+                }))
         self.line_ids = [(5, 0, 0)] + new_lines
+
+        if len(orders.partner_id) > 1 or len(orders.currency_id) > 1:
+            return {'warning': {
+                'title': 'Vendor / mata uang PO berbeda',
+                'message': 'PO yang dipilih punya vendor atau mata uang berbeda. '
+                           f'Usulan Dana ini memakai vendor {first.partner_id.display_name} '
+                           f'dan mata uang {first.currency_id.name}. Pastikan memang ditagihkan ke vendor yang sama.',
+            }}
+
+    def _sync_primary_po(self, from_ids=True):
+        """Jaga PO Utama (PO pertama) dan daftar PO tetap sama."""
+        for rec in self:
+            if from_ids:
+                if rec.purchase_order_id not in rec.purchase_order_ids:
+                    rec.purchase_order_id = rec.purchase_order_ids[:1]
+            elif rec.purchase_order_id and rec.purchase_order_id not in rec.purchase_order_ids:
+                rec.purchase_order_ids = [(4, rec.purchase_order_id.id)]
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if 'purchase_order_ids' in fields_list and res.get('purchase_order_id') and not res.get('purchase_order_ids'):
+            res['purchase_order_ids'] = [(6, 0, [res['purchase_order_id']])]
+        return res
+
+    def init(self):
+        super().init()
+        if table_exists(self.env.cr, 'usulan_dana_purchase_order_rel'):
+            self.env.cr.execute("""
+                INSERT INTO usulan_dana_purchase_order_rel (usulan_id, purchase_order_id)
+                SELECT u.id, u.purchase_order_id FROM usulan_usulan_dana u
+                WHERE u.purchase_order_id IS NOT NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM usulan_dana_purchase_order_rel r
+                      WHERE r.usulan_id = u.id AND r.purchase_order_id = u.purchase_order_id)
+            """)
 
     def _apply_ppn_to_lines(self):
         for record in self:
@@ -260,6 +310,9 @@ class UsulanUsulanDana(models.Model):
 
         if 'is_ppn' in vals:
             self._apply_ppn_to_lines()
+
+        if not self.env.context.get('skip_po_sync') and ('purchase_order_ids' in vals or 'purchase_order_id' in vals):
+            self.with_context(skip_po_sync=True)._sync_primary_po(from_ids='purchase_order_ids' in vals)
 
         return res
 
@@ -387,7 +440,10 @@ class UsulanUsulanDana(models.Model):
                     f"{surat_code}-"
                     f"{sequence}"
                 )
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        for record, vals in zip(records, vals_list):
+            record.with_context(skip_po_sync=True)._sync_primary_po(from_ids='purchase_order_ids' in vals)
+        return records
 
     def action_set_to_draft(self):
         for record in self:
@@ -835,6 +891,10 @@ class UsulanUsulanDanaLine(models.Model):
     tax_amount = fields.Float(string="Tax Amount")
     final_amount = fields.Float(string="Final Amount")
     keterangan = fields.Text(string="Keterangan", readonly=False)
+    purchase_order_id = fields.Many2one(
+        'purchase.order', string='No. PO', readonly=True,
+        help='PO asal barang ini (bila Usulan Dana ditarik dari PO).',
+    )
 
     @api.onchange('product_id')
     def _onchange_product_id(self):

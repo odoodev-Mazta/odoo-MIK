@@ -151,9 +151,11 @@ class PurchaseOrder(models.Model):
             order.customer_line_warning = "\n".join(over) or False
             order.customer_line_stock_note = "\n".join(rest) or False
 
-    usulan_dana_ids = fields.One2many(
+    usulan_dana_ids = fields.Many2many(
         'usulan.usulan.dana',
+        'usulan_dana_purchase_order_rel',
         'purchase_order_id',
+        'usulan_id',
         string='Usulan Dana',
     )
 
@@ -188,7 +190,7 @@ class PurchaseOrder(models.Model):
             'target': 'current',
             'context': {
                 'default_document_type': 'ud',
-                'default_purchase_order_id': self.id,
+                'default_purchase_order_ids': [(6, 0, [self.id])],
             },
         }
 
@@ -198,8 +200,8 @@ class PurchaseOrder(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Usulan Dana',
             'res_model': 'usulan.usulan.dana',
-            'domain': [('purchase_order_id', '=', self.id)],
-            'context': {'default_document_type': 'ud', 'default_purchase_order_id': self.id},
+            'domain': [('purchase_order_ids', 'in', [self.id])],
+            'context': {'default_document_type': 'ud', 'default_purchase_order_ids': [(6, 0, [self.id])]},
         }
         if self.usulan_dana_count == 1:
             action.update(view_mode='form', res_id=self.usulan_dana_ids.id)
