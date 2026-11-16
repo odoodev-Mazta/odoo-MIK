@@ -22,6 +22,8 @@ BOM_COLUMNS = [
     ("bom_code", "Referensi BoM", 18),
     ("brand", "Brand", 18),
     ("variant", "Varian Produk", 18),
+    ("jenis_produk", "Jenis Produk", 20),
+    ("jenis_kemasan", "Jenis Kemasan", 24),
     ("comp_code", "Kode Komponen*", 20),
     ("comp_name", "Nama Komponen", 34),
     ("comp_qty", "Qty Komponen*", 15),
@@ -48,6 +50,7 @@ HELP_LINES = [
     "  - Kode Komponen*     : Internal Reference bahan/label/kemasan (harus sudah ada di Odoo).",
     "  - Qty Komponen*      : jumlah komponen untuk Qty Produk Jadi.",
     "  - Satuan Komponen    : nama satuan (mis. Unit, kg, g). Kosong = satuan bawaan produk.",
+    "  - Jenis Produk / Jenis Kemasan : opsional; bila belum ada di Odoo otomatis dibuatkan.",
     "  - Data header (produk jadi, qty, tipe, brand, varian) diulang di tiap baris komponen;",
     "    yang dipakai adalah baris pertama untuk setiap produk + Referensi BoM.",
     "",
@@ -147,13 +150,106 @@ def _read_sheet(sheet, columns, sheet_name):
     return result
 
 
+def _po_columns(header):
+    """Petakan kolom file PO dari judulnya. None bila bukan format PO."""
+    titles = [" ".join(str(t or "").lower().split()) for t in header]
+    if not any("component" in t for t in titles) or "product" not in titles:
+        return None
+    pos = {"product": titles.index("product"), "comp": next(i for i, t in enumerate(titles) if "component" in t)}
+    for key, test in (
+        ("so", lambda t: t.replace(" ", "") in ("no.so", "noso")),
+        ("qty", lambda t: t == "qty"),
+        ("uom", lambda t: "unit of measure" in t and "bom lines" not in t),
+        ("type", lambda t: t == "bom type"),
+        ("jenis_produk", lambda t: t == "jenis produk"),
+        ("jenis_kemasan", lambda t: t == "jenis kemasan"),
+    ):
+        found = [i for i, t in enumerate(titles) if test(t)]
+        if found:
+            pos[key] = found[0]
+    # Sheet 2026: jenis produk ada di kolom kedua yang berjudul "QTY".
+    qty_cols = [i for i, t in enumerate(titles) if t == "qty"]
+    if "jenis_produk" not in pos and len(qty_cols) > 1:
+        pos["jenis_produk"] = qty_cols[1]
+    # Bisa ada dua kolom "BoM Lines/Quantity" (netto lalu total): yang dipakai yang terakhir.
+    qty = [i for i, t in enumerate(titles) if "bom lines" in t and "quantity" in t]
+    uom = [i for i, t in enumerate(titles) if "bom lines" in t and "unit" in t]
+    if not qty or "qty" not in pos:
+        return None
+    pos["comp_qty"] = qty[-1]
+    if uom:
+        pos["comp_uom"] = uom[-1]
+    return pos
+
+
+def _parse_po_sheet(sheet, seen):
+    """Satu blok = satu produk jadi (baris pertama) + baris komponen di bawahnya."""
+    rows = list(sheet.iter_rows(values_only=True))
+    pos = None
+    start = 0
+    for index, values in enumerate(rows[:10]):
+        pos = _po_columns(values)
+        if pos:
+            start = index + 1
+            break
+    if not pos:
+        return None
+
+    def cell(values, key):
+        i = pos.get(key)
+        return values[i] if i is not None and i < len(values) else None
+
+    result = []
+    current = None
+    for offset, values in enumerate(rows[start:]):
+        line_no = start + offset + 1
+        product = to_text(cell(values, "product"))
+        comp = to_text(cell(values, "comp"))
+        if product:
+            so = to_text(cell(values, "so"))
+            base = f"SO-{so}" if so else f"{sheet.title}-{line_no}"
+            key = (product.lower(), base)
+            seen[key] = seen.get(key, 0) + 1
+            code = base if seen[key] == 1 else f"{base}-{seen[key]}"
+            current = {
+                "product_code": "", "product_name": product,
+                "product_qty": cell(values, "qty"),
+                "product_uom": to_text(cell(values, "uom")),
+                "bom_type": to_text(cell(values, "type")).lower(),
+                "bom_code": code, "brand": "", "variant": "",
+                "jenis_produk": to_text(cell(values, "jenis_produk")),
+                "jenis_kemasan": to_text(cell(values, "jenis_kemasan")),
+            }
+        elif current is None or not comp:
+            continue
+        row = dict(current)
+        row.update({
+            "comp_code": "", "comp_name": comp,
+            "comp_qty": cell(values, "comp_qty"),
+            "comp_uom": to_text(cell(values, "comp_uom")),
+            "_row": line_no, "_sheet": sheet.title,
+        })
+        result.append(row)
+    return result
+
+
 def parse_workbook(raw):
-    """Baca file .xlsx. Kembalikan (baris_bom, baris_operation)."""
+    """Baca file .xlsx. Kembalikan (baris_bom, baris_operation).
+
+    Mendukung Format Import (sheet BoM) dan file PO (blok per produk, tanpa kode produk).
+    """
     workbook = load_workbook(io.BytesIO(raw), data_only=True, read_only=True)
     if SHEET_BOM not in workbook.sheetnames:
-        raise ValueError(
-            f"Sheet '{SHEET_BOM}' tidak ditemukan. Gunakan tombol Format Import untuk mengunduh formatnya."
-        )
+        seen = {}
+        po_rows = []
+        for sheet in workbook.worksheets:
+            po_rows.extend(_parse_po_sheet(sheet, seen) or [])
+        if not po_rows:
+            raise ValueError(
+                f"Sheet '{SHEET_BOM}' tidak ditemukan dan file tidak dikenali sebagai file PO. "
+                f"Gunakan tombol Format Import untuk mengunduh formatnya."
+            )
+        return po_rows, []
     bom_rows = _read_sheet(workbook[SHEET_BOM], BOM_COLUMNS, SHEET_BOM)
     op_rows = []
     if SHEET_OPS in workbook.sheetnames:

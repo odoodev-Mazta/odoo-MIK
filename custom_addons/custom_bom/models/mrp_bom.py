@@ -16,6 +16,9 @@ class MrpBom(models.Model):
         string="Varian Produk",
     )
 
+    jenis_produk_id = fields.Many2one("mrp.bom.jenis.produk", string="Jenis Produk")
+    jenis_kemasan_id = fields.Many2one("mrp.bom.jenis.kemasan", string="Jenis Kemasan")
+
     # ------------------------------------------------------------------
     # Import / Export Excel
     # ------------------------------------------------------------------
@@ -70,6 +73,8 @@ class MrpBom(models.Model):
                 "bom_code": bom.code or "",
                 "brand": bom.brand or "",
                 "variant": bom.product_variant or "",
+                "jenis_produk": bom.jenis_produk_id.name or "",
+                "jenis_kemasan": bom.jenis_kemasan_id.name or "",
             }
             if not bom.bom_line_ids:
                 bom_rows.append(dict(head))

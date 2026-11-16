@@ -9,6 +9,20 @@
             <xpath expr="//field[@name='product_id']" position="after">
                 <field name="brand"/>
                 <field name="product_variant"/>
+                <field name="jenis_produk_id"/>
+                <field name="jenis_kemasan_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_mrp_bom_list_custom" model="ir.ui.view">
+        <field name="name">mrp.bom.list.custom</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="jenis_produk_id" optional="show"/>
+                <field name="jenis_kemasan_id" optional="show"/>
             </xpath>
         </field>
     </record>

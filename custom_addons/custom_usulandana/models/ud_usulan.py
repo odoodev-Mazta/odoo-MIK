@@ -227,19 +227,7 @@ class UsulanUsulanDana(models.Model):
 
         new_lines = []
         for order in orders:
-            for line in order.order_line:
-                if line.display_type:
-                    continue
-                new_lines.append((0, 0, {
-                    'line_type': 'product',
-                    'purchase_order_id': order.id,
-                    'product_id': line.product_id.id,
-                    'uom_id': line.product_uom_id.id,
-                    'keterangan': line.name,
-                    'quantity': line.product_qty,
-                    'price_unit': line.price_unit,
-                    'tax_ids': [(6, 0, line.tax_ids.ids)],
-                }))
+            new_lines += [(0, 0, vals) for vals in self._prepare_item_lines(order)]
         self.line_ids = [(5, 0, 0)] + new_lines
 
         if len(orders.partner_id) > 1 or len(orders.currency_id) > 1:
@@ -249,6 +237,19 @@ class UsulanUsulanDana(models.Model):
                            f'Usulan Dana ini memakai vendor {first.partner_id.display_name} '
                            f'dan mata uang {first.currency_id.name}. Pastikan memang ditagihkan ke vendor yang sama.',
             }}
+
+    def _prepare_item_lines(self, order):
+        """Nilai baris Item Details dari barang-barang satu PO."""
+        return [{
+            'line_type': 'product',
+            'purchase_order_id': order.id,
+            'product_id': line.product_id.id,
+            'uom_id': line.product_uom_id.id,
+            'keterangan': line.name,
+            'quantity': line.product_qty,
+            'price_unit': line.price_unit,
+            'tax_ids': [(6, 0, line.tax_ids.ids)],
+        } for line in order.order_line if not line.display_type]
 
     def _sync_primary_po(self, from_ids=True):
         """Jaga PO Utama (PO pertama) dan daftar PO tetap sama."""
