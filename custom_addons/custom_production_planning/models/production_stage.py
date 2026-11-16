@@ -181,7 +181,7 @@ class ProductionPlanStage(models.Model):
         domain="[('machine_id', '=', machine_id)]",
         help="Pilih jenis dan ukuran kemasan yang dikerjakan mesin ini, mis. Tube 20 gr.",
     )
-    capacity_per_day = fields.Float(related="capacity_id.capacity_per_day", string="Kapasitas/Hari")
+    capacity_per_day = fields.Float(related="capacity_id.capacity_per_day", string="Kapasitas Dipilih/Hari")
     capacity_uom = fields.Many2one(related="capacity_id.uom_id", string="Satuan")
     capacity_qty = fields.Float(
         string="Qty Dihitung",

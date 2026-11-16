@@ -255,7 +255,7 @@ class ProductionPlan(models.Model):
         store=True,
     )
 
-    mo_count = fields.Integer(string="Perintah Produksi", compute="_compute_mo_count")
+    mo_count = fields.Integer(string="Jumlah Perintah Produksi", compute="_compute_mo_count")
 
     @api.depends("manufacturing_order_ids")
     def _compute_mo_count(self):
@@ -266,7 +266,7 @@ class ProductionPlan(models.Model):
         "stock.picking", string="Pengiriman", compute="_compute_delivery",
         help="Delivery Order dari Sales Order plan ini.",
     )
-    delivery_count = fields.Integer(string="Pengiriman", compute="_compute_delivery")
+    delivery_count = fields.Integer(string="Jumlah Pengiriman", compute="_compute_delivery")
     delivery_state = fields.Selection(
         [
             ("none", "Belum ada Delivery Order"),
