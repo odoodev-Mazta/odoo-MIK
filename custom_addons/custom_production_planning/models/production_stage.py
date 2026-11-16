@@ -272,6 +272,69 @@ class ProductionPlanStage(models.Model):
         for stage in self:
             stage.is_late = bool(stage.date_end and stage.date_end < today and stage.state != "done")
 
+    material_state = fields.Selection(
+        [("ok", "Bahan Cukup"), ("short", "Bahan Kurang")],
+        string="Bahan", compute="_compute_material_state",
+    )
+    material_info = fields.Text(string="Kekurangan Bahan", compute="_compute_material_state")
+
+    def _get_stage_material_lines(self):
+        """Komponen BOM untuk tahap ini. Komponen tanpa tahap ikut tahap pertama produk."""
+        self.ensure_one()
+        bom = self.env["mrp.bom"].search([("product_tmpl_id", "=", self.product_id.product_tmpl_id.id)], limit=1)
+        if not bom:
+            return self.env["mrp.bom.line"], bom
+        is_first = self._siblings()[:1] == self
+        lines = bom.bom_line_ids.filtered(
+            lambda l: l.production_stage_id == self.stage_id or (is_first and not l.production_stage_id)
+        )
+        return lines, bom
+
+    @api.depends("product_line_id.bom_product_id", "qty_plan", "stage_id", "state")
+    def _compute_material_state(self):
+        for stage in self:
+            stage.material_state = "ok"
+            stage.material_info = False
+            if stage.state != "todo" or not stage.product_id or not stage.id:
+                continue
+            lines, bom = stage._get_stage_material_lines()
+            ratio = (stage.qty_plan or 0.0) / (bom.product_qty or 1.0) if bom else 0.0
+            short = []
+            for line in lines:
+                need = line.product_qty * ratio
+                product = line.product_id
+                have = product.virtual_available - product.incoming_qty
+                if have < need - 1e-6:
+                    short.append(f"{product.display_name}: perlu {need:g}, tersedia {max(have, 0):g}")
+            if short:
+                stage.material_state = "short"
+                stage.material_info = "\n".join(short)
+
+    def action_show_material(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": f"Bahan kurang: {self._label()}",
+                "message": self.material_info or "Bahan cukup.",
+                "type": "warning",
+                "sticky": True,
+            },
+        }
+
+    def action_open_workorder(self):
+        self.ensure_one()
+        if not self.workorder_id:
+            raise ValidationError("Work Order tahap ini belum dibuat. Buat Perintah Produksi dulu.")
+        return {
+            "type": "ir.actions.act_window",
+            "name": self.workorder_id.display_name,
+            "res_model": "mrp.workorder",
+            "res_id": self.workorder_id.id,
+            "views": [(False, "form")],
+        }
+
     def action_open_mo(self):
         self.ensure_one()
         if not self.production_id:
@@ -373,6 +436,10 @@ class ProductionPlanStage(models.Model):
             previous = stage._previous()
             if previous and previous.state != "done":
                 raise ValidationError(f"Selesaikan tahap {previous._label()} dulu.")
+            if stage.material_state == "short":
+                raise ValidationError(
+                    f"Tahap {stage._label()} belum bisa diproses, bahan kurang:\n{stage.material_info}"
+                )
             stage.write({
                 "state": "in_progress",
                 "date_start_actual": fields.Datetime.now(),

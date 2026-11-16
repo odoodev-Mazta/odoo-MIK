@@ -28,6 +28,7 @@
         "views/production_machine_views.xml",
         "views/production_machine_schedule_views.xml",
         "views/mrp_production_views.xml",
+        "views/mrp_bom_views.xml",
         "views/production_dashboard_views.xml",
         "views/production_plan_product_line_views.xml",
         "views/production_plan_menus.xml",

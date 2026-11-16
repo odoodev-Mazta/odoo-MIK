@@ -5,6 +5,7 @@ from . import production_machine_capacity
 from . import production_machine_schedule
 from . import mrp_production
 from . import mrp_workorder
+from . import mrp_bom
 from . import production_material_shortage
 from . import production_dashboard
 from . import production_product_plan_line

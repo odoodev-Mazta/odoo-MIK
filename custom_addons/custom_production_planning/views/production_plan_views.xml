@@ -204,8 +204,12 @@
                                     <field name="remaining_qty" string="Sisa Split" optional="hide"/>
                                     <field name="production_type" string="Tipe" optional="show"/>
 
-                                    <field name="create_mo" string="Buat Perintah" width="130px" readonly="production_qty &lt;= 0"/>
                                     <field name="has_mo" string="Sudah Dibuat" readonly="1" optional="hide"/>
+                                    <button name="action_create_mo" type="object" string="Buat MO"
+                                            icon="fa-industry" class="btn btn-primary"
+                                            invisible="has_mo or production_qty &lt;= 0 or parent.state not in ('approved', 'running')"/>
+                                    <button name="action_open_mo" type="object" string="Buka MO"
+                                            icon="fa-external-link" class="btn btn-link" invisible="not has_mo"/>
                                     <field name="progress" widget="progressbar" width="120px"/>
 
                                     <button
@@ -264,6 +268,8 @@
                                     <field name="user_id" readonly="1" string="PIC"/>
                                     <field name="machine_id" readonly="1"/>
                                     <field name="workorder_id" readonly="1" optional="show"/>
+                                    <field name="material_state" widget="badge" decoration-danger="material_state == 'short'"
+                                           decoration-success="material_state == 'ok'"/>
                                     <field name="qty_good" readonly="state != 'in_progress'"/>
                                     <field name="qty_reject" readonly="state != 'in_progress'"/>
                                     <field name="set_batch" column_invisible="1"/>
@@ -275,7 +281,10 @@
                                            decoration-danger="qc_state == 'failed'"/>
                                     <field name="has_checks" column_invisible="1"/>
                                     <button name="action_start" type="object" string="Mulai" icon="fa-play"
-                                            invisible="state != 'todo'"/>
+                                            invisible="state != 'todo' or material_state == 'short'"/>
+                                    <button name="action_show_material" type="object" string="Bahan kurang - lihat detail"
+                                            icon="fa-exclamation-triangle" class="text-danger"
+                                            invisible="state != 'todo' or material_state != 'short'"/>
                                     <button name="action_submit_qc" type="object" string="Ajukan QC" icon="fa-paper-plane"
                                             invisible="state != 'in_progress'"/>
                                     <button name="action_open_checks" type="object" string="Isi Parameter QC" icon="fa-list-alt"
@@ -288,6 +297,8 @@
                                             invisible="state != 'waiting_qc'"
                                             groups="custom_production_planning.group_production_qc,base.group_system"/>
                                     <button name="action_open_mo" type="object" string="Buka MO" icon="fa-external-link"/>
+                                    <button name="action_open_workorder" type="object" string="Buka Work Order"
+                                            icon="fa-cogs" invisible="not workorder_id"/>
                                 </list>
                             </field>
                             <div class="text-muted">
