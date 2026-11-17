@@ -355,7 +355,7 @@ class UsulanUsulanDana(models.Model):
             if plan_states and all(state == 'rilis' for state in plan_states):
                 rec.status_payment = 'paid'
 
-                if rec.state == 'approve':
+                if rec.state in ('approve', 'plan_payment'):
                     rec.state = 'rilis'
             else:
                 rec.status_payment = 'unpaid'

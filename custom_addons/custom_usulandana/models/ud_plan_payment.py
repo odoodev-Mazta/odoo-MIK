@@ -56,6 +56,19 @@ class UsulanPlanPayment(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('usulan.plan.payment') or 'PP/New'
         return super().create(vals_list)
 
+    def _check_release(self):
+        """Semua termin lunas -> Plan Payment Rilis; semua Plan Payment Rilis -> Usulan Dana Rilis."""
+        for plan in self:
+            if plan.state in ('cancel', 'rilis') or not plan.payment_line_ids:
+                continue
+            if all(line.state == 'paid' for line in plan.payment_line_ids):
+                plan.state = 'rilis'
+            usulan = plan.usulan_dana_id
+            if usulan and usulan.state in ('approve', 'plan_payment'):
+                plans = usulan.plan_payment_ids.filtered(lambda p: p.state != 'cancel')
+                if plans and all(p.state == 'rilis' for p in plans):
+                    usulan.state = 'rilis'
+
     def action_confirm_plan(self):
         self.state = 'plan_payment'
 
