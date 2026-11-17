@@ -40,7 +40,7 @@
         <field name="arch" type="xml">
             <form string="Plan Payment">
                 <header>
-                    <button name="action_confirm_plan" string="Set Plan" type="object" class="oe_highlight" invisible="state != 'menggantung'"/>
+                    <button name="action_confirm_plan" string="Set Plan" type="object" class="oe_highlight" invisible="state not in ('menggantung', 'reschedule')"/>
                     <button name="action_reschedule" string="Reschedule" type="object" invisible="state not in ('plan_payment', 'menggantung')"/>
                     <field name="state" widget="statusbar" statusbar_visible="menggantung,plan_payment,reschedule,rilis,cancel"/>
                 </header>

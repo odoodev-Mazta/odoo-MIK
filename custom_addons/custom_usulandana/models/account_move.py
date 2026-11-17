@@ -59,7 +59,7 @@ class AccountMove(models.Model):
 
                         # Cek jika semua Plan Payment sudah rilis, jadikan Usulan Dana rilis
                         all_plans = usulan.line_ids.mapped('payment_schedule_ids.plan_payment_id')
-                        if usulan.state == 'approve' and all_plans and all(p.state == 'rilis' for p in all_plans):
+                        if usulan.state in ('approve', 'plan_payment') and all_plans and all(p.state == 'rilis' for p in all_plans):
                             usulan.write({'state': 'rilis'})
         return res
 
@@ -90,7 +90,7 @@ class AccountMove(models.Model):
                         if plan and not plan.payment_line_ids.filtered(lambda l: l.state != 'paid'):
                             plan.write({'state': 'rilis'})
 
-                            if plan.usulan_dana_id and plan.usulan_dana_id.state == 'approve':
+                            if plan.usulan_dana_id and plan.usulan_dana_id.state in ('approve', 'plan_payment'):
                                 plan.usulan_dana_id.write({'state': 'rilis'})
 
     # def write(self, vals):

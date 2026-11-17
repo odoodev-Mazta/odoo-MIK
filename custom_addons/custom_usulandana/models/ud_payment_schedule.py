@@ -62,6 +62,9 @@ class UsulanPaymentSchedule(models.Model):
         old_dates = {rec.id: rec.plan_payment_date for rec in self}
         res = super(UsulanPaymentSchedule, self).write(vals)
 
+        if vals.get('state') == 'paid':
+            self.plan_payment_id._check_release()
+
         if 'plan_payment_date' in vals and not self.env.context.get('skip_auto_bill'):
             plan_payment_groups = {}
             for record in self:
