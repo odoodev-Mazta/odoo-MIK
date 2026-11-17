@@ -227,9 +227,14 @@ class MrpBomImportWizard(models.TransientModel):
             ("product_tmpl_id", "=", group["product"].product_tmpl_id.id),
             ("company_id", "in", [False, self.env.company.id]),
         ]
+        BoM = self.env["mrp.bom"]
         if group["code"]:
-            domain.append(("code", "=", group["code"]))
-        return self.env["mrp.bom"].search(domain, limit=1)
+            found = BoM.search(domain + [("code", "=", group["code"])], limit=1)
+            if found:
+                return found
+            # BoM lama produk ini yang belum punya Reference dianggap BoM yang sama (bukan dibuat dobel).
+            return BoM.search(domain + [("code", "in", [False, ""])], order="id", limit=1)
+        return BoM.search(domain, order="id", limit=1)
 
     def _line_vals(self, items):
         return [
@@ -255,11 +260,24 @@ class MrpBomImportWizard(models.TransientModel):
 
     def _apply_uoms(self, group):
         """Samakan satuan produk dengan file (satuan lama dianggap salah), sebelum BoM dibuat/diubah."""
-        pairs = [(group["product"], group.get("uom"))]
-        pairs += [(item["product"], item["uom"]) for item in group["components"]]
-        for product, uom in pairs:
-            if uom and product.uom_id != uom:
-                product.write({"uom_id": uom.id})
+        def apply(product, uom):
+            """True bila satuan produk sama dengan file. Produk yang sudah dipakai tidak bisa diganti satuannya."""
+            if not uom or product.uom_id == uom:
+                return True
+            try:
+                with self.env.cr.savepoint():
+                    product.write({"uom_id": uom.id})
+                return True
+            except UserError:
+                return False  # sudah ada transaksi dengan satuan lain; satuan produk dibiarkan
+
+        if not apply(group["product"], group.get("uom")):
+            if not group["uom"]._has_common_reference(group["product"].uom_id):
+                group["uom"] = group["product"].uom_id
+        for item in group["components"]:
+            if not apply(item["product"], item["uom"]):
+                if not item["uom"]._has_common_reference(item["product"].uom_id):
+                    item["uom"] = item["product"].uom_id
 
     def _category_vals(self, group, cache):
         """Jenis Produk / Jenis Kemasan: cocokkan longgar dengan data yang ada, buat bila belum ada."""
@@ -281,6 +299,8 @@ class MrpBomImportWizard(models.TransientModel):
 
     def _update_bom(self, bom, group, category_vals=None):
         values = {"product_qty": group["qty"], "type": group["type"], **(category_vals or {})}
+        if group["code"] and not bom.code:
+            values["code"] = group["code"]
         if group.get("uom"):
             values["product_uom_id"] = group["uom"].id
         if group["brand"]:

@@ -12,3 +12,4 @@ from . import production_product_plan_line
 from . import production_stage
 from . import sale_order
 from . import purchase_deadline
+from . import stock_picking
