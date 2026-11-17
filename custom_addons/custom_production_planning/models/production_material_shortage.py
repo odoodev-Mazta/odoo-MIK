@@ -28,6 +28,12 @@ class ProductionMaterialShortage(models.Model):
         string="Material"
     )
 
+    uom_id = fields.Many2one(
+        "uom.uom",
+        string="Satuan",
+        related="product_id.uom_id",
+    )
+
     required_qty = fields.Float(
         string="Required Quantity",
     )

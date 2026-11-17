@@ -65,6 +65,21 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Pemakaian Mesin">
+                            <field name="stage_usage_ids" readonly="1">
+                                <list create="0" delete="0" open_form_view="0" default_order="date_start desc"
+                                      decoration-muted="state == 'done'" decoration-info="state == 'in_progress'">
+                                    <field name="date_start" string="Mulai"/>
+                                    <field name="date_end" string="Selesai"/>
+                                    <field name="plan_id" string="Plan"/>
+                                    <field name="product_id" string="Produk"/>
+                                    <field name="stage_id" string="Tahap"/>
+                                    <field name="capacity_id" string="Kapasitas"/>
+                                    <field name="capacity_qty" string="Qty"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
                         <page string="Machine Schedule">
                             <field name="schedule_ids" readonly="1">
                                 <list>

@@ -229,6 +229,26 @@ class ProductionPlanStage(models.Model):
             stage.days_available = available
             stage.capacity_warning = bool(needed and available and needed > available)
 
+    machine_conflict = fields.Char(string="Bentrok Mesin", compute="_compute_machine_conflict")
+
+    @api.depends("machine_id", "date_start", "date_end")
+    def _compute_machine_conflict(self):
+        for stage in self:
+            stage.machine_conflict = False
+            if not (stage.machine_id and stage.date_start and stage.date_end):
+                continue
+            others = self.search([
+                ("id", "!=", stage._origin.id or 0),
+                ("machine_id", "=", stage.machine_id.id),
+                ("state", "!=", "done"),
+                ("date_start", "<=", stage.date_end),
+                ("date_end", ">=", stage.date_start),
+            ])
+            if others:
+                stage.machine_conflict = "Dipakai juga: " + ", ".join(
+                    sorted({f"{o.plan_id.name} · {o.product_id.display_name or '-'}" for o in others})
+                )
+
     @api.onchange("machine_id")
     def _onchange_machine_id_capacity(self):
         for stage in self:
@@ -286,6 +306,18 @@ class ProductionPlanStage(models.Model):
             elif action == "reset":
                 workorder.button_pending()
                 workorder.write({"state": "ready"})
+
+    is_current = fields.Boolean(
+        string="Tahap Sekarang", compute="_compute_is_current", store=True,
+        help="Tahap pertama yang belum selesai pada tiap produk.",
+    )
+
+    @api.depends("state", "sequence", "product_line_id.stage_ids.state", "product_line_id.stage_ids.sequence")
+    def _compute_is_current(self):
+        for stage in self:
+            siblings = stage.product_line_id.stage_ids.sorted(key=lambda s: (s.sequence, s.id)) if stage.product_line_id else stage
+            pending = siblings.filtered(lambda s: s.state != "done")[:1]
+            stage.is_current = bool(pending) and stage.id == pending.id
 
     is_late = fields.Boolean(
         string="Terlambat", compute="_compute_is_late",
