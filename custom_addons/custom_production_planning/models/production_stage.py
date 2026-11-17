@@ -27,6 +27,10 @@ class ProductionStage(models.Model):
         help="Tahap ini menentukan nomor batch dan tanggal kedaluwarsa (Coding).",
     )
     parameter_ids = fields.One2many("mrp.production.stage.parameter", "stage_id", string="Parameter QC")
+    use_machine = fields.Boolean(
+        string="Pakai Mesin", default=True,
+        help="Matikan untuk tahap yang dikerjakan manual tanpa mesin (mis. Penimbangan, Packing).",
+    )
     workcenter_id = fields.Many2one(
         "mrp.workcenter",
         string="Work Center",
@@ -34,6 +38,19 @@ class ProductionStage(models.Model):
              "Bila mesin yang dipilih punya Work Center sendiri, itu yang dipakai.",
     )
     active = fields.Boolean(default=True)
+
+    @api.model
+    def _seed_machine_usage(self):
+        """Penimbangan dan Packing tanpa mesin. Hanya sekali, supaya pengaturan manual tidak tertimpa."""
+        params = self.env["ir.config_parameter"].sudo()
+        key = "custom_production_planning.machine_usage_seeded"
+        if params.get_param(key):
+            return
+        for xmlid in ("stage_penimbangan", "stage_packing"):
+            stage = self.env.ref(f"custom_production_planning.{xmlid}", raise_if_not_found=False)
+            if stage:
+                stage.use_machine = False
+        params.set_param(key, "1")
 
     @api.model
     def _link_default_workcenters(self):
@@ -142,6 +159,7 @@ class ProductionPlanStage(models.Model):
                AND NOT EXISTS (SELECT 1 FROM mrp_production_plan_stage_pic_rel r WHERE r.stage_id = s.id)
              GROUP BY s.id
         """)
+    use_machine = fields.Boolean(related="stage_id.use_machine", string="Pakai Mesin")
     machine_id = fields.Many2one(
         "mrp.production.machine",
         string="Mesin",

@@ -9,6 +9,7 @@
                 <field name="name"/>
                 <field name="origin_type"/>
                 <field name="set_batch"/>
+                <field name="use_machine"/>
                 <field name="workcenter_id"/>
                 <field name="active" column_invisible="1"/>
             </list>
@@ -26,6 +27,7 @@
                         <field name="sequence"/>
                         <field name="origin_type"/>
                         <field name="set_batch"/>
+                        <field name="use_machine"/>
                         <field name="workcenter_id"/>
                     </group>
                     <separator string="Parameter QC tahap ini"/>

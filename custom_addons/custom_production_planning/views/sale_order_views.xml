@@ -11,4 +11,31 @@
             </xpath>
         </field>
     </record>
+
+    <record id="view_order_form_plan_button" model="ir.ui.view">
+        <field name="name">sale.order.form.plan.button</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_production_plans" type="object"
+                        class="oe_stat_button" icon="fa-industry"
+                        invisible="not production_plan_count">
+                    <field name="production_plan_count" widget="statinfo" string="Plan Production"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_picking_form_plan" model="ir.ui.view">
+        <field name="name">stock.picking.form.plan</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="production_plan_ids" widget="many2many_tags" readonly="1"
+                       invisible="not production_plan_ids"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

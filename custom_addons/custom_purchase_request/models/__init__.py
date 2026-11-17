@@ -6,3 +6,4 @@ from . import detail_export
 from . import purchase_order_customer
 from . import product_from_description
 from . import usulan_dana_po
+from . import pr_sync
