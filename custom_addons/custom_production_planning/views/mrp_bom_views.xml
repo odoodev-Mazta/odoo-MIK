@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_mrp_bom_form_production_stage" model="ir.ui.view">
+        <field name="name">mrp.bom.form.production.stage</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='bom_line_ids']/list/field[@name='product_qty']" position="before">
+                <field name="production_stage_id" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

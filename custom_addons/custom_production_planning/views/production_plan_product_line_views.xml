@@ -109,13 +109,16 @@
                         <field name="stage_id" readonly="1"/>
                         <field name="date_start" readonly="state == 'done'"/>
                         <field name="date_end" readonly="state == 'done'"/>
-                        <field name="user_id" string="PIC" readonly="state == 'done'"/>
+                        <field name="pic_ids" string="PIC" widget="many2many_tags" readonly="state == 'done'"
+                               options="{'no_create': True}"/>
                         <field name="machine_id" readonly="state == 'done'"
-                               options="{'no_create': True}"
+                               options="{'no_quick_create': True}"
+                               context="{'default_stage_ids': [(6, 0, [stage_id])]}"
                                domain="['|', ('stage_ids', '=', False), ('stage_ids', 'in', stage_id)]"/>
                         <field name="machine_operator_count" string="Pekerja"/>
                         <field name="capacity_id" readonly="state == 'done' or not machine_id"
-                               options="{'no_create': True}" placeholder="mis. Tube 20 gr"/>
+                               options="{'no_quick_create': True}"
+                               context="{'default_machine_id': machine_id}" placeholder="mis. Tube 20 gr"/>
                         <field name="capacity_per_day" string="Kapasitas/Hari"/>
                         <field name="capacity_qty" readonly="state == 'done' or not capacity_id"/>
                         <field name="days_needed" string="Hari Perlu"/>
