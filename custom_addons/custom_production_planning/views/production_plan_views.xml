@@ -255,19 +255,19 @@
                         </page>
 
                         <page string="Eksekusi Produksi" invisible="state not in ('running', 'done')">
-                            <field name="stage_ids">
+                            <field name="current_stage_ids">
                                 <list editable="bottom" create="0" delete="0"
                                       decoration-danger="is_late"
                                       decoration-muted="state == 'done'">
                                     <field name="product_id" string="Produk" readonly="1"/>
                                     <field name="batch_label" readonly="1" optional="hide"/>
                                     <field name="stage_id" readonly="1"/>
-                                    <field name="date_start" readonly="1"/>
-                                    <field name="date_end" readonly="1"/>
+                                    <field name="date_start" readonly="1" optional="hide"/>
+                                    <field name="date_end" readonly="1" string="Target Selesai"/>
                                     <field name="is_late" column_invisible="1"/>
                                     <field name="pic_ids" readonly="1" string="PIC" widget="many2many_tags"/>
                                     <field name="machine_id" readonly="1"/>
-                                    <field name="workorder_id" readonly="1" optional="show"/>
+                                    <field name="workorder_id" readonly="1" optional="hide"/>
                                     <field name="material_state" widget="badge" decoration-danger="material_state == 'short'"
                                            decoration-success="material_state == 'ok'"/>
                                     <field name="qty_good" readonly="state != 'in_progress'"/>
@@ -301,7 +301,19 @@
                                             icon="fa-cogs" invisible="not workorder_id"/>
                                 </list>
                             </field>
+                            <div class="mt-3 fw-bold" invisible="not done_stage_ids">Riwayat tahap selesai</div>
+                            <field name="done_stage_ids" readonly="1" invisible="not done_stage_ids">
+                                <list create="0" delete="0" edit="0" open_form_view="0" decoration-muted="1">
+                                    <field name="product_id" string="Produk"/>
+                                    <field name="stage_id"/>
+                                    <field name="qty_good"/>
+                                    <field name="qty_reject"/>
+                                    <field name="date_end_actual" string="Selesai"/>
+                                    <field name="qc_user_id"/>
+                                </list>
+                            </field>
                             <div class="text-muted">
+                                Satu baris per produk = tahap yang sedang dikerjakan. Selesai QC, baris pindah ke tahap berikutnya dan yang lama masuk Riwayat.
                                 Semua produk dalam plan ini dikerjakan dari sini. Tahap dikerjakan berurutan per produk,
                                 dan setelah Ajukan QC, petugas QC memeriksa dari Antrean QC. QC lulus membuka tahap berikutnya.
                                 Baris merah = melewati tanggal selesai rencana.
@@ -346,21 +358,20 @@
                         </page>
 
                         <page string="Material Availability">
-                            <field name="material_shortage_ids" readonly="1">
-                                <list>
-                                    <field
-                                        name="finished_product_id"
-                                        string="Produk Jadi"
-                                    />
-                                    <field
-                                        name="product_id"
-                                        string="Material"
-                                    />
-                                    <field name="required_qty"/>
-                                    <field name="available_qty"/>
-                                    <field name="shortage_qty"/>
+                            <field name="material_product_line_ids" readonly="1">
+                                <list create="0" delete="0" edit="0" open_form_view="0"
+                                      decoration-danger="material_summary and 'kurang' in material_summary"
+                                      decoration-success="material_summary and 'cukup' in material_summary">
+                                    <field name="bom_product_id" string="Produk Jadi"/>
+                                    <field name="production_qty" string="Qty"/>
+                                    <field name="material_summary" string="Bahan"/>
+                                    <button name="action_open_material_popup" type="object"
+                                            string="Lihat Bahan" icon="fa-list" class="btn btn-link"/>
                                 </list>
                             </field>
+                            <div class="text-muted">
+                                Klik Lihat Bahan di tiap produk untuk melihat kebutuhan, stok, dan kekurangan bahannya.
+                            </div>
                         </page>
 
                         <page string="Machine Schedule" invisible="stage_ids">

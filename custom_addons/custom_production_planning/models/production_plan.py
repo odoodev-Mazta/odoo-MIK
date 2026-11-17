@@ -100,6 +100,25 @@ class ProductionPlan(models.Model):
         string="Jadwal Proses",
     )
 
+    current_stage_ids = fields.One2many(
+        "mrp.production.plan.stage", "plan_id",
+        domain=[("is_current", "=", True)], string="Tahap Sekarang",
+    )
+    done_stage_ids = fields.One2many(
+        "mrp.production.plan.stage", "plan_id",
+        domain=[("state", "=", "done")], string="Riwayat Tahap",
+    )
+    material_product_line_ids = fields.Many2many(
+        "mrp.production.plan.product.line",
+        compute="_compute_material_product_line_ids",
+        string="Produk di Material Availability",
+    )
+
+    @api.depends("material_shortage_ids.product_line_id")
+    def _compute_material_product_line_ids(self):
+        for plan in self:
+            plan.material_product_line_ids = plan.material_shortage_ids.product_line_id
+
     stage_product_line_ids = fields.Many2many(
         "mrp.production.plan.product.line",
         compute="_compute_stage_product_line_ids",
@@ -1698,6 +1717,12 @@ class ProductionPlan(models.Model):
                             * product_line.production_qty
                             / bom.product_qty
                     )
+
+                    # Samakan satuan BOM dengan satuan stok bahan supaya bisa dibandingkan.
+                    if bom_line.product_uom_id and bom_line.product_uom_id != material.uom_id:
+                        required_qty = bom_line.product_uom_id._compute_quantity(
+                            required_qty, material.uom_id
+                        )
 
                     # Stok tersedia = on hand dikurangi kebutuhan keluar yang sudah
                     # terkonfirmasi (Perintah Produksi / pengiriman lain), tanpa

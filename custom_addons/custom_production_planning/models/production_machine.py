@@ -39,6 +39,10 @@ class ProductionMachine(models.Model):
         help="Mesin hanya muncul sebagai pilihan di tahap ini. Kosongkan bila boleh dipilih di tahap mana pun.",
     )
 
+    stage_usage_ids = fields.One2many(
+        "mrp.production.plan.stage", "machine_id", string="Pemakaian di Tahapan Plan",
+    )
+
     capacity_ids = fields.One2many(
         "mrp.production.machine.capacity",
         "machine_id",

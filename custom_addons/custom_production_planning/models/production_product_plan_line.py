@@ -114,6 +114,34 @@ class ProductionPlanProductLine(models.Model):
                 + (f" · {current.stage_id.name} ({labels.get(current.state, current.state)})" if current else "")
             )
 
+    material_ids = fields.One2many(
+        "mrp.production.material.shortage", "product_line_id", string="Daftar Bahan",
+    )
+    material_summary = fields.Char(string="Bahan", compute="_compute_material_summary")
+
+    @api.depends("material_ids.shortage_qty")
+    def _compute_material_summary(self):
+        for line in self:
+            total = len(line.material_ids)
+            short = len(line.material_ids.filtered(lambda m: m.shortage_qty > 0))
+            if not total:
+                line.material_summary = False
+            elif short:
+                line.material_summary = f"{short} dari {total} bahan kurang"
+            else:
+                line.material_summary = f"{total} bahan cukup"
+
+    def action_open_material_popup(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": f"Bahan {self.bom_product_id.display_name}",
+            "res_model": self._name,
+            "res_id": self.id,
+            "views": [(self.env.ref("custom_production_planning.view_production_plan_product_line_material_form").id, "form")],
+            "target": "new",
+        }
+
     def action_open_stage_popup(self):
         """Popup untuk mengatur tanggal, PIC, dan mesin tiap tahap produk ini."""
         self.ensure_one()
