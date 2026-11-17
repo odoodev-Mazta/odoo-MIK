@@ -287,6 +287,18 @@ class ProductionPlanStage(models.Model):
                 workorder.button_pending()
                 workorder.write({"state": "ready"})
 
+    is_current = fields.Boolean(
+        string="Tahap Sekarang", compute="_compute_is_current", store=True,
+        help="Tahap pertama yang belum selesai pada tiap produk.",
+    )
+
+    @api.depends("state", "sequence", "product_line_id.stage_ids.state", "product_line_id.stage_ids.sequence")
+    def _compute_is_current(self):
+        for stage in self:
+            siblings = stage.product_line_id.stage_ids.sorted(key=lambda s: (s.sequence, s.id)) if stage.product_line_id else stage
+            pending = siblings.filtered(lambda s: s.state != "done")[:1]
+            stage.is_current = bool(pending) and stage.id == pending.id
+
     is_late = fields.Boolean(
         string="Terlambat", compute="_compute_is_late",
         help="Tanggal selesai rencana sudah lewat tetapi tahap belum selesai.",

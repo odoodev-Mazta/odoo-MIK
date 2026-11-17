@@ -134,8 +134,6 @@ class MrpBomImportWizard(models.TransientModel):
                 if not finished:
                     continue
                 qty = number(row.get("product_qty"), "Qty Produk Jadi", "BoM", row_no)
-                if qty is not None and qty <= 0:
-                    errors.append(f"Sheet BoM baris {row_no}: Qty Produk Jadi harus lebih dari 0.")
                 bom_type = BOM_TYPES.get(bom_excel.to_text(row.get("bom_type")).lower())
                 if not bom_type:
                     errors.append(f"Sheet BoM baris {row_no}: Tipe BoM harus 'normal' atau 'kit'.")
@@ -163,12 +161,10 @@ class MrpBomImportWizard(models.TransientModel):
             component = find_product(
                 comp_code, comp_name, sheet_name, row_no, bom_excel.to_text(row.get("comp_uom")))
             comp_qty = number(comp_qty_raw, "Qty Komponen", "BoM", row_no)
-            if comp_qty is None or comp_qty <= 0:
-                if comp_qty is None and bom_excel.to_text(comp_qty_raw) == "":
-                    errors.append(f"Sheet BoM baris {row_no}: Qty Komponen kosong.")
-                elif comp_qty is not None:
-                    errors.append(f"Sheet BoM baris {row_no}: Qty Komponen harus lebih dari 0.")
-                continue
+            if comp_qty is None:
+                if bom_excel.to_text(comp_qty_raw) != "":
+                    continue  # bukan angka, sudah dicatat sebagai error
+                comp_qty = 0.0  # qty kosong diimpor apa adanya sebagai 0
             if not component:
                 continue
             uom_name = bom_excel.to_text(row.get("comp_uom"))
