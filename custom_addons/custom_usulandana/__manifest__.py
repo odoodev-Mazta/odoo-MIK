@@ -10,6 +10,7 @@
         'security/approval_security.xml',
         'security/ir.model.access.csv',
         'data/sequence.xml',
+        'data/release_sweep.xml',
         'views/ud_approval_views.xml',
         'views/ud_setup_views.xml',
         'views/ud_up_country_views.xml',
