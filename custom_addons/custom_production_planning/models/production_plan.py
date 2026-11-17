@@ -537,8 +537,8 @@ class ProductionPlan(models.Model):
                     "product_line_id": product_line.id,
                     "stage_id": stage.id,
                     "sequence": stage.sequence,
-                    "date_start": plan.planned_start,
-                    "date_end": plan.planned_start,
+                    "date_start": product_line.production_start or plan.planned_start,
+                    "date_end": product_line.production_end or product_line.production_start or plan.planned_start,
                 })
                 for product_line in product_lines
                 for stage in stages
@@ -1024,7 +1024,7 @@ class ProductionPlan(models.Model):
             },
         }
 
-    def action_create_mo(self):
+    def action_create_mo(self, only_lines=None):
         _logger.warning(
             "========== ACTION CREATE MO DIPANGGIL =========="
         )
@@ -1066,14 +1066,14 @@ class ProductionPlan(models.Model):
                     "Perintah Produksi."
                 )
 
-            selected_lines = pending_lines.filtered(
-                lambda line: line.create_mo
+            # Tombol di baris produk -> hanya baris itu; tombol di header -> semua yang belum.
+            selected_lines = (
+                pending_lines & only_lines if only_lines else pending_lines
             )
 
             if not selected_lines:
                 raise ValidationError(
-                    "Please select at least one production batch "
-                    "to create a Perintah Produksi."
+                    "Perintah Produksi untuk baris ini sudah dibuat."
                 )
 
             created_mos = self.env["mrp.production"]

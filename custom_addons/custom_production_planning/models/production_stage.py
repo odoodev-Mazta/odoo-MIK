@@ -115,7 +115,33 @@ class ProductionPlanStage(models.Model):
     )
     date_start = fields.Date(string="Mulai")
     date_end = fields.Date(string="Selesai")
-    user_id = fields.Many2one("res.users", string="PIC")
+    user_id = fields.Many2one("res.users", string="PIC (lama)", help="Dipakai sebelum PIC bisa lebih dari satu.")
+    pic_ids = fields.Many2many(
+        "hr.employee",
+        "mrp_production_plan_stage_pic_rel",
+        "stage_id",
+        "employee_id",
+        string="PIC",
+        help="Karyawan penanggung jawab tahap ini. Boleh lebih dari satu.",
+    )
+    user_ids = fields.Many2many("res.users", string="Akun PIC", compute="_compute_user_ids")
+
+    @api.depends("pic_ids.user_id")
+    def _compute_user_ids(self):
+        for stage in self:
+            stage.user_ids = stage.pic_ids.user_id
+
+    def init(self):
+        # PIC lama (satu akun) dipindah jadi karyawan PIC, sekali saja.
+        self.env.cr.execute("""
+            INSERT INTO mrp_production_plan_stage_pic_rel (stage_id, employee_id)
+            SELECT s.id, MIN(e.id)
+              FROM mrp_production_plan_stage s
+              JOIN hr_employee e ON e.user_id = s.user_id
+             WHERE s.user_id IS NOT NULL
+               AND NOT EXISTS (SELECT 1 FROM mrp_production_plan_stage_pic_rel r WHERE r.stage_id = s.id)
+             GROUP BY s.id
+        """)
     machine_id = fields.Many2one(
         "mrp.production.machine",
         string="Mesin",
@@ -272,6 +298,69 @@ class ProductionPlanStage(models.Model):
         for stage in self:
             stage.is_late = bool(stage.date_end and stage.date_end < today and stage.state != "done")
 
+    material_state = fields.Selection(
+        [("ok", "Bahan Cukup"), ("short", "Bahan Kurang")],
+        string="Bahan", compute="_compute_material_state",
+    )
+    material_info = fields.Text(string="Kekurangan Bahan", compute="_compute_material_state")
+
+    def _get_stage_material_lines(self):
+        """Komponen BOM untuk tahap ini. Komponen tanpa tahap ikut tahap pertama produk."""
+        self.ensure_one()
+        bom = self.env["mrp.bom"].search([("product_tmpl_id", "=", self.product_id.product_tmpl_id.id)], limit=1)
+        if not bom:
+            return self.env["mrp.bom.line"], bom
+        is_first = self._siblings()[:1] == self
+        lines = bom.bom_line_ids.filtered(
+            lambda l: l.production_stage_id == self.stage_id or (is_first and not l.production_stage_id)
+        )
+        return lines, bom
+
+    @api.depends("product_line_id.bom_product_id", "qty_plan", "stage_id", "state")
+    def _compute_material_state(self):
+        for stage in self:
+            stage.material_state = "ok"
+            stage.material_info = False
+            if stage.state != "todo" or not stage.product_id or not stage.id:
+                continue
+            lines, bom = stage._get_stage_material_lines()
+            ratio = (stage.qty_plan or 0.0) / (bom.product_qty or 1.0) if bom else 0.0
+            short = []
+            for line in lines:
+                need = line.product_qty * ratio
+                product = line.product_id
+                have = product.virtual_available - product.incoming_qty
+                if have < need - 1e-6:
+                    short.append(f"{product.display_name}: perlu {need:g}, tersedia {max(have, 0):g}")
+            if short:
+                stage.material_state = "short"
+                stage.material_info = "\n".join(short)
+
+    def action_show_material(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": f"Bahan kurang: {self._label()}",
+                "message": self.material_info or "Bahan cukup.",
+                "type": "warning",
+                "sticky": True,
+            },
+        }
+
+    def action_open_workorder(self):
+        self.ensure_one()
+        if not self.workorder_id:
+            raise ValidationError("Work Order tahap ini belum dibuat. Buat Perintah Produksi dulu.")
+        return {
+            "type": "ir.actions.act_window",
+            "name": self.workorder_id.display_name,
+            "res_model": "mrp.workorder",
+            "res_id": self.workorder_id.id,
+            "views": [(False, "form")],
+        }
+
     def action_open_mo(self):
         self.ensure_one()
         if not self.production_id:
@@ -373,6 +462,10 @@ class ProductionPlanStage(models.Model):
             previous = stage._previous()
             if previous and previous.state != "done":
                 raise ValidationError(f"Selesaikan tahap {previous._label()} dulu.")
+            if stage.material_state == "short":
+                raise ValidationError(
+                    f"Tahap {stage._label()} belum bisa diproses, bahan kurang:\n{stage.material_info}"
+                )
             stage.write({
                 "state": "in_progress",
                 "date_start_actual": fields.Datetime.now(),
@@ -474,7 +567,7 @@ class ProductionPlanStage(models.Model):
             stage._sync_workorder("finish")
             stage._close_qc_activities()
             following = stage._siblings().filtered(lambda s: s.sequence > stage.sequence or (s.sequence == stage.sequence and s.id > stage.id))[:1]
-            partners = (stage.user_id | following.user_id).partner_id.ids
+            partners = (stage.user_ids | following.user_ids).partner_id.ids
             stage.plan_id.message_post(
                 body=f"QC lulus: {stage._label()}."
                      + (f" Tahap berikutnya: {following._label()}." if following else " Semua tahap produk ini selesai."),
@@ -506,7 +599,7 @@ class ProductionPlanStage(models.Model):
             stage.plan_id.message_post(
                 body=f"QC gagal di tahap {stage._label()}: {stage.qc_note}. Tahap diulang.",
                 subtype_xmlid="mail.mt_note",
-                partner_ids=stage.user_id.partner_id.ids,
+                partner_ids=stage.user_ids.partner_id.ids,
             )
             stage._close_qc_activities()
             stage.write({

@@ -125,9 +125,44 @@ class PurchaseOrderCustomerLine(models.Model):
             new_qty = max(new_qty, min(taken, order_line.product_qty))
         order_line.product_qty = max(new_qty, 0.0)
 
+    def init(self):
+        # Baris Keterangan PR lama yang deskripsinya kosong diisi dari deskripsi di PR-nya.
+        self.env.cr.execute("""
+            UPDATE purchase_order_customer_line c
+               SET description = (
+                   SELECT r.description
+                     FROM purchase_request_line r
+                    WHERE r.request_id = c.request_id
+                      AND r.product_id = c.product_id
+                      AND COALESCE(r.description, '') <> ''
+                    ORDER BY r.id
+                    LIMIT 1)
+             WHERE COALESCE(c.description, '') = ''
+               AND c.request_id IS NOT NULL
+               AND EXISTS (
+                   SELECT 1 FROM purchase_request_line r
+                    WHERE r.request_id = c.request_id
+                      AND r.product_id = c.product_id
+                      AND COALESCE(r.description, '') <> '')
+        """)
+
+    @api.model
+    def _description_from_request(self, request_id, product_id):
+        if not request_id or not product_id:
+            return False
+        line = self.env['purchase.request.line'].search([
+            ('request_id', '=', request_id),
+            ('product_id', '=', product_id),
+            ('description', '!=', False),
+        ], limit=1)
+        return line.description or False
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            if not vals.get('description'):
+                vals['description'] = self._description_from_request(
+                    vals.get('request_id'), vals.get('product_id')) or vals.get('description')
             if not vals.get('is_remainder') and not vals.get('request_qty'):
                 vals['request_qty'] = vals.get('qty', 1.0)
         lines = super().create(vals_list)

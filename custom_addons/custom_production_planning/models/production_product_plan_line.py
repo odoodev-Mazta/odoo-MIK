@@ -214,6 +214,16 @@ class ProductionPlanProductLine(models.Model):
         for line in self:
             line.finished_product_id = line._suggest_finished_product()
 
+    def action_create_mo(self):
+        """Tombol Buat MO di baris produk."""
+        for line in self:
+            if line.plan_id.state not in ("approved", "running"):
+                raise ValidationError("Approve Planning dulu sebelum membuat Perintah Produksi.")
+            if line.has_mo:
+                raise ValidationError("Perintah Produksi untuk baris ini sudah dibuat.")
+            line.plan_id.action_create_mo(only_lines=line)
+        return True
+
     def action_open_mo(self):
         self.ensure_one()
         mo = self.manufacturing_order_ids[:1]
