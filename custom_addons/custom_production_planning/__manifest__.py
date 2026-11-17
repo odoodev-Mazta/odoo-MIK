@@ -10,6 +10,7 @@
         "sale_stock",
         "product",
         "mail",
+        "hr",
         "product_expiry",
         "custom_mou",
         "custom_purchase_request",

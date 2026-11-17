@@ -265,7 +265,7 @@
                                     <field name="date_start" readonly="1"/>
                                     <field name="date_end" readonly="1"/>
                                     <field name="is_late" column_invisible="1"/>
-                                    <field name="user_id" readonly="1" string="PIC"/>
+                                    <field name="pic_ids" readonly="1" string="PIC" widget="many2many_tags"/>
                                     <field name="machine_id" readonly="1"/>
                                     <field name="workorder_id" readonly="1" optional="show"/>
                                     <field name="material_state" widget="badge" decoration-danger="material_state == 'short'"

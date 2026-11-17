@@ -115,7 +115,33 @@ class ProductionPlanStage(models.Model):
     )
     date_start = fields.Date(string="Mulai")
     date_end = fields.Date(string="Selesai")
-    user_id = fields.Many2one("res.users", string="PIC")
+    user_id = fields.Many2one("res.users", string="PIC (lama)", help="Dipakai sebelum PIC bisa lebih dari satu.")
+    pic_ids = fields.Many2many(
+        "hr.employee",
+        "mrp_production_plan_stage_pic_rel",
+        "stage_id",
+        "employee_id",
+        string="PIC",
+        help="Karyawan penanggung jawab tahap ini. Boleh lebih dari satu.",
+    )
+    user_ids = fields.Many2many("res.users", string="Akun PIC", compute="_compute_user_ids")
+
+    @api.depends("pic_ids.user_id")
+    def _compute_user_ids(self):
+        for stage in self:
+            stage.user_ids = stage.pic_ids.user_id
+
+    def init(self):
+        # PIC lama (satu akun) dipindah jadi karyawan PIC, sekali saja.
+        self.env.cr.execute("""
+            INSERT INTO mrp_production_plan_stage_pic_rel (stage_id, employee_id)
+            SELECT s.id, MIN(e.id)
+              FROM mrp_production_plan_stage s
+              JOIN hr_employee e ON e.user_id = s.user_id
+             WHERE s.user_id IS NOT NULL
+               AND NOT EXISTS (SELECT 1 FROM mrp_production_plan_stage_pic_rel r WHERE r.stage_id = s.id)
+             GROUP BY s.id
+        """)
     machine_id = fields.Many2one(
         "mrp.production.machine",
         string="Mesin",
@@ -541,7 +567,7 @@ class ProductionPlanStage(models.Model):
             stage._sync_workorder("finish")
             stage._close_qc_activities()
             following = stage._siblings().filtered(lambda s: s.sequence > stage.sequence or (s.sequence == stage.sequence and s.id > stage.id))[:1]
-            partners = (stage.user_id | following.user_id).partner_id.ids
+            partners = (stage.user_ids | following.user_ids).partner_id.ids
             stage.plan_id.message_post(
                 body=f"QC lulus: {stage._label()}."
                      + (f" Tahap berikutnya: {following._label()}." if following else " Semua tahap produk ini selesai."),
@@ -573,7 +599,7 @@ class ProductionPlanStage(models.Model):
             stage.plan_id.message_post(
                 body=f"QC gagal di tahap {stage._label()}: {stage.qc_note}. Tahap diulang.",
                 subtype_xmlid="mail.mt_note",
-                partner_ids=stage.user_id.partner_id.ids,
+                partner_ids=stage.user_ids.partner_id.ids,
             )
             stage._close_qc_activities()
             stage.write({

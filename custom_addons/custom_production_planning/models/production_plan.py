@@ -537,8 +537,8 @@ class ProductionPlan(models.Model):
                     "product_line_id": product_line.id,
                     "stage_id": stage.id,
                     "sequence": stage.sequence,
-                    "date_start": plan.planned_start,
-                    "date_end": plan.planned_start,
+                    "date_start": product_line.production_start or plan.planned_start,
+                    "date_end": product_line.production_end or product_line.production_start or plan.planned_start,
                 })
                 for product_line in product_lines
                 for stage in stages
