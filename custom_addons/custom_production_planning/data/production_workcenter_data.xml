@@ -30,5 +30,6 @@
     <!-- Hubungkan tahap -> Work Center (hanya bila belum diisi). Berjalan tiap Upgrade. -->
     <data noupdate="0">
         <function model="mrp.production.stage" name="_link_default_workcenters"/>
+        <function model="mrp.production.stage" name="_seed_machine_usage"/>
     </data>
 </odoo>

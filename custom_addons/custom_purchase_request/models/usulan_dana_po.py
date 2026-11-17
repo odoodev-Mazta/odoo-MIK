@@ -26,6 +26,17 @@ class UsulanDanaPoLine(models.Model):
     allocate_product_id = fields.Many2one('product.product', string='Alokasi ke Produk')
     is_remainder = fields.Boolean(string='Sisa', help='Bagian barang PO yang belum dialokasikan ke customer.')
 
+    destination = fields.Selection(
+        [('customer', 'Customer'), ('stock', 'Masuk Stok')],
+        string='Tujuan', compute='_compute_destination',
+        help='Masuk Stok = barang PO yang tidak dialokasikan ke customer, jadi tersimpan sebagai stok.',
+    )
+
+    @api.depends('is_remainder', 'customer_id', 'mou_id')
+    def _compute_destination(self):
+        for line in self:
+            line.destination = 'stock' if line.is_remainder or not (line.customer_id or line.mou_id) else 'customer'
+
     @api.depends('qty', 'price_unit')
     def _compute_price_subtotal(self):
         for line in self:
@@ -77,7 +88,7 @@ class UsulanUsulanDana(models.Model):
             if left > 1e-6:
                 rows.append({
                     **base,
-                    'description': f'Belum dialokasikan ke customer ({line.name})',
+                    'description': f'Masuk stok, tidak dialokasikan ke customer ({line.name})',
                     'qty': left,
                     'is_remainder': True,
                 })
