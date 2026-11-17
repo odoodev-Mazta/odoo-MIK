@@ -69,6 +69,11 @@ class UsulanPlanPayment(models.Model):
                 if plans and all(p.state == 'rilis' for p in plans):
                     usulan.state = 'rilis'
 
+    @api.model
+    def _sweep_release(self):
+        """Rapikan data lama: Plan Payment yang semua terminnya sudah dibayar tapi status belum Rilis."""
+        self.search([('state', 'in', ('menggantung', 'plan_payment', 'reschedule'))])._check_release()
+
     def action_confirm_plan(self):
         self.state = 'plan_payment'
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Berjalan tiap Upgrade: Plan Payment yang semua terminnya lunas otomatis jadi Rilis. -->
+    <data noupdate="0">
+        <function model="usulan.plan.payment" name="_sweep_release"/>
+    </data>
+</odoo>
