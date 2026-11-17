@@ -115,7 +115,7 @@ class ProductionPlanProductLine(models.Model):
             )
 
     material_ids = fields.One2many(
-        "mrp.production.material.shortage", "product_line_id", string="Bahan",
+        "mrp.production.material.shortage", "product_line_id", string="Daftar Bahan",
     )
     material_summary = fields.Char(string="Bahan", compute="_compute_material_summary")
 
