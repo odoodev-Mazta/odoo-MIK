@@ -1,3 +1,4 @@
+import inspect
 import math
 from datetime import datetime, timedelta
 
@@ -50,6 +51,30 @@ class ProductionStage(models.Model):
             stage = self.env.ref(f"custom_production_planning.{xmlid}", raise_if_not_found=False)
             if stage:
                 stage.use_machine = False
+        params.set_param(key, "1")
+
+    @api.model
+    def _merge_labeling_coding(self):
+        """Labeling dan Coding jadi satu tahap 'Labeling & Coding' (stiker + tanggal expired). Sekali saja."""
+        params = self.env["ir.config_parameter"].sudo()
+        key = "custom_production_planning.labeling_coding_merged"
+        if params.get_param(key):
+            return
+        labeling = self.env.ref("custom_production_planning.stage_labeling", raise_if_not_found=False)
+        coding = self.env.ref("custom_production_planning.stage_coding", raise_if_not_found=False)
+        if labeling:
+            labeling.write({"name": "Labeling & Coding", "set_batch": True})
+        if labeling and coding and labeling != coding:
+            coding.parameter_ids.write({"stage_id": labeling.id})
+            for machine in self.env["mrp.production.machine"].with_context(active_test=False).search(
+                [("stage_ids", "in", coding.id)]
+            ):
+                machine.stage_ids = [Command.unlink(coding.id), Command.link(labeling.id)]
+            # Tahap Coding di plan yang belum dimulai dihapus; yang sudah berjalan/selesai dibiarkan sebagai riwayat.
+            self.env["mrp.production.plan.stage"].search([
+                ("stage_id", "=", coding.id), ("state", "=", "todo"),
+            ]).unlink()
+            coding.active = False
         params.set_param(key, "1")
 
     @api.model
@@ -315,7 +340,12 @@ class ProductionPlanStage(models.Model):
                 workcenter = stage._get_workcenter()
                 if workcenter and workorder.workcenter_id != workcenter and not workorder.leave_id:
                     workorder.workcenter_id = workcenter
-                workorder.button_start()
+                # Odoo Enterprise mewajibkan user terhubung ke Employee untuk memulai Work Order.
+                # Operatornya sudah dicatat di PIC tahap, jadi pemeriksaan itu dilewati.
+                if "bypass" in inspect.signature(workorder.button_start).parameters:
+                    workorder.button_start(bypass=True)
+                else:
+                    workorder.button_start()
             elif action == "pending":
                 workorder.button_pending()
             elif action == "finish":
