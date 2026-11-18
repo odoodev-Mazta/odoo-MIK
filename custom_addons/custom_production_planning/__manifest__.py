@@ -38,6 +38,7 @@
         "views/production_qc_log_views.xml",
         "wizard/production_plan_split_wizard_views.xml",
         "wizard/production_plan_shortage_wizard_views.xml",
+        "wizard/production_stage_fail_wizard_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

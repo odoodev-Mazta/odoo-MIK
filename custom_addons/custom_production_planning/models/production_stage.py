@@ -694,8 +694,27 @@ class ProductionPlanStage(models.Model):
             "target": "new",
         }
 
+    def _need_fail_reason(self):
+        """Catatan kosong diisi otomatis dari parameter yang gagal. True bila masih ada yang perlu alasan (popup)."""
+        for stage in self.filtered(lambda s: s.state == "waiting_qc" and not s.qc_note):
+            failed = stage.check_ids.filtered(lambda check: check.result == "failed")
+            if failed:
+                stage.qc_note = "Di luar batas: " + ", ".join(
+                    f"{check.name} ({check.actual_value or check.actual_yesno})" for check in failed
+                )
+        return bool(self.filtered(lambda s: s.state == "waiting_qc" and not s.qc_note))
+
     def action_qc_fail(self):
         self._check_qc_access()
+        if self._need_fail_reason():
+            return {
+                "type": "ir.actions.act_window",
+                "name": "Alasan QC Gagal",
+                "res_model": "mrp.production.plan.stage.fail.wizard",
+                "view_mode": "form",
+                "target": "new",
+                "context": {"default_stage_ids": self.ids},
+            }
         for stage in self:
             if stage.state != "waiting_qc":
                 raise ValidationError(f"Tahap {stage._label()} belum diajukan ke QC.")

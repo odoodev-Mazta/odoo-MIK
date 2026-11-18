@@ -71,7 +71,7 @@
                         <group>
                             <field name="qty_good" readonly="1"/>
                             <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'" decoration-danger="qc_state == 'failed'"/>
-                            <field name="qc_note" readonly="state != 'waiting_qc'"/>
+                            <field name="qc_note" readonly="state != 'waiting_qc'" placeholder="Wajib diisi bila QC Gagal"/>
                         </group>
                     </group>
                     <group string="Riwayat Proses">

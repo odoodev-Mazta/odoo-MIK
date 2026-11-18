@@ -34,8 +34,10 @@ class QCSchedule(models.Model):
 
     def action_failed(self):
         stage_linked = self.filtered("plan_stage_id")
-        for rec in stage_linked:
-            rec.plan_stage_id.action_qc_fail()
+        if stage_linked:
+            result = stage_linked.plan_stage_id.action_qc_fail()
+            if isinstance(result, dict):
+                return result  # popup alasan gagal
         return super(QCSchedule, self - stage_linked).action_failed() if self - stage_linked else True
 
 

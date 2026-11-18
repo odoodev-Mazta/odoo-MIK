@@ -129,6 +129,8 @@ class ProductionPlanStage(models.Model):
     def action_qc_fail(self):
         # Dicatat sebelum tahap direset (parameter & catatan masih ada).
         self._check_qc_access()
+        if self._need_fail_reason():
+            return super().action_qc_fail()  # popup alasan; dicatat setelah alasan diisi
         for stage in self:
             if stage.state == "waiting_qc" and stage.qc_note:
                 stage._create_qc_log("failed")
