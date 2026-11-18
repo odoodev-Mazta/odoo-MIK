@@ -57,7 +57,7 @@
                             <field name="expiry_date" readonly="not set_batch or state != 'in_progress'"/>
                             <field name="state" widget="badge" decoration-success="state == 'done'" decoration-info="state == 'in_progress'" decoration-warning="state == 'waiting_qc'"/>
                             <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'" decoration-danger="qc_state == 'failed'"/>
-                            <field name="qc_note" readonly="state != 'waiting_qc'"/>
+                            <field name="qc_note" readonly="state != 'waiting_qc'" placeholder="Wajib diisi bila QC Gagal"/>
                             <field name="has_checks" column_invisible="1"/>
                             <button name="action_start" type="object" string="Mulai" icon="fa-play"
                                     invisible="state != 'todo'"/>
@@ -79,4 +79,15 @@
         </field>
     </record>
 
+    <!-- Sementara: tab Work Orders disembunyikan; proses dijalankan lewat tab Proses Produksi. -->
+    <record id="view_mrp_production_form_hide_workorders" model="ir.ui.view">
+        <field name="name">mrp.production.form.hide.workorders</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='operations']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>

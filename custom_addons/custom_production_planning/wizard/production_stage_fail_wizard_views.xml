@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_production_stage_fail_wizard_form" model="ir.ui.view">
+        <field name="name">mrp.production.plan.stage.fail.wizard.form</field>
+        <field name="model">mrp.production.plan.stage.fail.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="stage_ids" widget="many2many_tags" readonly="1"/>
+                    <field name="reason" placeholder="Mis. warna tidak sesuai standar, kemasan penyok, dll."/>
+                </group>
+                <div class="text-muted">Tahap akan diulang dari awal. Alasan ini tercatat di Laporan QC.</div>
+                <footer>
+                    <button name="action_confirm" type="object" string="Nyatakan QC Gagal" class="btn-danger"/>
+                    <button special="cancel" string="Batal"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

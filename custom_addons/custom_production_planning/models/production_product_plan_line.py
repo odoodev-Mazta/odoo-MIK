@@ -131,6 +131,40 @@ class ProductionPlanProductLine(models.Model):
             else:
                 line.material_summary = f"{total} bahan cukup"
 
+    finished_uom_id = fields.Many2one(
+        "uom.uom", string="Satuan Produk Jadi", compute="_compute_finished_uom_id",
+    )
+
+    @api.depends("finished_product_id.uom_id", "product_id.uom_id")
+    def _compute_finished_uom_id(self):
+        for line in self:
+            line.finished_uom_id = (line.finished_product_id or line.product_id).uom_id
+    finished_qty_available = fields.Float(
+        string="Stok Produk Jadi", compute="_compute_finished_stock",
+        help="Stok on hand produk jadi saat ini di gudang.",
+    )
+    finished_qty_forecast = fields.Float(
+        string="Perkiraan Stok", compute="_compute_finished_stock",
+        help="Stok on hand + yang akan masuk (Perintah Produksi / pembelian) - yang akan keluar (pengiriman).",
+    )
+    finished_stock_status = fields.Char(string="Status Stok", compute="_compute_finished_stock")
+
+    @api.depends("bom_product_id", "production_qty")
+    def _compute_finished_stock(self):
+        for line in self:
+            product = line.bom_product_id
+            on_hand = product.qty_available if product else 0.0
+            line.finished_qty_available = on_hand
+            line.finished_qty_forecast = product.virtual_available if product else 0.0
+            if not product:
+                line.finished_stock_status = False
+            elif on_hand <= 0:
+                line.finished_stock_status = "Belum ada stok"
+            elif on_hand >= line.production_qty:
+                line.finished_stock_status = "Stok sudah cukup"
+            else:
+                line.finished_stock_status = f"Stok kurang {line.production_qty - on_hand:g}"
+
     def action_open_material_popup(self):
         self.ensure_one()
         return {
@@ -279,12 +313,17 @@ class ProductionPlanProductLine(models.Model):
                 )
 
     @api.depends(
+        "stage_ids.state",
         "manufacturing_order_ids",
         "manufacturing_order_ids.workorder_ids",
         "manufacturing_order_ids.workorder_ids.state",
     )
     def _compute_progress(self):
         for line in self:
+            # Progress dari tahap proses (sama seperti progress Plan); Work Order hanya cadangan.
+            if line.stage_ids:
+                line.progress = len(line.stage_ids.filtered(lambda s: s.state == "done")) / len(line.stage_ids) * 100
+                continue
             workorders = line.manufacturing_order_ids.mapped(
                 "workorder_ids"
             )
@@ -300,6 +339,13 @@ class ProductionPlanProductLine(models.Model):
             line.progress = (
                 len(done) / len(workorders)
             ) * 100
+
+    @api.model
+    def _recompute_stage_progress(self):
+        """Tiap Upgrade: progress produk yang sudah ada dihitung ulang dari tahap proses."""
+        lines = self.search([("stage_ids", "!=", False)])
+        self.env.add_to_compute(self._fields["progress"], lines)
+        lines._recompute_recordset(["progress"])
 
     @api.depends("parent_product_line_id")
     def _compute_is_child_product_line(self):

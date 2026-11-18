@@ -32,5 +32,6 @@
         <function model="mrp.production.stage" name="_link_default_workcenters"/>
         <function model="mrp.production.stage" name="_seed_machine_usage"/>
         <function model="mrp.production.stage" name="_merge_labeling_coding"/>
+        <function model="mrp.production.plan.product.line" name="_recompute_stage_progress"/>
     </data>
 </odoo>

@@ -114,10 +114,11 @@ class ProductionPlan(models.Model):
         string="Produk di Material Availability",
     )
 
-    @api.depends("material_shortage_ids.product_line_id")
+    @api.depends("product_line_ids", "material_shortage_ids.product_line_id")
     def _compute_material_product_line_ids(self):
+        # Semua produk jadi di plan (stok produk jadi), bukan hanya yang sudah dicek bahannya.
         for plan in self:
-            plan.material_product_line_ids = plan.material_shortage_ids.product_line_id
+            plan.material_product_line_ids = plan.product_line_ids | plan.material_shortage_ids.product_line_id
 
     stage_product_line_ids = fields.Many2many(
         "mrp.production.plan.product.line",
