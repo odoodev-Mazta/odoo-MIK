@@ -132,8 +132,13 @@ class ProductionPlanProductLine(models.Model):
                 line.material_summary = f"{total} bahan cukup"
 
     finished_uom_id = fields.Many2one(
-        "uom.uom", string="Satuan Produk Jadi", related="bom_product_id.uom_id",
+        "uom.uom", string="Satuan Produk Jadi", compute="_compute_finished_uom_id",
     )
+
+    @api.depends("finished_product_id.uom_id", "product_id.uom_id")
+    def _compute_finished_uom_id(self):
+        for line in self:
+            line.finished_uom_id = (line.finished_product_id or line.product_id).uom_id
     finished_qty_available = fields.Float(
         string="Stok Produk Jadi", compute="_compute_finished_stock",
         help="Stok on hand produk jadi saat ini di gudang.",
