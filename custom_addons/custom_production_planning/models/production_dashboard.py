@@ -73,7 +73,7 @@ class ProductionDashboard(models.Model):
         ("draft", "Draft"),
         ("confirmed", "Confirmed"),
         ("progress", "In Progress"),
-        ("to_close", "To Close"),
+        ("to_close", "Progress"),
         ("done", "Done"),
         ("cancel", "Cancelled"),
     ],

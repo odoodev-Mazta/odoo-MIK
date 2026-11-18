@@ -4,8 +4,8 @@ from odoo.exceptions import ValidationError
 class MrpWorkorder(models.Model):
     _inherit = "mrp.workorder"
 
-    def button_start(self):
-        res = super().button_start()
+    def button_start(self, *args, **kwargs):
+        res = super().button_start(*args, **kwargs)
 
         schedules = self.env[
             "mrp.production.machine.schedule"

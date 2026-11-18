@@ -1,4 +1,3 @@
-import inspect
 import math
 from datetime import datetime, timedelta
 
@@ -243,6 +242,10 @@ class ProductionPlanStage(models.Model):
     qc_user_id = fields.Many2one("res.users", string="Petugas QC", readonly=True, copy=False)
     qc_date = fields.Datetime(string="Waktu QC", readonly=True, copy=False)
     qc_submit_date = fields.Datetime(string="Diajukan QC", readonly=True, copy=False)
+    started_by_id = fields.Many2one("res.users", string="Dimulai Oleh", readonly=True, copy=False)
+    submitted_by_id = fields.Many2one("res.users", string="Diajukan QC Oleh", readonly=True, copy=False)
+    qc_attempt = fields.Integer(string="Percobaan QC", readonly=True, copy=False, default=0,
+                                help="Berapa kali tahap ini diajukan ke QC (bertambah bila QC gagal lalu diajukan ulang).")
 
     capacity_id = fields.Many2one(
         "mrp.production.machine.capacity",
@@ -342,7 +345,10 @@ class ProductionPlanStage(models.Model):
                     workorder.workcenter_id = workcenter
                 # Odoo Enterprise mewajibkan user terhubung ke Employee untuk memulai Work Order.
                 # Operatornya sudah dicatat di PIC tahap, jadi pemeriksaan itu dilewati.
-                if "bypass" in inspect.signature(workorder.button_start).parameters:
+                enterprise = self.env["ir.module.module"].sudo().search_count(
+                    [("name", "=", "mrp_workorder"), ("state", "=", "installed")]
+                )
+                if enterprise:
                     workorder.button_start(bypass=True)
                 else:
                     workorder.button_start()
@@ -549,6 +555,7 @@ class ProductionPlanStage(models.Model):
             stage.write({
                 "state": "in_progress",
                 "date_start_actual": fields.Datetime.now(),
+                "started_by_id": self.env.user.id,
                 "qc_state": "pending",
                 "qc_note": False,
             })
@@ -568,6 +575,10 @@ class ProductionPlanStage(models.Model):
                 stage.expiry_date = fields.Date.context_today(stage) + timedelta(days=product.expiration_time)
             stage._ensure_workorder()
             stage._sync_workorder("start")
+            stage.plan_id.message_post(
+                body=f"Tahap {stage._label()} dimulai oleh {self.env.user.name}.",
+                subtype_xmlid="mail.mt_note",
+            )
         return True
 
     def _check_qc_access(self):
@@ -607,6 +618,8 @@ class ProductionPlanStage(models.Model):
                 "state": "waiting_qc",
                 "qc_state": "pending",
                 "qc_submit_date": fields.Datetime.now(),
+                "submitted_by_id": self.env.user.id,
+                "qc_attempt": stage.qc_attempt + 1,
             })
             qc_users = self.env.ref("custom_production_planning.group_production_qc").sudo().all_user_ids
             stage.plan_id.message_post(
