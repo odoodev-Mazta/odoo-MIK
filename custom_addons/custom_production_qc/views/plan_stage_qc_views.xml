@@ -47,7 +47,8 @@
                 <field name="submitted_by_id" invisible="not plan_stage_id"/>
                 <field name="qc_user_id" invisible="not plan_stage_id"/>
             </xpath>
-            <xpath expr="//group[@string='QC Summary']" position="attributes">
+            <!-- Grup "QC Summary" (dipilih lewat field di dalamnya; selector @string tidak diizinkan) -->
+            <xpath expr="//field[@name='pending_count']/../.." position="attributes">
                 <attribute name="invisible">plan_stage_id</attribute>
             </xpath>
             <xpath expr="//notebook" position="attributes">
