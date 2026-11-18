@@ -359,18 +359,26 @@
 
                         <page string="Material Availability">
                             <field name="material_product_line_ids" readonly="1">
-                                <list create="0" delete="0" edit="0" open_form_view="0"
-                                      decoration-danger="material_summary and 'kurang' in material_summary"
-                                      decoration-success="material_summary and 'cukup' in material_summary">
+                                <list create="0" delete="0" edit="0" open_form_view="0">
                                     <field name="bom_product_id" string="Produk Jadi"/>
-                                    <field name="production_qty" string="Qty"/>
-                                    <field name="material_summary" string="Bahan"/>
+                                    <field name="production_qty" string="Qty Produksi"/>
+                                    <field name="finished_qty_available"/>
+                                    <field name="finished_qty_forecast" optional="show"/>
+                                    <field name="finished_uom_id" string="Satuan"/>
+                                    <field name="finished_stock_status" widget="badge"
+                                           decoration-success="finished_stock_status == 'Stok sudah cukup'"
+                                           decoration-warning="finished_stock_status and finished_stock_status != 'Stok sudah cukup'"/>
+                                    <field name="material_summary" string="Bahan" widget="badge"
+                                           decoration-danger="material_summary and 'kurang' in material_summary"
+                                           decoration-success="material_summary and 'cukup' in material_summary"/>
                                     <button name="action_open_material_popup" type="object"
-                                            string="Lihat Bahan" icon="fa-list" class="btn btn-link"/>
+                                            string="Lihat Bahan" icon="fa-list" class="btn btn-link"
+                                            invisible="not material_summary"/>
                                 </list>
                             </field>
                             <div class="text-muted">
-                                Klik Lihat Bahan di tiap produk untuk melihat kebutuhan, stok, dan kekurangan bahannya.
+                                Stok Produk Jadi = stok on hand produk jadi sekarang. Perkiraan Stok = on hand + yang akan
+                                masuk - yang akan keluar. Kolom Bahan terisi setelah Check Material; klik Lihat Bahan untuk rinciannya.
                             </div>
                         </page>
 

@@ -90,17 +90,34 @@
                         </group>
                     </group>
                     <separator string="Pemeriksaan"/>
+                    <div class="text-muted" invisible="state != 'waiting_qc'">
+                        Minimum, Maksimum, dan Spesifikasi boleh diubah khusus untuk produksi ini.
+                        Data di QC Template / QC Parameter tidak ikut berubah; perubahan dicatat di chatter Plan.
+                    </div>
                     <field name="check_ids" readonly="state != 'waiting_qc'">
-                        <list editable="bottom" create="0" delete="0">
-                            <field name="parameter_type" column_invisible="1"/>
-                            <field name="name" readonly="1"/>
-                            <field name="specification" readonly="1"/>
-                            <field name="unit" readonly="1"/>
-                            <field name="min_value" readonly="1" optional="show"/>
-                            <field name="max_value" readonly="1" optional="show"/>
+                        <list editable="bottom" delete="0">
+                            <field name="parameter_type" optional="hide"/>
+                            <field name="name"/>
+                            <field name="specification"/>
+                            <field name="unit"/>
+                            <field name="min_value" readonly="parameter_type != 'number'" optional="show"/>
+                            <field name="max_value" readonly="parameter_type != 'number'" optional="show"/>
                             <field name="actual_value" readonly="parameter_type == 'boolean'"/>
                             <field name="actual_yesno" readonly="parameter_type != 'boolean'"/>
                             <field name="result" widget="badge" decoration-success="result == 'passed'" decoration-danger="result == 'failed'"/>
+                        </list>
+                    </field>
+                    <separator string="Riwayat QC" invisible="not qc_log_ids"/>
+                    <field name="qc_log_ids" readonly="1" invisible="not qc_log_ids">
+                        <list decoration-success="result == 'passed'" decoration-danger="result == 'failed'">
+                            <field name="attempt"/>
+                            <field name="qc_date"/>
+                            <field name="started_by_id"/>
+                            <field name="qc_user_id"/>
+                            <field name="failed_parameters"/>
+                            <field name="reason"/>
+                            <field name="result" widget="badge"
+                                   decoration-success="result == 'passed'" decoration-danger="result == 'failed'"/>
                         </list>
                     </field>
                 </sheet>

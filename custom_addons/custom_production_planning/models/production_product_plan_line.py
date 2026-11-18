@@ -131,6 +131,35 @@ class ProductionPlanProductLine(models.Model):
             else:
                 line.material_summary = f"{total} bahan cukup"
 
+    finished_uom_id = fields.Many2one(
+        "uom.uom", string="Satuan Produk Jadi", related="bom_product_id.uom_id",
+    )
+    finished_qty_available = fields.Float(
+        string="Stok Produk Jadi", compute="_compute_finished_stock",
+        help="Stok on hand produk jadi saat ini di gudang.",
+    )
+    finished_qty_forecast = fields.Float(
+        string="Perkiraan Stok", compute="_compute_finished_stock",
+        help="Stok on hand + yang akan masuk (Perintah Produksi / pembelian) - yang akan keluar (pengiriman).",
+    )
+    finished_stock_status = fields.Char(string="Status Stok", compute="_compute_finished_stock")
+
+    @api.depends("bom_product_id", "production_qty")
+    def _compute_finished_stock(self):
+        for line in self:
+            product = line.bom_product_id
+            on_hand = product.qty_available if product else 0.0
+            line.finished_qty_available = on_hand
+            line.finished_qty_forecast = product.virtual_available if product else 0.0
+            if not product:
+                line.finished_stock_status = False
+            elif on_hand <= 0:
+                line.finished_stock_status = "Belum ada stok"
+            elif on_hand >= line.production_qty:
+                line.finished_stock_status = "Stok sudah cukup"
+            else:
+                line.finished_stock_status = f"Stok kurang {line.production_qty - on_hand:g}"
+
     def action_open_material_popup(self):
         self.ensure_one()
         return {
