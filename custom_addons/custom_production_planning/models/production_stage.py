@@ -53,6 +53,30 @@ class ProductionStage(models.Model):
         params.set_param(key, "1")
 
     @api.model
+    def _merge_labeling_coding(self):
+        """Labeling dan Coding jadi satu tahap 'Labeling & Coding' (stiker + tanggal expired). Sekali saja."""
+        params = self.env["ir.config_parameter"].sudo()
+        key = "custom_production_planning.labeling_coding_merged"
+        if params.get_param(key):
+            return
+        labeling = self.env.ref("custom_production_planning.stage_labeling", raise_if_not_found=False)
+        coding = self.env.ref("custom_production_planning.stage_coding", raise_if_not_found=False)
+        if labeling:
+            labeling.write({"name": "Labeling & Coding", "set_batch": True})
+        if labeling and coding and labeling != coding:
+            coding.parameter_ids.write({"stage_id": labeling.id})
+            for machine in self.env["mrp.production.machine"].with_context(active_test=False).search(
+                [("stage_ids", "in", coding.id)]
+            ):
+                machine.stage_ids = [Command.unlink(coding.id), Command.link(labeling.id)]
+            # Tahap Coding di plan yang belum dimulai dihapus; yang sudah berjalan/selesai dibiarkan sebagai riwayat.
+            self.env["mrp.production.plan.stage"].search([
+                ("stage_id", "=", coding.id), ("state", "=", "todo"),
+            ]).unlink()
+            coding.active = False
+        params.set_param(key, "1")
+
+    @api.model
     def _link_default_workcenters(self):
         """Isi Work Center bawaan tiap tahap dari data (hanya yang masih kosong)."""
         mapping = {
@@ -218,6 +242,10 @@ class ProductionPlanStage(models.Model):
     qc_user_id = fields.Many2one("res.users", string="Petugas QC", readonly=True, copy=False)
     qc_date = fields.Datetime(string="Waktu QC", readonly=True, copy=False)
     qc_submit_date = fields.Datetime(string="Diajukan QC", readonly=True, copy=False)
+    started_by_id = fields.Many2one("res.users", string="Dimulai Oleh", readonly=True, copy=False)
+    submitted_by_id = fields.Many2one("res.users", string="Diajukan QC Oleh", readonly=True, copy=False)
+    qc_attempt = fields.Integer(string="Percobaan QC", readonly=True, copy=False, default=0,
+                                help="Berapa kali tahap ini diajukan ke QC (bertambah bila QC gagal lalu diajukan ulang).")
 
     capacity_id = fields.Many2one(
         "mrp.production.machine.capacity",
@@ -315,7 +343,15 @@ class ProductionPlanStage(models.Model):
                 workcenter = stage._get_workcenter()
                 if workcenter and workorder.workcenter_id != workcenter and not workorder.leave_id:
                     workorder.workcenter_id = workcenter
-                workorder.button_start()
+                # Odoo Enterprise mewajibkan user terhubung ke Employee untuk memulai Work Order.
+                # Operatornya sudah dicatat di PIC tahap, jadi pemeriksaan itu dilewati.
+                enterprise = self.env["ir.module.module"].sudo().search_count(
+                    [("name", "=", "mrp_workorder"), ("state", "=", "installed")]
+                )
+                if enterprise:
+                    workorder.button_start(bypass=True)
+                else:
+                    workorder.button_start()
             elif action == "pending":
                 workorder.button_pending()
             elif action == "finish":
@@ -519,6 +555,7 @@ class ProductionPlanStage(models.Model):
             stage.write({
                 "state": "in_progress",
                 "date_start_actual": fields.Datetime.now(),
+                "started_by_id": self.env.user.id,
                 "qc_state": "pending",
                 "qc_note": False,
             })
@@ -538,6 +575,10 @@ class ProductionPlanStage(models.Model):
                 stage.expiry_date = fields.Date.context_today(stage) + timedelta(days=product.expiration_time)
             stage._ensure_workorder()
             stage._sync_workorder("start")
+            stage.plan_id.message_post(
+                body=f"Tahap {stage._label()} dimulai oleh {self.env.user.name}.",
+                subtype_xmlid="mail.mt_note",
+            )
         return True
 
     def _check_qc_access(self):
@@ -577,6 +618,8 @@ class ProductionPlanStage(models.Model):
                 "state": "waiting_qc",
                 "qc_state": "pending",
                 "qc_submit_date": fields.Datetime.now(),
+                "submitted_by_id": self.env.user.id,
+                "qc_attempt": stage.qc_attempt + 1,
             })
             qc_users = self.env.ref("custom_production_planning.group_production_qc").sudo().all_user_ids
             stage.plan_id.message_post(

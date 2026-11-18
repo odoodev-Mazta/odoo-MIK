@@ -180,7 +180,7 @@
             <field name="code">COD-MSN</field>
             <field name="operator_count">2</field>
             <field name="note">Mesin, 2 orang. Kapasitas pcs per hari.</field>
-            <field name="stage_ids" eval="[(6, 0, [ref('stage_coding')])]"/>
+            <field name="stage_ids" eval="[(6, 0, [ref('stage_labeling')])]"/>
         </record>
 
             <record id="machine_coding_mesin_cap1" model="mrp.production.machine.capacity">

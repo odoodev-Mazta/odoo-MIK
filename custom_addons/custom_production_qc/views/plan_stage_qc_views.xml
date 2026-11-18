@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- QC Schedule: tampilkan tahap proses yang diajukan dari Plan Produksi -->
+    <record id="view_qc_schedule_list_stage" model="ir.ui.view">
+        <field name="name">production.qc.schedule.list.stage</field>
+        <field name="model">production.qc.schedule</field>
+        <field name="inherit_id" ref="view_qc_schedule_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-warning">state == 'waiting'</attribute>
+                <attribute name="decoration-success">state == 'done'</attribute>
+                <attribute name="decoration-danger">state == 'failed'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="plan_id" optional="show"/>
+                <field name="stage_name_id" optional="show"/>
+                <field name="production_id" optional="show"/>
+                <field name="stage_qty_good" optional="show"/>
+                <field name="submitted_by_id" optional="show"/>
+                <field name="qc_user_id" optional="show"/>
+                <field name="inspection_date" optional="hide"/>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="attributes">
+                <attribute name="widget">badge</attribute>
+                <attribute name="decoration-warning">state == 'waiting'</attribute>
+                <attribute name="decoration-success">state == 'done'</attribute>
+                <attribute name="decoration-danger">state == 'failed'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_qc_schedule_form_stage" model="ir.ui.view">
+        <field name="name">production.qc.schedule.form.stage</field>
+        <field name="model">production.qc.schedule</field>
+        <field name="inherit_id" ref="view_qc_schedule_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_stage_check" type="object" string="Periksa &amp; Approve"
+                        class="btn-primary" invisible="not plan_stage_id or state != 'waiting'"
+                        groups="custom_production_planning.group_production_qc,base.group_system"/>
+            </xpath>
+            <xpath expr="//field[@name='workorder_id']" position="after">
+                <field name="plan_stage_id" invisible="not plan_stage_id"/>
+                <field name="plan_id" invisible="not plan_stage_id"/>
+                <field name="stage_name_id" invisible="not plan_stage_id"/>
+                <field name="stage_qty_good" invisible="not plan_stage_id"/>
+                <field name="submitted_by_id" invisible="not plan_stage_id"/>
+                <field name="qc_user_id" invisible="not plan_stage_id"/>
+            </xpath>
+            <!-- Grup "QC Summary" (dipilih lewat field di dalamnya; selector @string tidak diizinkan) -->
+            <xpath expr="//field[@name='pending_count']/../.." position="attributes">
+                <attribute name="invisible">plan_stage_id</attribute>
+            </xpath>
+            <xpath expr="//notebook" position="attributes">
+                <attribute name="invisible">plan_stage_id</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Tahap yang sudah terlanjur diajukan QC ikut muncul di QC Schedule. Berjalan tiap Upgrade. -->
+    <function model="mrp.production.plan.stage" name="_backfill_qc_schedule"/>
+</odoo>

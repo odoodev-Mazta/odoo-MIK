@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_production_report_import_wizard" model="ir.ui.view">
+        <field name="name">mrp.production.report.import.wizard.form</field>
+        <field name="model">mrp.production.report.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Laporan Produksi">
+                <p class="text-muted">
+                    Pilih file Excel MASTER produksi. Baris judul harus berisi kolom seperti NO.PO, BRAND,
+                    JENIS PRODUK, QTY, JENIS KEMASAN, TGL PRODUKSI, PROSES MIXING ... STATUS PO.
+                    Baris kosong dilewati. Baris dengan No. PO yang sama digabung jadi satu PO berisi banyak produk.
+                    Import ulang memperbarui data, bukan mendobel.
+                </p>
+                <group>
+                    <field name="file" filename="filename"/>
+                    <field name="filename" invisible="1"/>
+                    <field name="mode" widget="radio"/>
+                </group>
+                <footer>
+                    <button name="action_import" type="object" string="Import" class="btn-primary"/>
+                    <button string="Batal" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_production_report_import" model="ir.actions.act_window">
+        <field name="name">Import Laporan Produksi</field>
+        <field name="res_model">mrp.production.report.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_production_report_list" model="ir.ui.view">
+        <field name="name">mrp.production.report.list</field>
+        <field name="model">mrp.production.report</field>
+        <field name="arch" type="xml">
+            <list decoration-success="po_status == 'selesai'" decoration-info="po_status == 'progress'"
+                  decoration-warning="po_status == 'partial'" decoration-muted="po_status == 'closing'">
+                <header>
+                    <button name="%(action_production_report_import)d" type="action" string="Import dari Excel"
+                            class="btn-primary" icon="fa-upload" display="always"/>
+                </header>
+                <field name="po_date"/>
+                <field name="po_number"/>
+                <field name="brand"/>
+                <field name="product_count" string="Produk"/>
+                <field name="qty_total" sum="Total Qty"/>
+                <field name="material_total" sum="Total Bahan" optional="hide"/>
+                <field name="production_date"/>
+                <field name="delivery_date"/>
+                <field name="lead_days" optional="hide"/>
+                <field name="po_status" widget="badge" decoration-success="po_status == 'selesai'"
+                       decoration-info="po_status == 'progress'" decoration-warning="po_status == 'partial'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_production_report_form" model="ir.ui.view">
+        <field name="name">mrp.production.report.form</field>
+        <field name="model">mrp.production.report</field>
+        <field name="arch" type="xml">
+            <form string="Laporan Produksi (Excel)">
+                <header>
+                    <field name="po_status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="display_label" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="po_number"/>
+                            <field name="po_date"/>
+                            <field name="brand"/>
+                        </group>
+                        <group>
+                            <field name="product_count"/>
+                            <field name="qty_total"/>
+                            <field name="material_total"/>
+                            <field name="production_date"/>
+                            <field name="delivery_date"/>
+                            <field name="lead_days"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Produk" name="products">
+                            <field name="line_ids">
+                                <list editable="bottom"
+                                      decoration-success="po_status == 'selesai'" decoration-info="po_status == 'progress'"
+                                      decoration-warning="po_status == 'partial'" decoration-muted="po_status == 'closing'">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="batch_no"/>
+                                    <field name="brand" optional="hide"/>
+                                    <field name="product_type"/>
+                                    <field name="qty" sum="Total Qty"/>
+                                    <field name="packaging"/>
+                                    <field name="unit_weight" optional="show"/>
+                                    <field name="total_material" sum="Total Bahan" optional="show"/>
+                                    <field name="production_date"/>
+                                    <field name="mixing_state" widget="badge" decoration-success="mixing_state == 'done'" decoration-warning="mixing_state == 'progress'" optional="show"/>
+                                    <field name="filling_state" widget="badge" decoration-success="filling_state == 'done'" decoration-warning="filling_state == 'progress'" optional="show"/>
+                                    <field name="labeling_state" widget="badge" decoration-success="labeling_state == 'done'" decoration-warning="labeling_state == 'progress'" optional="show"/>
+                                    <field name="packing_state" widget="badge" decoration-success="packing_state == 'done'" decoration-warning="packing_state == 'progress'" optional="show"/>
+                                    <field name="delivery_state" widget="badge" decoration-success="delivery_state == 'done'" decoration-warning="delivery_state == 'progress'" optional="show"/>
+                                    <field name="ready_date" optional="hide"/>
+                                    <field name="delivery_date"/>
+                                    <field name="po_status" widget="badge" decoration-success="po_status == 'selesai'"
+                                           decoration-info="po_status == 'progress'" decoration-warning="po_status == 'partial'"/>
+                                    <field name="sequence_label" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_production_report_search" model="ir.ui.view">
+        <field name="name">mrp.production.report.search</field>
+        <field name="model">mrp.production.report</field>
+        <field name="arch" type="xml">
+            <search string="Laporan Produksi (Excel)">
+                <field name="po_number"/>
+                <field name="brand"/>
+                <field name="line_ids" string="Jenis Produk" filter_domain="[('line_ids.product_type', 'ilike', self)]"/>
+                <field name="line_ids" string="No. Batch" filter_domain="[('line_ids.batch_no', 'ilike', self)]"/>
+                <field name="line_ids" string="Jenis Kemasan" filter_domain="[('line_ids.packaging', 'ilike', self)]"/>
+                <filter name="selesai" string="Selesai" domain="[('po_status', '=', 'selesai')]"/>
+                <filter name="progress" string="Progress" domain="[('po_status', '=', 'progress')]"/>
+                <filter name="partial" string="Partial" domain="[('po_status', '=', 'partial')]"/>
+                <filter name="closing" string="Closing" domain="[('po_status', '=', 'closing')]"/>
+                <separator/>
+                <filter name="not_sent" string="Belum Dikirim" domain="[('line_ids.delivery_state', '!=', 'done')]"/>
+                <separator/>
+                <filter name="po_date" string="Tgl PO" date="po_date"/>
+                <filter name="production_date" string="Tgl Produksi" date="production_date"/>
+                <group>
+                    <filter name="group_brand" string="Brand" context="{'group_by': 'brand'}"/>
+                    <filter name="group_status" string="Status PO" context="{'group_by': 'po_status'}"/>
+                    <filter name="group_month" string="Bulan PO" context="{'group_by': 'po_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_production_report_pivot" model="ir.ui.view">
+        <field name="name">mrp.production.report.pivot</field>
+        <field name="model">mrp.production.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Laporan Produksi (Excel)">
+                <field name="po_date" interval="month" type="row"/>
+                <field name="po_status" type="col"/>
+                <field name="qty_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_production_report_graph" model="ir.ui.view">
+        <field name="name">mrp.production.report.graph</field>
+        <field name="model">mrp.production.report</field>
+        <field name="arch" type="xml">
+            <graph string="Laporan Produksi (Excel)" type="bar">
+                <field name="po_date" interval="month"/>
+                <field name="qty_total" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_production_report" model="ir.actions.act_window">
+        <field name="name">Laporan Produksi (Excel)</field>
+        <field name="res_model">mrp.production.report</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada data Laporan Produksi.</p>
+            <p>Klik tombol Import dari Excel di atas daftar untuk memasukkan data MASTER produksi.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_production_report" name="Laporan Produksi (Excel)"
+              parent="menu_production_planning_root" action="action_production_report" sequence="50"/>
+</odoo>
