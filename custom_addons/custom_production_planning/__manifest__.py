@@ -33,6 +33,7 @@
         "views/production_dashboard_views.xml",
         "views/production_plan_product_line_views.xml",
         "views/production_plan_menus.xml",
+        "views/production_report_views.xml",
         "views/production_stage_views.xml",
         "wizard/production_plan_split_wizard_views.xml",
         "wizard/production_plan_shortage_wizard_views.xml",

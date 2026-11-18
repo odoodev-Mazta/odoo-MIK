@@ -18,6 +18,7 @@
         "views/qc_template_views.xml",
         "views/qc_parameter_views.xml",
         "views/qc_schedule_views.xml",
+        "views/plan_stage_qc_views.xml",
         "views/production_machine_views.xml",
         "views/mrp_workorder_views.xml",
         "views/qc_menus.xml",

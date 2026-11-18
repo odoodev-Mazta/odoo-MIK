@@ -16,13 +16,8 @@
             <field name="origin_type">both</field>
         </record>
         <record id="stage_labeling" model="mrp.production.stage">
-            <field name="name">Labeling</field>
+            <field name="name">Labeling &amp; Coding</field>
             <field name="sequence">40</field>
-            <field name="origin_type">both</field>
-        </record>
-        <record id="stage_coding" model="mrp.production.stage">
-            <field name="name">Coding</field>
-            <field name="sequence">50</field>
             <field name="origin_type">both</field>
             <field name="set_batch" eval="True"/>
         </record>

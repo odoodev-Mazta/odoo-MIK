@@ -6,3 +6,4 @@ from . import qc_check_line
 from . import production_machine_schedule
 from . import production_machine
 from . import mrp_workorder
+from . import plan_stage_qc

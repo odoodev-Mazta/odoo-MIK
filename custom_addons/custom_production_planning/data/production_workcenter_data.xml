@@ -31,5 +31,6 @@
     <data noupdate="0">
         <function model="mrp.production.stage" name="_link_default_workcenters"/>
         <function model="mrp.production.stage" name="_seed_machine_usage"/>
+        <function model="mrp.production.stage" name="_merge_labeling_coding"/>
     </data>
 </odoo>

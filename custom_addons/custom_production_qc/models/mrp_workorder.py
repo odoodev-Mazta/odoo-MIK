@@ -87,9 +87,9 @@ class MrpWorkorder(models.Model):
             }
         }
 
-    def button_start(self):
+    def button_start(self, *args, **kwargs):
 
-        res = super().button_start()
+        res = super().button_start(*args, **kwargs)
 
         qc_schedules = self.env[
             "production.qc.schedule"

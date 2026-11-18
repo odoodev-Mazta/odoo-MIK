@@ -583,7 +583,7 @@ class ProductionPlan(models.Model):
                     "expiration_date": datetime.combine(batch_stage.expiry_date, datetime.min.time()),
                 })
             order.with_context(
-                skip_backorder=True, skip_consumption=True, skip_immediate=True,
+                skip_backorder=True, skip_consumption=True, skip_immediate=True, stage_flow_done=True,
             ).button_mark_done()
             self.message_post(
                 body=f"{product_line.product_id.display_name}: Packing selesai, {qty:g} masuk stok (Perintah Produksi {order.name})."
