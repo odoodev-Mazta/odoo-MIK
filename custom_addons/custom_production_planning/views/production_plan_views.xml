@@ -224,7 +224,7 @@
                                         type="object"
                                         title="Pecah produksi (Split)"
                                         icon="fa-scissors"
-                                        invisible="parent_product_line_id or remaining_qty &lt;= 0"
+                                        invisible="parent_product_line_id or remaining_qty &lt;= 0 or has_mo or parent.state != 'draft'"
                                     />
                                 </list>
                             </field>

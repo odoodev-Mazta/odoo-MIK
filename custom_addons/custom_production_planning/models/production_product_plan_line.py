@@ -313,12 +313,17 @@ class ProductionPlanProductLine(models.Model):
                 )
 
     @api.depends(
+        "stage_ids.state",
         "manufacturing_order_ids",
         "manufacturing_order_ids.workorder_ids",
         "manufacturing_order_ids.workorder_ids.state",
     )
     def _compute_progress(self):
         for line in self:
+            # Progress dari tahap proses (sama seperti progress Plan); Work Order hanya cadangan.
+            if line.stage_ids:
+                line.progress = len(line.stage_ids.filtered(lambda s: s.state == "done")) / len(line.stage_ids) * 100
+                continue
             workorders = line.manufacturing_order_ids.mapped(
                 "workorder_ids"
             )
@@ -334,6 +339,13 @@ class ProductionPlanProductLine(models.Model):
             line.progress = (
                 len(done) / len(workorders)
             ) * 100
+
+    @api.model
+    def _recompute_stage_progress(self):
+        """Tiap Upgrade: progress produk yang sudah ada dihitung ulang dari tahap proses."""
+        lines = self.search([("stage_ids", "!=", False)])
+        self.env.add_to_compute(self._fields["progress"], lines)
+        lines._recompute_recordset(["progress"])
 
     @api.depends("parent_product_line_id")
     def _compute_is_child_product_line(self):
