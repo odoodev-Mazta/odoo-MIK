@@ -7,3 +7,4 @@ from . import production_machine_schedule
 from . import production_machine
 from . import mrp_workorder
 from . import plan_stage_qc
+from . import stage_qc_template

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- QC Template: dipilih per tahap + isi per pcs (20 gr, 50 gr, ...) atau produk tertentu -->
+    <record id="view_qc_template_list_stage" model="ir.ui.view">
+        <field name="name">production.qc.template.list.stage</field>
+        <field name="model">production.qc.template</field>
+        <field name="inherit_id" ref="view_qc_template_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='qc_type']" position="after">
+                <field name="stage_id"/>
+                <field name="fill_size"/>
+                <field name="product_tmpl_ids" widget="many2many_tags" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_qc_template_form_stage" model="ir.ui.view">
+        <field name="name">production.qc.template.form.stage</field>
+        <field name="model">production.qc.template</field>
+        <field name="inherit_id" ref="view_qc_template_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='operation_id']" position="before">
+                <field name="stage_id"/>
+                <field name="fill_size" invisible="not stage_id"/>
+                <field name="product_tmpl_ids" widget="many2many_tags" invisible="not stage_id"
+                       options="{'no_create': True}"/>
+            </xpath>
+            <xpath expr="//field[@name='operation_id']" position="attributes">
+                <attribute name="invisible">stage_id</attribute>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <div class="text-muted" invisible="not stage_id">
+                    Saat tahap dimulai di Plan Produksi, dipilih template yang paling cocok:
+                    1) produk disebut di Khusus Produk, 2) Isi per pcs sama dengan angka gr/ml di nama produk
+                    (mis. "... 20 GR"), 3) template umum tahap ini (Isi per pcs 0 dan Khusus Produk kosong).
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Daftar QC Parameter: tampilkan template, tahap, dan batasnya -->
+    <record id="view_qc_parameter_list_stage" model="ir.ui.view">
+        <field name="name">production.qc.parameter.list.stage</field>
+        <field name="model">production.qc.parameter</field>
+        <field name="inherit_id" ref="view_qc_parameter_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="before">
+                <field name="template_id"/>
+            </xpath>
+            <xpath expr="//field[@name='uom_id']" position="after">
+                <field name="min_value"/>
+                <field name="max_value"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Master Tahap: parameter tidak lagi diisi di sini, tapi di QC Template -->
+    <record id="view_production_stage_form_qc_template" model="ir.ui.view">
+        <field name="name">mrp.production.stage.form.qc.template</field>
+        <field name="model">mrp.production.stage</field>
+        <field name="inherit_id" ref="custom_production_planning.view_production_stage_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='parameter_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='parameter_ids']" position="after">
+                <div class="text-muted mb-2">
+                    Parameter QC diatur di Quality Control → QC Template (bisa beda per ukuran, mis. 20 gr dan 50 gr).
+                </div>
+                <field name="qc_template_ids" context="{'default_stage_id': id, 'default_qc_type': 'process'}">
+                    <list>
+                        <field name="name"/>
+                        <field name="fill_size"/>
+                        <field name="product_tmpl_ids" widget="many2many_tags"/>
+                        <field name="active"/>
+                    </list>
+                </field>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Form pemeriksaan tahap: template yang dipakai -->
+    <record id="view_production_plan_stage_form_qc_template" model="ir.ui.view">
+        <field name="name">mrp.production.plan.stage.form.qc.template</field>
+        <field name="model">mrp.production.plan.stage</field>
+        <field name="inherit_id" ref="custom_production_planning.view_production_plan_stage_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='qc_note']" position="after">
+                <field name="qc_template_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <function model="mrp.production.stage" name="_move_parameters_to_qc_templates"/>
+</odoo>

@@ -502,6 +502,13 @@ class ProductionPlanStage(models.Model):
                     "lebih awal dari tanggal mulai."
                 )
 
+    @api.depends("stage_id", "product_line_id.bom_product_id", "batch_label", "plan_id")
+    def _compute_display_name(self):
+        for stage in self:
+            label = stage._label() if stage.stage_id else ""
+            parts = [label, stage.batch_label, stage.plan_id.name]
+            stage.display_name = " · ".join(p for p in parts if p) or False
+
     def _label(self):
         self.ensure_one()
         product = self.product_id.display_name
@@ -560,16 +567,7 @@ class ProductionPlanStage(models.Model):
                 "qc_note": False,
             })
             stage.check_ids.unlink()
-            stage.check_ids = [Command.create({
-                "sequence": parameter.sequence,
-                "name": parameter.name,
-                "specification": parameter.specification,
-                "parameter_type": parameter.parameter_type,
-                "unit": parameter.unit,
-                "min_value": parameter.min_value,
-                "max_value": parameter.max_value,
-                "required": parameter.required,
-            }) for parameter in stage.stage_id.parameter_ids]
+            stage.check_ids = [Command.create(vals) for vals in stage._get_qc_parameter_vals()]
             product = stage.product_id
             if stage.set_batch and not stage.expiry_date and product.use_expiration_date and product.expiration_time:
                 stage.expiry_date = fields.Date.context_today(stage) + timedelta(days=product.expiration_time)
@@ -580,6 +578,20 @@ class ProductionPlanStage(models.Model):
                 subtype_xmlid="mail.mt_note",
             )
         return True
+
+    def _get_qc_parameter_vals(self):
+        """Parameter QC yang disalin ke tahap saat Mulai. Modul QC menggantinya dengan QC Template yang cocok."""
+        self.ensure_one()
+        return [{
+            "sequence": parameter.sequence,
+            "name": parameter.name,
+            "specification": parameter.specification,
+            "parameter_type": parameter.parameter_type,
+            "unit": parameter.unit,
+            "min_value": parameter.min_value,
+            "max_value": parameter.max_value,
+            "required": parameter.required,
+        } for parameter in self.stage_id.parameter_ids]
 
     def _check_qc_access(self):
         """Hanya petugas QC (atau Administrator) yang boleh menyatakan lulus / gagal."""
@@ -682,8 +694,27 @@ class ProductionPlanStage(models.Model):
             "target": "new",
         }
 
+    def _need_fail_reason(self):
+        """Catatan kosong diisi otomatis dari parameter yang gagal. True bila masih ada yang perlu alasan (popup)."""
+        for stage in self.filtered(lambda s: s.state == "waiting_qc" and not s.qc_note):
+            failed = stage.check_ids.filtered(lambda check: check.result == "failed")
+            if failed:
+                stage.qc_note = "Di luar batas: " + ", ".join(
+                    f"{check.name} ({check.actual_value or check.actual_yesno})" for check in failed
+                )
+        return bool(self.filtered(lambda s: s.state == "waiting_qc" and not s.qc_note))
+
     def action_qc_fail(self):
         self._check_qc_access()
+        if self._need_fail_reason():
+            return {
+                "type": "ir.actions.act_window",
+                "name": "Alasan QC Gagal",
+                "res_model": "mrp.production.plan.stage.fail.wizard",
+                "view_mode": "form",
+                "target": "new",
+                "context": {"default_stage_ids": self.ids},
+            }
         for stage in self:
             if stage.state != "waiting_qc":
                 raise ValidationError(f"Tahap {stage._label()} belum diajukan ke QC.")

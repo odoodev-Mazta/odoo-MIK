@@ -48,6 +48,10 @@ class MrpWorkorder(models.Model):
             if existing:
                 continue
 
+            # Work Order dari tahap Plan Produksi tidak punya Operation; QC-nya lewat tahap (QC Template per tahap).
+            if not wo.operation_id:
+                continue
+
             template = Template.search([
                 ("operation_id", "=", wo.operation_id.id)
             ], limit=1)
