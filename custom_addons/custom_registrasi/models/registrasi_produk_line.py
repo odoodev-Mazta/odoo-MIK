@@ -63,7 +63,7 @@ class RegistrasiProdukLine(models.Model):
     #     tracking=True,
     # )
     official_product_name = fields.Char(
-        string='Official Product Name (RO Drafted)',
+        string='Nama Resmi (teks)',
         copy=False,
     )
     official_product_id = fields.Many2one(
