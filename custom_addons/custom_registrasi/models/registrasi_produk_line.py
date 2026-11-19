@@ -68,10 +68,10 @@ class RegistrasiProdukLine(models.Model):
     )
     official_product_id = fields.Many2one(
         comodel_name='product.template',
-        string='Cari / Buat Produk Resmi',
+        string='Official Product Name (RO Drafted)',
         copy=False,
         help='Cari produk yang sudah ada, atau ketik nama baru lalu Create untuk membuat produk baru. '
-             'Nama produk yang dipilih otomatis mengisi Official Product Name (tetap bisa diedit).',
+             'Namanya otomatis disimpan sebagai Official Product Name.',
     )
     product_name_revision_count = fields.Integer(
         string='Product Name Revision Count',
@@ -105,8 +105,26 @@ class RegistrasiProdukLine(models.Model):
     @api.onchange('official_product_id')
     def _onchange_official_product_id(self):
         for line in self:
-            if line.official_product_id:
-                line.official_product_name = line.official_product_id.display_name
+            line.official_product_name = line.official_product_id.display_name or False
+
+    def _mirror_official_name(self, vals):
+        """Pilihan produk resmi selalu menjadi Official Product Name (teks) yang dipakai di seluruh proses."""
+        if 'official_product_id' in vals and 'official_product_name' not in vals:
+            product = self.env['product.template'].browse(vals['official_product_id'])
+            vals = dict(vals, official_product_name=product.display_name or False)
+        return vals
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        return super().create([self._mirror_official_name(vals) for vals in vals_list])
+
+    @api.model
+    def _link_official_products(self):
+        """Tiap Upgrade: nama resmi lama yang persis sama dengan nama produk ditautkan ke produknya."""
+        for line in self.search([('official_product_id', '=', False), ('official_product_name', '!=', False)]):
+            product = self.env['product.template'].search([('name', '=', line.official_product_name)], limit=1)
+            if product:
+                line.official_product_id = product
 
     # Perubahan field ini dicatat di chatter Registrasi Produk (induknya), karena baris
     # produk tidak punya chatter sendiri.
@@ -121,6 +139,7 @@ class RegistrasiProdukLine(models.Model):
     )
 
     def write(self, vals):
+        vals = self._mirror_official_name(vals)
         tracked = [name for name in self._TRACKED_FIELDS if name in vals]
         old_values = {line.id: {name: line[name] for name in tracked} for line in self} if tracked else {}
         result = super().write(vals)
