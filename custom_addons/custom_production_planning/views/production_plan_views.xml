@@ -103,6 +103,14 @@
                         class="btn-info"
                     />
 
+                    <button
+                        name="action_create_finished_delivery"
+                        type="object"
+                        string="Buat Delivery Produk Jadi"
+                        class="btn-primary"
+                        invisible="state not in ('running', 'done') or not sale_order_id"
+                    />
+
                     <field
                         name="state"
                         widget="statusbar"
@@ -270,8 +278,8 @@
                                     <field name="workorder_id" readonly="1" optional="hide"/>
                                     <field name="material_state" widget="badge" decoration-danger="material_state == 'short'"
                                            decoration-success="material_state == 'ok'"/>
-                                    <field name="qty_good" readonly="state != 'in_progress'"/>
-                                    <field name="qty_reject" readonly="state != 'in_progress'"/>
+                                    <field name="qty_good" readonly="state != 'waiting_qc'"/>
+                                    <field name="qty_reject" readonly="state != 'waiting_qc'"/>
                                     <field name="set_batch" column_invisible="1"/>
                                     <field name="batch_no" readonly="not set_batch or state != 'in_progress'" optional="hide"/>
                                     <field name="expiry_date" readonly="not set_batch or state != 'in_progress'" optional="hide"/>

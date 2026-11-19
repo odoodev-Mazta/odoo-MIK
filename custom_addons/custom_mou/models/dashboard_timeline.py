@@ -580,10 +580,52 @@ class DashboardTimeline(models.Model):
                                 picking.date_done.date() if picking.date_done else None
                             )
 
+                # SO per baris produk (1 PR bisa berisi lebih dari 1 Sales Order)
+                line_sales = []
+                if not pr.is_bulk_purchase:
+                    for rl in pr.request_line_ids.filtered(lambda l: not l.display_type and l.product_id):
+                        so = rl.sale_order_id or pr.sale_order_id
+                        line_sales.append({
+                            'product': rl.product_id.name,
+                            'qty': rl.product_qty,
+                            'sale_order_id': so.id or False,
+                        })
+                so_ids = sorted({l['sale_order_id'] for l in line_sales if l['sale_order_id']})
+
+                # PO bisa berisi banyak PR; tiap PR punya SO-nya sendiri
+                po_lines, po_so_ids, po_pr_names = [], [], []
+                if po:
+                    po_prs = po.purchase_request_ids | pr
+                    po_pr_names = po_prs.mapped('name')
+                    for cl in po.customer_line_ids:
+                        so = cl.sale_order_id or cl.request_id.sale_order_id
+                        po_lines.append({
+                            'product': cl.product_id.name,
+                            'qty': cl.qty,
+                            'sale_order_id': so.id or False,
+                            'pr_name': cl.request_id.name or '',
+                        })
+                    if not po_lines:
+                        for rq in po_prs:
+                            for rl in rq.request_line_ids.filtered(lambda l: not l.display_type and l.product_id):
+                                so = rl.sale_order_id or rq.sale_order_id
+                                po_lines.append({
+                                    'product': rl.product_id.name,
+                                    'qty': rl.product_qty,
+                                    'sale_order_id': so.id or False,
+                                    'pr_name': rq.name,
+                                })
+                    po_so_ids = sorted({l['sale_order_id'] for l in po_lines if l['sale_order_id']})
+
                 # =====================================================
                 # Append
                 # =====================================================
                 pr_data.append({
+                    'line_sales': line_sales,
+                    'so_ids': so_ids,
+                    'po_lines': po_lines,
+                    'po_so_ids': po_so_ids,
+                    'po_pr_names': po_pr_names,
                     'id': pr.id,
                     'name': pr.name,
                     'sale_order_id': pr.sale_order_id.id or False,

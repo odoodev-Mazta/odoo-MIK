@@ -171,12 +171,12 @@
                            invisible="not category">
                         <field name="mou_id"
                                readonly="state not in ('draft',)"
-                               required="category == 'import'"/>
+                               required="category in ('import', 'lokal_import')"/>
                     </group>
 
                     <!-- ── Lokal Category: RnD / QC / Purchasing ─────── -->
                     <group string="Lokal Product Tracking"
-                        invisible="category != 'lokal'">
+                        invisible="category not in ('lokal', 'lokal_import')">
                         <group string="RnD &amp; Formula">
                             <field name="rnd_formula_ref"/>
                             <field name="raw_material_status"/>
@@ -467,6 +467,8 @@
                         domain="[('category','=','import')]"/>
                 <filter string="Lokal" name="lokal"
                         domain="[('category','=','lokal')]"/>
+                <filter string="Lokal &amp; Import" name="lokal_import"
+                        domain="[('category','=','lokal_import')]"/>
                 <separator/>
                 <filter string="Overdue BPOM Review" name="overdue_bpom"
                         domain="[('bpom_review_deadline','&lt;', current_date),('state','=','bpom_review')]"/>

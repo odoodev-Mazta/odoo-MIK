@@ -279,7 +279,7 @@
                     <div style="display:grid;grid-template-columns:1fr 220px;gap:1.5rem;align-items:start;">
                         <div style="display:flex;flex-direction:column;gap:7px;">
                             <t t-foreach="state.selected_mou.stages" t-as="stage" t-key="stage.code">
-                                <t t-set="bar_pct" t-value="stage.status === 'done' ? 100 : stage.status === 'process' ? (stage.code === 'registrasi' ? getRegistrasiPct(stage) : 30) : 0"/>
+                                <t t-set="bar_pct" t-value="stage.status === 'done' ? 100 : stage.status === 'process' ? getStagePct(stage) : 0"/>
                                 <t t-set="bar_color" t-value="stage.status === 'done' ? '#198754' : stage.status === 'process' ? '#0d6efd' : '#dee2e6'"/>
                                 <div style="display:flex;align-items:center;gap:8px;">
                                     <span style="font-size:11px;color:#6c757d;width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -398,8 +398,7 @@
                                             <span t-attf-style="font-size:10px;font-weight:500;color:{{st_color}};">
                                                 <t t-if="stage.status === 'done'">100%</t>
                                                 <t t-else="">
-                                                    <t t-if="stage.code === 'registrasi'"><t t-esc="getRegistrasiPct(stage)"/>%</t>
-                                                    <t t-else="">–</t>
+                                                    <t t-esc="getStagePct(stage)"/>%
                                                 </t>
                                             </span>
                                         </t>
@@ -412,7 +411,7 @@
                                         <div t-attf-style="
                                             height:100%;border-radius:99px;
                                             background:{{st_color}};
-                                            width:{{stage.status === 'done' ? '100' : stage.status === 'process' ? (stage.code === 'registrasi' ? getRegistrasiPct(stage) : '30') : '0'}}%;
+                                            width:{{stage.status === 'done' ? '100' : stage.status === 'process' ? getStagePct(stage) : '0'}}%;
                                             transition:width 0.6s;
                                         "></div>
                                     </div>
@@ -713,13 +712,23 @@
                                                                         <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#f8d7da;color:#842029;border:0.5px solid #f5c2c7;font-weight:500;">URGENT</span>
                                                                     </t>
                                                                 </div>
+                                                                <t t-if="item.lines and item.lines.length">
+                                                                    <t t-foreach="item.lines" t-as="ln" t-key="ln_index">
+                                                                        <div style="font-size:10px;color:#6c757d;margin-top:2px;">
+                                                                            <t t-esc="ln.product"/> × <t t-esc="ln.qty"/>
+                                                                            <t t-if="ln.so_name"><span style="font-size:9px;padding:0 5px;margin-left:3px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;"><t t-esc="ln.so_name"/></span></t>
+                                                                        </div>
+                                                                    </t>
+                                                                </t>
+                                                                <t t-else="">
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:2px;">
                                                                     <t t-esc="item.product_summary"/>
                                                                 </div>
+                                                                </t>
                                                                 <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#ede9ff' : '#f8f9fa'}};color:{{item.is_done ? '#3b1fa8' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#7048e8' : '#dee2e6'}};">
                                                                     <t t-esc="item.state_label"/>
                                                                 </span>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name and !(item.lines and item.lines.length)"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i><t t-esc="item.date"/>
                                                                 </div>
@@ -763,7 +772,7 @@
                                             <t t-if="isAccordionOpen(state.selected_mou.id, 'peng_po')">
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_pengadaan and stage.sub_pengadaan.po.length > 0">
-                                                        <t t-foreach="stage.sub_pengadaan.po" t-as="item" t-key="item.pr_ref + '_po'">
+                                                        <t t-foreach="stage.sub_pengadaan.po" t-as="item" t-key="item.label">
                                                             <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="item.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(item.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#0d6efd;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{item.is_done ? '#0d6efd' : '#fff'}};border:1.5px solid #0d6efd;"></div>
@@ -772,14 +781,21 @@
                                                                     <t t-else="">Purchase Order</t>
                                                                 </div>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:1px;">
-                                                                    Dari PR: <t t-esc="item.pr_ref"/>
+                                                                    Dari PR: <t t-esc="(item.pr_names and item.pr_names.length) ? item.pr_names.join(', ') : item.pr_ref"/>
                                                                 </div>
+                                                                <t t-foreach="item.lines || []" t-as="ln" t-key="ln_index">
+                                                                    <div style="font-size:10px;color:#6c757d;margin-top:2px;">
+                                                                        <t t-esc="ln.product"/> × <t t-esc="ln.qty"/>
+                                                                        <t t-if="ln.so_name"><span style="font-size:9px;padding:0 5px;margin-left:3px;border-radius:3px;background:#e0e7ff;color:#3730a3;border:0.5px solid #a5b4fc;"><t t-esc="ln.so_name"/></span></t>
+                                                                        <t t-if="ln.pr_name"><span style="color:#adb5bd;"> · <t t-esc="ln.pr_name"/></span></t>
+                                                                    </div>
+                                                                </t>
                                                                 <t t-if="item.po_state">
                                                                     <span t-attf-style="display:inline-flex;font-size:10px;padding:1px 5px;border-radius:3px;margin-top:2px;background:{{item.is_done ? '#cfe2ff' : '#f8f9fa'}};color:{{item.is_done ? '#084298' : '#6c757d'}};border:0.5px solid {{item.is_done ? '#0d6efd' : '#dee2e6'}};">
                                                                         <t t-esc="item.po_state"/>
                                                                     </span>
                                                                 </t>
-                                                                <t t-if="item.so_name"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
+                                                                <t t-if="item.so_name and !(item.lines and item.lines.length)"><div style="margin-top:3px;"><span t-attf-style="font-size:9px;padding:1px 6px;border-radius:3px;background:{{item.so_name.includes('Repeat') ? '#ffedd5' : '#e0e7ff'}};color:{{item.so_name.includes('Repeat') ? '#9a3412' : '#3730a3'}};border:0.5px solid {{item.so_name.includes('Repeat') ? '#fb923c' : '#a5b4fc'}};font-weight:500;"><i class="fa fa-file-text-o me-1"></i>SO: <t t-esc="item.so_name"/></span></div></t>
                                                                 <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
                                                                     <i class="fa fa-calendar-o me-1"></i>
                                                                     <t t-if="item.date !== '-'"><t t-esc="item.date"/></t>
@@ -1171,7 +1187,7 @@
                                                 t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'delivery_retur')">
                                                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
                                                     <i class="fa fa-undo" style="color:#dc3545;font-size:12px;"></i>
-                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Retur / Pengembalian</span>
+                                                    <span style="font-size:11.5px;font-weight:500;color:#212529;">Retur / Pengembalian</span><span style="font-size:9px;color:#adb5bd;">opsional</span>
                                                     <span t-attf-style="
                                                         font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;
                                                         background:{{stage.sub_summary_delivery and stage.sub_summary_delivery.retur.total > 0 ? '#f8d7da' : '#f8f9fa'}};

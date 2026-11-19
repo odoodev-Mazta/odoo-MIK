@@ -153,6 +153,33 @@ export class TimelineDashboard extends Component {
         return Math.round((doneCount / allItems.length) * 100);
     }
 
+    /**
+     * Persentase tiap tahap di Tracking, dihitung dari isi tahap itu sendiri.
+     */
+    getStagePct(stage) {
+        if (!stage) return 0;
+        if (stage.status === 'done') return 100;
+        if (stage.status === 'waiting') return 0;
+        const ratio = list => list.length ? Math.round(list.filter(i => i.is_done).length / list.length * 100) : 0;
+        if (stage.code === 'produksi') {
+            const plans = (stage.sub_produksi && stage.sub_produksi.plans) || [];
+            return plans.length ? Math.round(plans.reduce((t, p) => t + (p.progress || 0), 0) / plans.length) : 0;
+        }
+        if (stage.code === 'qc') {
+            return ratio((stage.sub_qc && stage.sub_qc.schedules) || []);
+        }
+        if (stage.code === 'pengadaan') {
+            const sub = stage.sub_pengadaan || {};
+            return ratio([...(sub.pr || []), ...(sub.po || []), ...(sub.ud || []), ...(sub.delivered || [])]);
+        }
+        if (stage.code === 'delivery') {
+            const sub = stage.sub_delivery || {};
+            return ratio((sub.picking || []).filter(i => !i.is_cancelled));
+        }
+        if (stage.code === 'registrasi') return this.getRegistrasiPct(stage);
+        return ratio(stage.details || []);
+    }
+
     // ─── Fetch & Build ───────────────────────────────────────────────────────
 
     async fetchData() {
@@ -487,6 +514,13 @@ export class TimelineDashboard extends Component {
                     amount: this.formatCurrency(pr.total_amount),
                     sale_order_id: pr.sale_order_id,
                     so_name: this._soName(mou, pr.sale_order_id),
+                    so_ids: pr.so_ids || [],
+                    lines: (pr.line_sales || []).map(l => ({
+                        product: l.product,
+                        qty: l.qty,
+                        sale_order_id: l.sale_order_id,
+                        so_name: this._soName(mou, l.sale_order_id),
+                    })),
                     popup: this._popup('purchase.request', pr.id, pr.name),
                 });
 
@@ -510,6 +544,15 @@ export class TimelineDashboard extends Component {
                         po_state: pr.po_state,
                         sale_order_id: pr.po_sale_order_id,
                         so_name: this._soName(mou, pr.po_sale_order_id),
+                        so_ids: pr.po_so_ids || [],
+                        pr_names: pr.po_pr_names || [pr.name],
+                        lines: (pr.po_lines || []).map(l => ({
+                            product: l.product,
+                            qty: l.qty,
+                            pr_name: l.pr_name,
+                            sale_order_id: l.sale_order_id,
+                            so_name: this._soName(mou, l.sale_order_id),
+                        })),
                         popup: this._popup('purchase.order', pr.po_id, pr.po_name),
                     });
                 }
@@ -646,6 +689,7 @@ export class TimelineDashboard extends Component {
                     so_name: pk.sale_order_name,
                     state_label: pk.state_label,
                     is_done: pk.is_done,
+                    is_cancelled: pk.state === 'cancel',
                     popup: this._popup('stock.picking', pk.id, pk.name),
                     date: pk.date_done
                         ? `Selesai: ${this.formatDate(pk.date_done)}`
@@ -665,6 +709,7 @@ export class TimelineDashboard extends Component {
                         ? this.formatDate(pk.date_done)
                         : (pk.scheduled_date ? `Estimasi: ${this.formatDate(pk.scheduled_date)}` : '-'),
                     is_done: pk.is_done,
+                    is_cancelled: pk.state === 'cancel',
                 });
             });
 
@@ -824,10 +869,8 @@ export class TimelineDashboard extends Component {
             });
 
             // Progress keseluruhan
-            const doneCount    = stages.filter(s => s.status === 'done').length;
-            const processCount = stages.filter(s => s.status === 'process').length;
             const progressPercent = Math.round(
-                ((doneCount + processCount * 0.5) / stages.length) * 100
+                stages.reduce((t, s) => t + this.getStagePct(s), 0) / stages.length
             );
 
             return {
@@ -864,6 +907,15 @@ export class TimelineDashboard extends Component {
         return                                      { status: 'process', color: 'primary', progress: 'none' };
     }
 
+    if (stage.code === 'produksi') {
+        // Status dinilai dari Plan Produksi (bukan baris total MOU): semua plan selesai = hijau.
+        const items = (stage.details || []).filter(d => !d.is_mou_total && !d.is_cancelled);
+        if (items.length === 0) return { status: 'waiting', color: 'secondary', progress: 'none' };
+        if (items.every(i => i.is_done))  return { status: 'done',    color: 'success', progress: 'full' };
+        if (items.some(i => i.is_done))   return { status: 'process', color: 'warning', progress: 'partial' };
+        return                                  { status: 'process', color: 'primary', progress: 'none' };
+    }
+
     if (stage.code === 'pengadaan') {
         const sub = stage.sub_pengadaan || {};
         const allItems = [
@@ -880,11 +932,10 @@ export class TimelineDashboard extends Component {
     }
 
     if (stage.code === 'delivery') {
+        // Status dinilai dari Delivery Order saja. Retur opsional (hanya bila ada pengembalian),
+        // dan Delivery yang dibatalkan serta baris total MOU tidak menahan status.
         const sub = stage.sub_delivery || {};
-        const allItems = [
-            ...stage.details,
-            ...(sub.picking || []),
-        ];
+        const allItems = (sub.picking || []).filter(i => !i.is_cancelled);
         if (allItems.length === 0) return { status: 'waiting', color: 'secondary', progress: 'none' };
         if (allItems.every(i => i.is_done))  return { status: 'done',    color: 'success', progress: 'full' };
         if (allItems.some(i => i.is_done))   return { status: 'process', color: 'warning', progress: 'partial' };
@@ -1056,7 +1107,16 @@ export class TimelineDashboard extends Component {
             const sub = {};
             const summary = { ...(stage.sub_summary_pengadaan || {}) };
             for (const key of ['pr', 'po', 'ud', 'delivered']) {
-                sub[key] = (stage.sub_pengadaan[key] || []).filter(keep);
+                if (key === 'pr' || key === 'po') {
+                    // PR dengan banyak SO: tampil bila ada baris untuk SO ini, dan hanya baris SO ini.
+                    sub[key] = (stage.sub_pengadaan[key] || [])
+                        .filter(i => (i.so_ids && i.so_ids.length) ? i.so_ids.includes(soId) : keep(i))
+                        .map(i => (i.lines && i.lines.length)
+                            ? { ...i, lines: i.lines.filter(l => !l.sale_order_id || l.sale_order_id === soId) }
+                            : i);
+                } else {
+                    sub[key] = (stage.sub_pengadaan[key] || []).filter(keep);
+                }
                 summary[key] = { ...(summary[key] || {}), ...summarize(sub[key]) };
             }
             result.sub_pengadaan = sub;
