@@ -40,6 +40,7 @@
         'views/all_mou_views.xml',
         'views/dashboard_views.xml',
         'views/design_usulan_views.xml',
+        'data/link_official_products.xml',
     ],
     'assets': {
         'web.assets_backend': [
