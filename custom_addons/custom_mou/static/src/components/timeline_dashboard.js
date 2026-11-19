@@ -37,6 +37,7 @@ export class TimelineDashboard extends Component {
             active_stage_index: 0,
             accordion_open: {},
             search_pelanggan: "",
+            col_widths: {},
         });
 
         onWillStart(async () => {
@@ -777,7 +778,12 @@ export class TimelineDashboard extends Component {
             qcStage.sub_qc = { schedules: [] };
             qcStage.sub_summary_qc = { total: 0, done: 0, failed: 0 };
 
-            (mou.qc_data || []).forEach(q => {
+            // Urut per Perintah Produksi, lalu sesuai urutan tahapan (bukan loncat-loncat).
+            const qcSorted = [...(mou.qc_data || [])].sort((a, b) =>
+                String(a.production || '').localeCompare(String(b.production || '')) ||
+                (a.stage_sequence ?? 9999) - (b.stage_sequence ?? 9999) ||
+                (a.id - b.id));
+            qcSorted.forEach(q => {
                 qcStage.details.push({
                     sale_order_id: q.sale_order_id,
                     label: `${q.name} (${q.production})${q.sale_order_name ? ' · ' + q.sale_order_name : ''}`,
@@ -789,6 +795,7 @@ export class TimelineDashboard extends Component {
                 });
 
                 qcStage.sub_qc.schedules.push({
+                    key: `${q.model || 'qc'}-${q.id}`,
                     label: q.name,
                     sale_order_id: q.sale_order_id,
                     so_name: q.sale_order_name,
@@ -891,6 +898,22 @@ export class TimelineDashboard extends Component {
 }
 
     // ─── Accordion ───────────────────────────────────────────────────────────
+
+    startColResize(ev, code, defaultWidth) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const startX = ev.clientX;
+        const startW = this.state.col_widths[code] || defaultWidth;
+        const onMove = (e) => {
+            this.state.col_widths[code] = Math.max(120, Math.round(startW + e.clientX - startX));
+        };
+        const onUp = () => {
+            window.removeEventListener("mousemove", onMove);
+            window.removeEventListener("mouseup", onUp);
+        };
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+    }
 
     toggleAccordion(mouId, subKey) {
         if (!this.state.accordion_open[mouId]) {

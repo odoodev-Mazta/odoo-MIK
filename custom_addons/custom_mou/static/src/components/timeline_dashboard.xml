@@ -361,7 +361,8 @@
                             <t t-set="st_color" t-value="stage.status === 'done' ? '#198754' : stage.status === 'process' ? '#0d6efd' : '#dee2e6'"/>
 
                             <div t-attf-style="
-                                width: {{has_sub ? '215px' : '155px'}};
+                                width: {{state.col_widths[stage.code] || (has_sub ? 215 : 155)}}px;
+                                flex-shrink:0;position:relative;
                                 display:flex;flex-direction:column;
                                 background:#ffffff;
                                 border:0.5px solid #dee2e6;
@@ -370,6 +371,10 @@
                                 border-top:3px solid {{st_color}};
                                 height:100%;
                             ">
+                                <!-- Pegangan tarik lebar kolom -->
+                                <div title="Tarik untuk mengubah lebar kolom"
+                                     t-on-mousedown="(ev) => this.startColResize(ev, stage.code, has_sub ? 215 : 155)"
+                                     style="position:absolute;top:0;right:0;bottom:0;width:6px;cursor:col-resize;z-index:5;"></div>
 
                                 <!-- Column header -->
                                 <div style="padding:10px 10px 8px;border-bottom:0.5px solid #dee2e6;background:#f8f9fa;flex-shrink:0;">
@@ -1042,7 +1047,15 @@
                                             <t t-if="isAccordionOpen(state.selected_mou.id, 'qc_schedule')">
                                                 <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
                                                     <t t-if="stage.sub_qc and stage.sub_qc.schedules.length > 0">
-                                                        <t t-foreach="stage.sub_qc.schedules" t-as="sched" t-key="sched.label">
+                                                        <t t-foreach="stage.sub_qc.schedules" t-as="sched" t-key="sched.key">
+                                                            <t t-if="sched_index === 0 or stage.sub_qc.schedules[sched_index - 1].production !== sched.production">
+                                                                <div style="font-size:10.5px;font-weight:600;color:#4c1d95;background:#ede9fe;border-radius:4px;padding:2px 6px;margin:2px 0 8px;">
+                                                                    <i class="fa fa-cogs me-1"></i><t t-esc="sched.production"/>
+                                                                    <span style="float:right;font-weight:500;">
+                                                                        <t t-esc="stage.sub_qc.schedules.filter(x => x.production === sched.production &amp;&amp; x.is_done).length"/>/<t t-esc="stage.sub_qc.schedules.filter(x => x.production === sched.production).length"/>
+                                                                    </span>
+                                                                </div>
+                                                            </t>
                                                             <div style="position:relative;padding-left:14px;padding-bottom:12px;" t-att-class="sched.popup ? 'o_trk_link' : ''" t-on-click="() => this.openRecord(sched.popup)">
                                                                 <div style="position:absolute;left:1px;top:6px;bottom:0;width:0.5px;background:#7c3aed;opacity:0.3;"></div>
                                                                 <div t-attf-style="position:absolute;left:-2px;top:5px;width:7px;height:7px;border-radius:50%;background:{{sched.is_failed ? '#dc3545' : (sched.is_done ? '#7c3aed' : '#fff')}};border:1.5px solid {{sched.is_failed ? '#dc3545' : '#7c3aed'}};"></div>

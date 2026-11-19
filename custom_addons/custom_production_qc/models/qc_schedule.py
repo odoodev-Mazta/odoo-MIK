@@ -272,6 +272,7 @@ class DashboardTimeline(models.Model):
             result.append({
                 "id": stage.id,
                 "model": "mrp.production.plan.stage",
+                "stage_sequence": stage.sequence,
                 "name": f"QC {stage.stage_id.name}{batch}",
                 "sale_order_id": sale_order.id or False,
                 "sale_order_name": sale_order.display_name or False,
