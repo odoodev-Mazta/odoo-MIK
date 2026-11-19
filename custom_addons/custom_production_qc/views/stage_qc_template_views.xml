@@ -86,7 +86,8 @@
         <field name="inherit_id" ref="custom_production_planning.view_production_plan_stage_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='qc_note']" position="after">
-                <field name="qc_template_id"/>
+                <field name="qc_template_id" readonly="state != 'waiting_qc'"
+                       options="{'no_create': True}"/>
             </xpath>
         </field>
     </record>

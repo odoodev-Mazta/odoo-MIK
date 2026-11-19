@@ -116,6 +116,8 @@ class MrpWorkorder(models.Model):
             ].search([
                 ("workorder_id", "=", wo.id)
             ])
+            # QC dari tahap Plan Produksi sudah diperiksa di tahapnya sendiri (Lulus = boleh selesai).
+            qc_schedules = qc_schedules.filtered(lambda qc: not qc.plan_stage_id)
 
             if qc_schedules:
 

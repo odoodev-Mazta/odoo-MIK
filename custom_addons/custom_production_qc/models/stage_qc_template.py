@@ -1,6 +1,6 @@
 import re
 
-from odoo import api, fields, models
+from odoo import Command, api, fields, models
 
 SIZE_PATTERN = re.compile(r"(\d+(?:[.,]\d+)?)\s*(?:gr|gram|g|ml)\b", re.IGNORECASE)
 
@@ -97,15 +97,13 @@ class ProductionPlanStage(models.Model):
     _inherit = "mrp.production.plan.stage"
 
     qc_template_id = fields.Many2one(
-        "production.qc.template", string="QC Template Dipakai", readonly=True, copy=False,
+        "production.qc.template", string="QC Template Dipakai", copy=False,
+        domain="[('stage_id', '=', stage_id)]",
+        help="Dipilih otomatis saat tahap dimulai. Bisa diganti saat Menunggu QC; parameter pemeriksaan ikut diganti.",
     )
 
-    def _get_qc_parameter_vals(self):
-        self.ensure_one()
-        template = self.env["production.qc.template"]._find_for_stage(self.stage_id, self.product_id)
-        self.qc_template_id = template
-        if not template:
-            return super()._get_qc_parameter_vals()
+    @staticmethod
+    def _template_parameter_vals(template):
         return [{
             "sequence": parameter.sequence,
             "name": parameter.name,
@@ -116,3 +114,35 @@ class ProductionPlanStage(models.Model):
             "max_value": parameter.max_value,
             "required": parameter.required,
         } for parameter in template.parameter_ids]
+
+    def _get_qc_parameter_vals(self):
+        self.ensure_one()
+        template = self.env["production.qc.template"]._find_for_stage(self.stage_id, self.product_id)
+        self.with_context(skip_qc_template_reload=True).qc_template_id = template
+        if not template:
+            return super()._get_qc_parameter_vals()
+        return self._template_parameter_vals(template)
+
+    @api.onchange("qc_template_id")
+    def _onchange_qc_template_id(self):
+        """Ganti template di form pemeriksaan: parameter langsung diganti (nilai aktual dikosongkan)."""
+        for stage in self:
+            if stage.state == "waiting_qc" and stage.qc_template_id:
+                stage.check_ids = [Command.clear()] + [
+                    Command.create(vals) for vals in self._template_parameter_vals(stage.qc_template_id)
+                ]
+
+    def write(self, vals):
+        result = super().write(vals)
+        # Diganti di luar form (tanpa check_ids ikut dikirim): muat ulang parameternya di server.
+        if "qc_template_id" in vals and "check_ids" not in vals and not self.env.context.get("skip_qc_template_reload"):
+            for stage in self.filtered(lambda s: s.state == "waiting_qc" and s.qc_template_id):
+                stage.check_ids.unlink()
+                stage.check_ids = [Command.create(v) for v in self._template_parameter_vals(stage.qc_template_id)]
+        if "qc_template_id" in vals and not self.env.context.get("skip_qc_template_reload"):
+            for stage in self:
+                stage.plan_id.message_post(
+                    body=f"QC Template {stage._label()} diganti ke {stage.qc_template_id.name or '-'} oleh {self.env.user.name}.",
+                    subtype_xmlid="mail.mt_note",
+                )
+        return result
