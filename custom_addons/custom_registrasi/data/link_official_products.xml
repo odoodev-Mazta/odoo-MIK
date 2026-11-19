@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<odoo>
-    <!-- Tiap Upgrade: tautkan nama resmi lama ke produk yang namanya persis sama. -->
-    <function model="registrasi.produk.line" name="_link_official_products"/>
-</odoo>
