@@ -80,15 +80,30 @@
         </field>
     </record>
 
-    <!-- Sementara: tab Work Orders disembunyikan; proses dijalankan lewat tab Proses Produksi. -->
+    <!-- Tab Work Orders ditampilkan lagi (sempat disembunyikan). -->
     <record id="view_mrp_production_form_hide_workorders" model="ir.ui.view">
         <field name="name">mrp.production.form.hide.workorders</field>
         <field name="model">mrp.production</field>
         <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//page[@name='operations']" position="attributes">
-                <attribute name="invisible">1</attribute>
+                <attribute name="invisible">0</attribute>
             </xpath>
         </field>
+    </record>
+
+    <!-- Work Order yang sudah Done tetap tampil di daftar / kalender / Gantt (jadwal dan realisasinya tetap terlihat). -->
+    <record id="mrp.action_work_orders" model="ir.actions.act_window">
+        <field name="domain">[('state', '!=', 'cancel')]</field>
+    </record>
+    <record id="mrp.action_mrp_workorder_workcenter" model="ir.actions.act_window">
+        <field name="context">{'search_default_work_center': True, 'show_workcenter_status': True}</field>
+    </record>
+    <record id="mrp.action_mrp_workorder_production" model="ir.actions.act_window">
+        <field name="domain">[('production_state', '!=', 'cancel')]</field>
+        <field name="context">{'search_default_production': True}</field>
+    </record>
+    <record id="mrp.mrp_workorder_todo" model="ir.actions.act_window">
+        <field name="context">{}</field>
     </record>
 </odoo>
