@@ -365,6 +365,7 @@ class PurchaseRequest(models.Model):
                 'product_qty': line.product_uom_qty,
                 'product_uom': line.product_uom_id.id,
                 'currency_id': self.currency_id.id,
+                'sale_order_id': self.sale_order_id.id,
             })
             for line in lines
         ]
@@ -552,7 +553,7 @@ class PurchaseRequest(models.Model):
                     'quantity': line.product_qty,
                     'price_unit': line.price_unit,
                     'mou_id': self.mou_id.id,
-                    'sale_order_id': self.sale_order_id.id,
+                    'sale_order_id': (line.sale_order_id or self.sale_order_id).id,
                 }))
             if line.setup_item_id:
                 lines.append((0, 0, {
@@ -561,7 +562,7 @@ class PurchaseRequest(models.Model):
                     'quantity': line.item_qty,
                     'price_unit': 0.0,
                     'mou_id': self.mou_id.id,
-                    'sale_order_id': self.sale_order_id.id,
+                    'sale_order_id': (line.sale_order_id or self.sale_order_id).id,
                 }))
 
         usulan = self.env['usulan.usulan.dana'].create({
@@ -621,6 +622,18 @@ class PurchaseRequestLine(models.Model):
     )
 
     date_planned = fields.Date(string='Scheduled Date')
+    sale_order_id = fields.Many2one(
+        'sale.order', string='Sales Order',
+        compute='_compute_sale_order_id', store=True, readonly=False, precompute=True,
+        help='Default dari Sales Order di header PR; bisa diganti per produk.',
+    )
+
+    @api.depends('request_id.sale_order_id')
+    def _compute_sale_order_id(self):
+        for line in self:
+            if not line.sale_order_id:
+                line.sale_order_id = line.request_id.sale_order_id
+
     setup_item_id = fields.Many2one(
         'usulan.dana.setup',
         string="Setup Item",
