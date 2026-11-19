@@ -1,5 +1,5 @@
 /** @odoo-module **/
-import { Component, useState, onWillStart, onMounted, useRef } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted, onWillUnmount, useRef } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { loadJS } from "@web/core/assets";
@@ -12,6 +12,7 @@ export class DashboardMou extends Component {
         this.chart2Ref = useRef("chart2");
         this.chart3Ref = useRef("chart3");
         this.chart4Ref = useRef("chart4");
+        this.charts = [];
 
         this.state = useState({
             stats: { total_users: 0, system_status: 'Loading...' },
@@ -32,6 +33,12 @@ export class DashboardMou extends Component {
             this.renderDoughnutChart(this.chart2Ref.el, this.state.chart_2, "cancel_status", "MOU vs Cancel");
             this.renderDoughnutChart(this.chart3Ref.el, this.state.chart_3, "dp_status", "MOU vs Down Payment");
             this.renderDoughnutChart(this.chart4Ref.el, this.state.chart_4, "deadline_cat", "Deadline");
+        });
+
+        // Chart wajib dihancurkan saat pindah menu; kalau tidak, Chart.js error di canvas yang sudah hilang.
+        onWillUnmount(() => {
+            this.charts.forEach((chart) => chart.destroy());
+            this.charts = [];
         });
     }
 
@@ -70,9 +77,9 @@ export class DashboardMou extends Component {
 
     // Tambahkan parameter 'filterKey'
     renderDoughnutChart(canvasElement, chartData, filterKey, title) {
-        if (!canvasElement || !chartData.data) return;
+        if (!canvasElement || !chartData || !chartData.data) return;
 
-        new window.Chart(canvasElement, {
+        this.charts.push(new window.Chart(canvasElement, {
             type: 'doughnut',
             data: {
                 labels: chartData.labels,
@@ -108,7 +115,7 @@ export class DashboardMou extends Component {
                     }
                 }
             }
-        });
+        }));
     }
 }
 

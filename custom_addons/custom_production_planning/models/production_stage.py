@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from odoo import Command, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tools import float_compare
 
 
 class ProductionStage(models.Model):
@@ -468,7 +469,7 @@ class ProductionPlanStage(models.Model):
                 "mail.mail_activity_data_todo",
                 user_id=user.id,
                 summary=self._qc_activity_summary(),
-                note=f"Qty bagus {self.qty_good:g}. Buka menu Produksi > Antrean QC untuk memeriksa.",
+                note=f"Isi Qty Bagus & Qty Reject saat memeriksa. Buka menu Produksi > Antrean QC untuk memeriksa.",
                 date_deadline=fields.Date.context_today(self),
             )
 
@@ -608,13 +609,23 @@ class ProductionPlanStage(models.Model):
                 raise ValidationError(f"Tanggal Expired tahap {self._label()} harus setelah hari ini.")
 
     def _check_qty_limit(self):
+        """Qty Bagus + Qty Reject harus pas sama jumlah yang masuk ke tahap ini.
+
+        Tahap pertama: qty rencana. Tahap berikutnya: Qty Bagus tahap sebelumnya
+        (yang reject tidak dilanjutkan). Contoh 50 barang: 25 bagus + 25 reject, atau 50 bagus + 0 reject.
+        """
         self.ensure_one()
+        if self.qty_good < 0 or self.qty_reject < 0:
+            raise ValidationError(f"Tahap {self._label()}: Qty Bagus / Qty Reject tidak boleh minus.")
         previous = self._previous()
         limit = previous.qty_good if previous else self.qty_plan
-        if limit and self.qty_good > limit:
+        total = self.qty_good + self.qty_reject
+        if limit and float_compare(total, limit, precision_digits=4) != 0:
             raise ValidationError(
-                f"Tahap {self._label()}: Qty Bagus ({self.qty_good:g}) melebihi "
-                f"{'hasil tahap sebelumnya' if previous else 'qty rencana'} ({limit:g})."
+                f"Tahap {self._label()}: Qty Bagus ({self.qty_good:g}) + Qty Reject ({self.qty_reject:g}) "
+                f"= {total:g}, harus pas {limit:g} "
+                f"({'hasil bagus tahap sebelumnya' if previous else 'qty rencana'}). "
+                f"Selisih {abs(limit - total):g}."
             )
 
     def action_submit_qc(self):
@@ -622,10 +633,8 @@ class ProductionPlanStage(models.Model):
         for stage in self:
             if stage.state != "in_progress":
                 raise ValidationError(f"Tahap {stage._label()} belum berjalan.")
-            if stage.qty_good <= 0:
-                raise ValidationError(f"Isi Qty Bagus tahap {stage._label()} sebelum diajukan QC.")
+            # Qty Bagus / Qty Reject diisi oleh QC saat pemeriksaan, bukan saat diajukan.
             stage._check_batch_fields()
-            stage._check_qty_limit()
             stage.write({
                 "state": "waiting_qc",
                 "qc_state": "pending",
@@ -635,7 +644,7 @@ class ProductionPlanStage(models.Model):
             })
             qc_users = self.env.ref("custom_production_planning.group_production_qc").sudo().all_user_ids
             stage.plan_id.message_post(
-                body=f"Tahap {stage._label()} diajukan ke QC ({stage.qty_good:g} bagus). Menunggu pemeriksaan.",
+                body=f"Tahap {stage._label()} diajukan ke QC. Menunggu pemeriksaan.",
                 subtype_xmlid="mail.mt_note",
                 partner_ids=qc_users.partner_id.ids,
             )
@@ -661,6 +670,8 @@ class ProductionPlanStage(models.Model):
                     )
                     stage.action_qc_fail()
                     continue
+            if stage.qty_good <= 0:
+                raise ValidationError(f"Isi Qty Bagus tahap {stage._label()} (hasil pemeriksaan QC) sebelum QC Lulus.")
             stage._check_qty_limit()
             stage.write({
                 "qc_state": "passed",

@@ -222,6 +222,8 @@ class DashboardTimeline(models.Model):
         schedules = self.env["production.qc.schedule"].search([
             ("production_id.production_plan_id.sale_order_id.mou_id", "=", mou_id),
         ])
+        # QC yang terhubung ke tahap Plan Produksi ditampilkan lewat barisnya sendiri (per tahap), jangan ganda.
+        schedules = schedules.filtered(lambda sched: not sched.plan_stage_id)
 
         result = []
         for sched in schedules:
@@ -257,21 +259,23 @@ class DashboardTimeline(models.Model):
             ("plan_id.mou_id", "=", mou_id),
             ("plan_id.sale_order_id.mou_id", "=", mou_id),
         ])
-        # Jadwal QC baru muncul setelah tahap itu mulai dikerjakan (atau pernah gagal QC).
-        stages = stages.filtered(lambda s: s.state != 'todo' or s.qc_state == 'failed')
+        # Semua tahap tampil (termasuk yang belum dimulai / belum diajukan QC), berurutan per tahap.
         for stage in stages:
             plan = stage.plan_id
             sale_order = plan.sale_order_id
             if stage.state == 'waiting_qc':
                 state, label = 'progress', 'Menunggu QC'
+            elif stage.state == 'done' and stage.qc_state not in stage_state:
+                state, label = 'done', 'Selesai'
             else:
                 state, label = stage_state.get(stage.qc_state, (
-                    'progress', 'Sedang Dikerjakan') if stage.state == 'in_progress' else ('waiting', 'Belum QC'))
+                    'progress', 'Sedang Dikerjakan') if stage.state == 'in_progress' else ('waiting', 'Belum Dimulai'))
             checks = stage.check_ids
             batch = f" · {stage.batch_label}" if stage.batch_label else ""
             result.append({
                 "id": stage.id,
                 "model": "mrp.production.plan.stage",
+                "stage_sequence": stage.sequence,
                 "name": f"QC {stage.stage_id.name}{batch}",
                 "sale_order_id": sale_order.id or False,
                 "sale_order_name": sale_order.display_name or False,

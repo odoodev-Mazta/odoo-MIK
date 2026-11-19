@@ -55,7 +55,6 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="mou_id" invisible="move_type == 'entry'"/>
-                <field name="timeline_stage" readonly="1" invisible="move_type == 'entry' or not timeline_stage"/>
             </xpath>
         </field>
     </record>

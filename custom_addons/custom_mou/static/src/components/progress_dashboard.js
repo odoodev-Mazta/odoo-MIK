@@ -1,5 +1,5 @@
 /** @odoo-module **/
-import { Component, useState, onWillStart, onMounted, useRef } from "@odoo/owl";
+import { Component, useState, onWillStart, onMounted, onWillUnmount, useRef } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { loadJS } from "@web/core/assets";
@@ -10,6 +10,7 @@ export class ProgressDashboard extends Component {
         this.barChartRef = useRef("barChart");
         this.gaugeChartRef = useRef("gaugeChart");
         this.gaugeInstance = null;
+        this.barInstance = null;
 
         this.state = useState({
             bar_chart_data: {},
@@ -29,6 +30,12 @@ export class ProgressDashboard extends Component {
             if (this.state.selected_mou) {
                 this.renderGaugeChart();
             }
+        });
+
+        onWillUnmount(() => {
+            this.barInstance?.destroy();
+            this.gaugeInstance?.destroy();
+            this.barInstance = this.gaugeInstance = null;
         });
     }
 
@@ -92,7 +99,7 @@ export class ProgressDashboard extends Component {
             }
         };
 
-        new window.Chart(this.barChartRef.el, {
+        this.barInstance = new window.Chart(this.barChartRef.el, {
             type: 'bar',
             data: {
                 labels: this.state.bar_chart_data.labels,
@@ -112,7 +119,7 @@ export class ProgressDashboard extends Component {
     }
 
     renderGaugeChart() {
-        if (!this.gaugeChartRef.el) return;
+        if (!this.gaugeChartRef.el || !this.state.selected_mou) return;
         const progress = this.state.selected_mou.progress || 0;
         this.gaugeInstance = new window.Chart(this.gaugeChartRef.el, {
             type: 'doughnut',
