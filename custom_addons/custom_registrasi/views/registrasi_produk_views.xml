@@ -265,6 +265,7 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_template_id"/>
 <!--                                    <field name="product_name"/>-->
+                                    <field name="official_product_id"/>
                                     <field name="official_product_name"/>
                                     <field name="description"/>
                                     <field name="netto"/>

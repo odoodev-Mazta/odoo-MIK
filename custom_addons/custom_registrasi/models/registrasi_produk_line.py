@@ -1,6 +1,6 @@
 from markupsafe import Markup
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class RegistrasiProdukLine(models.Model):
@@ -66,6 +66,13 @@ class RegistrasiProdukLine(models.Model):
         string='Official Product Name (RO Drafted)',
         copy=False,
     )
+    official_product_id = fields.Many2one(
+        comodel_name='product.template',
+        string='Cari / Buat Produk Resmi',
+        copy=False,
+        help='Cari produk yang sudah ada, atau ketik nama baru lalu Create untuk membuat produk baru. '
+             'Nama produk yang dipilih otomatis mengisi Official Product Name (tetap bisa diedit).',
+    )
     product_name_revision_count = fields.Integer(
         string='Product Name Revision Count',
         default=0,
@@ -94,6 +101,12 @@ class RegistrasiProdukLine(models.Model):
         string='Product',
         copy=False,
     )
+
+    @api.onchange('official_product_id')
+    def _onchange_official_product_id(self):
+        for line in self:
+            if line.official_product_id:
+                line.official_product_name = line.official_product_id.display_name
 
     # Perubahan field ini dicatat di chatter Registrasi Produk (induknya), karena baris
     # produk tidak punya chatter sendiri.
