@@ -42,6 +42,7 @@ class RegistrasiProduk(models.Model):
         selection=[
             ('import', 'Import'),
             ('lokal', 'Lokal'),
+            ('lokal_import', 'Lokal & Import'),
         ],
         string='Category',
         required=True,
@@ -85,8 +86,8 @@ class RegistrasiProduk(models.Model):
         comodel_name='design.usulan',
         string='Design Reference',
         tracking=True,
-        domain=[('state', '=', 'done')],
-        help='Design artwork. Must be finished before submitting to BPOM.',
+        domain=[('state', 'in', ('upload_form', 'done'))],
+        help='Design artwork. Muncul setelah usulan design masuk fase Upload Form Design (final) atau Done.',
     )
 
     design_sla_type = fields.Selection(
@@ -307,7 +308,7 @@ class RegistrasiProduk(models.Model):
     @api.onchange('category')
     def _onchange_category(self):
         """Clear MoU when category changes away from import."""
-        if self.category != 'import':
+        if self.category not in ('import', 'lokal_import'):
             self.mou_id = False
 
     @api.onchange('mou_id')
@@ -323,7 +324,7 @@ class RegistrasiProduk(models.Model):
             if not template or template in existing:
                 continue
             existing |= template
-            jenis = line.jenis_product or self.category or 'lokal'
+            jenis = line.jenis_product or (self.category if self.category in ('lokal', 'import') else False) or 'lokal'
             digits = ''.join(ch for ch in (line.ukuran or '') if ch.isdigit())
             commands.append(Command.create({
                 'product_template_id': template.id,
@@ -348,7 +349,7 @@ class RegistrasiProduk(models.Model):
     @api.constrains('category', 'mou_id')
     def _check_mou_required_for_import(self):
         for rec in self:
-            if rec.category == 'import' and not rec.mou_id:
+            if rec.category in ('import', 'lokal_import') and not rec.mou_id:
                 raise ValidationError(
                     _('An MoU Reference is mandatory for Import category products.')
                 )

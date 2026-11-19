@@ -69,7 +69,8 @@
                             <field name="state" widget="badge"/>
                         </group>
                         <group>
-                            <field name="qty_good" readonly="1"/>
+                            <field name="qty_good" readonly="state != 'waiting_qc'"/>
+                            <field name="qty_reject" readonly="state != 'waiting_qc'"/>
                             <field name="qc_state" widget="badge" decoration-success="qc_state == 'passed'" decoration-danger="qc_state == 'failed'"/>
                             <field name="qc_note" readonly="state != 'waiting_qc'" placeholder="Wajib diisi bila QC Gagal"/>
                         </group>
@@ -80,11 +81,11 @@
                             <field name="started_by_id"/>
                             <field name="date_start_actual"/>
                             <field name="submitted_by_id"/>
-                            <field name="qc_submit_date"/>
+                            <field name="qc_submit_date" string="Mulai QC"/>
                         </group>
                         <group>
                             <field name="qc_user_id" string="Diperiksa / Approve QC"/>
-                            <field name="qc_date"/>
+                            <field name="qc_date" string="Selesai QC"/>
                             <field name="date_end_actual"/>
                             <field name="qc_attempt"/>
                         </group>
@@ -171,9 +172,9 @@
                 <field name="started_by_id"/>
                 <field name="date_start_actual"/>
                 <field name="submitted_by_id" optional="show"/>
-                <field name="qc_submit_date" optional="hide"/>
+                <field name="qc_submit_date" string="Mulai QC" optional="show"/>
                 <field name="qc_user_id" string="Approve QC"/>
-                <field name="qc_date" optional="show"/>
+                <field name="qc_date" string="Selesai QC" optional="show"/>
                 <field name="date_end_actual" optional="hide"/>
                 <field name="qty_good" sum="Total Bagus"/>
                 <field name="qty_reject" sum="Total Reject"/>

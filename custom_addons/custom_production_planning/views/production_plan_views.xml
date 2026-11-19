@@ -103,6 +103,14 @@
                         class="btn-info"
                     />
 
+                    <button
+                        name="action_create_finished_delivery"
+                        type="object"
+                        string="Buat Delivery Produk Jadi"
+                        class="btn-primary"
+                        invisible="state not in ('running', 'done') or not sale_order_id"
+                    />
+
                     <field
                         name="state"
                         widget="statusbar"
@@ -195,12 +203,12 @@
                                     <field name="product_id" width="300px"/>
                                     <field name="finished_product_id" string="Produk Jadi" width="300px"
                                            optional="show" options="{'no_create': True}"/>
-                                    <field name="product_qty" string="Qty" width="110px"/>
+                                    <field name="product_qty" string="Qty Order" width="110px"/>
+                                    <field name="child_allocated_qty" string="Dipecah ke Baris Lain" optional="show"/>
                                     <field name="production_qty" string="Qty Produksi" readonly="1" width="130px"/>
                                     <field name="product_uom_id" optional="hide"/>
                                     <field name="production_start" string="Mulai" optional="show"/>
                                     <field name="production_end" string="Selesai" optional="show"/>
-                                    <field name="child_allocated_qty" string="Dipecah" optional="hide"/>
                                     <field name="remaining_qty" string="Sisa Split" optional="hide"/>
                                     <field name="production_type" string="Tipe" optional="show"/>
 
@@ -270,8 +278,8 @@
                                     <field name="workorder_id" readonly="1" optional="hide"/>
                                     <field name="material_state" widget="badge" decoration-danger="material_state == 'short'"
                                            decoration-success="material_state == 'ok'"/>
-                                    <field name="qty_good" readonly="state != 'in_progress'"/>
-                                    <field name="qty_reject" readonly="state != 'in_progress'"/>
+                                    <field name="qty_good" readonly="state != 'waiting_qc'"/>
+                                    <field name="qty_reject" readonly="state != 'waiting_qc'"/>
                                     <field name="set_batch" column_invisible="1"/>
                                     <field name="batch_no" readonly="not set_batch or state != 'in_progress'" optional="hide"/>
                                     <field name="expiry_date" readonly="not set_batch or state != 'in_progress'" optional="hide"/>
@@ -362,12 +370,7 @@
                                 <list create="0" delete="0" edit="0" open_form_view="0">
                                     <field name="bom_product_id" string="Produk Jadi"/>
                                     <field name="production_qty" string="Qty Produksi"/>
-                                    <field name="finished_qty_available"/>
-                                    <field name="finished_qty_forecast" optional="show"/>
                                     <field name="finished_uom_id" string="Satuan"/>
-                                    <field name="finished_stock_status" widget="badge"
-                                           decoration-success="finished_stock_status == 'Stok sudah cukup'"
-                                           decoration-warning="finished_stock_status and finished_stock_status != 'Stok sudah cukup'"/>
                                     <field name="material_summary" string="Bahan" widget="badge"
                                            decoration-danger="material_summary and 'kurang' in material_summary"
                                            decoration-success="material_summary and 'cukup' in material_summary"/>
@@ -377,8 +380,7 @@
                                 </list>
                             </field>
                             <div class="text-muted">
-                                Stok Produk Jadi = stok on hand produk jadi sekarang. Perkiraan Stok = on hand + yang akan
-                                masuk - yang akan keluar. Kolom Bahan terisi setelah Check Material; klik Lihat Bahan untuk rinciannya.
+                                Kolom Bahan terisi setelah Check Material; klik Lihat Bahan untuk rinciannya.
                             </div>
                         </page>
 

@@ -332,6 +332,56 @@ class ProductionPlan(models.Model):
             action.update(res_id=self.delivery_picking_ids.id, views=[(False, "form")])
         return action
 
+    def action_create_finished_delivery(self):
+        """Delivery Order berisi produk jadi hasil produksi (bukan baris Sales Order), sebanyak qty bagus tahap terakhir."""
+        self.ensure_one()
+        order = self.sale_order_id
+        if not order:
+            raise ValidationError("Plan ini belum punya Sales Order.")
+        lines = []
+        for product_line in self._get_effective_product_lines():
+            stages = self.stage_ids.filtered(lambda s: s.product_line_id == product_line)
+            last = stages.sorted(key=lambda s: (s.sequence, s.id))[-1:]
+            if not last or last.state != "done" or last.qty_good <= 0:
+                continue
+            lines.append((product_line.bom_product_id, last.qty_good))
+        if not lines:
+            raise ValidationError("Belum ada produk jadi yang selesai diproduksi (Packing/tahap terakhir belum selesai).")
+        sent = self.delivery_picking_ids.move_ids.filtered(lambda m: m.product_id in [p for p, _q in lines]).picking_id
+        if sent:
+            raise ValidationError(f"Delivery produk jadi sudah dibuat: {', '.join(sent.mapped('name'))}.")
+        picking_type = order.warehouse_id.out_type_id
+        if not picking_type:
+            raise ValidationError("Tipe operasi pengiriman (Delivery Orders) gudang belum diatur.")
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": picking_type.id,
+            "partner_id": order.partner_shipping_id.id or order.partner_id.id,
+            "origin": f"{order.name} / {self.name}",
+            "sale_id": order.id,
+            "location_id": picking_type.default_location_src_id.id,
+            "location_dest_id": order.partner_id.property_stock_customer.id,
+            "move_ids": [Command.create({
+                "product_id": product.id,
+                "product_uom_qty": qty,
+                "product_uom": product.uom_id.id,
+                "location_id": picking_type.default_location_src_id.id,
+                "location_dest_id": order.partner_id.property_stock_customer.id,
+            }) for product, qty in lines],
+        })
+        picking.action_confirm()
+        picking.action_assign()
+        self.message_post(
+            body=f"Delivery produk jadi {picking.name} dibuat: "
+                 + ", ".join(f"{p.display_name} × {q:g}" for p, q in lines),
+            subtype_xmlid="mail.mt_note",
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": "stock.picking",
+            "res_id": picking.id,
+            "views": [(False, "form")],
+        }
+
     def action_open_manufacturing_orders(self):
         self.ensure_one()
         action = {
@@ -575,6 +625,13 @@ class ProductionPlan(models.Model):
         )[:1]
         if open_orders:
             order = open_orders[0]
+            # Hasil produksi langsung masuk ke stok gudang (bukan Post-Production), supaya Delivery mengurangi stok itu.
+            stock_location = order.picking_type_id.warehouse_id.lot_stock_id
+            if stock_location and order.location_dest_id != stock_location:
+                order.location_dest_id = stock_location
+                order.move_finished_ids.filtered(lambda m: m.state not in ("done", "cancel")).write(
+                    {"location_dest_id": stock_location.id}
+                )
             order.qty_producing = qty
             if batch_stage and order.product_tracking == "lot":
                 order.lot_producing_ids = self.env["stock.lot"].create({
