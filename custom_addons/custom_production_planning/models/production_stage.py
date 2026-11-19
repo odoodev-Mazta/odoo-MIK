@@ -1,5 +1,7 @@
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
+
+import pytz
 
 from odoo import Command, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
@@ -326,13 +328,54 @@ class ProductionPlanStage(models.Model):
                 continue
             days = (stage.date_end - stage.date_start).days + 1 if stage.date_start and stage.date_end else 0
             name = stage.stage_id.name + (f" · {stage.batch_label}" if stage.batch_label else "")
-            stage.workorder_id = self.env["mrp.workorder"].create({
+            date_from, date_to = stage._planned_workorder_dates()
+            vals = {
                 "name": name,
                 "production_id": order.id,
                 "workcenter_id": workcenter.id,
                 "sequence": stage.sequence,
                 "duration_expected": (days or 1) * 480.0,
-            })
+            }
+            if date_from and date_to:
+                # Tanggal rencana tahap ikut ke Work Order, supaya tampil di kalender / Gantt Manufacturing.
+                vals.update(date_start=date_from, date_finished=date_to)
+            stage.workorder_id = self.env["mrp.workorder"].create(vals)
+
+    def _planned_workorder_dates(self):
+        """Tanggal rencana tahap (jam kerja 08:00-17:00 zona waktu user) dalam UTC untuk Work Order."""
+        self.ensure_one()
+        if not self.date_start or not self.date_end:
+            return False, False
+        tz = pytz.timezone(self.env.user.tz or "Asia/Jakarta")
+
+        def to_utc(day, hour):
+            return tz.localize(datetime.combine(day, time(hour, 0))).astimezone(pytz.utc).replace(tzinfo=None)
+
+        return to_utc(self.date_start, 8), to_utc(self.date_end, 17)
+
+    def _sync_workorder_dates(self):
+        """Samakan jadwal Work Order (kalender) dengan tanggal rencana tahap, selama tahap belum berjalan."""
+        for stage in self:
+            workorder = stage.workorder_id
+            if not workorder or workorder.state in ("done", "cancel", "progress"):
+                continue
+            date_from, date_to = stage._planned_workorder_dates()
+            if date_from and date_to:
+                workorder.write({"date_start": date_from, "date_finished": date_to})
+
+    def write(self, vals):
+        result = super().write(vals)
+        if "date_start" in vals or "date_end" in vals:
+            self._sync_workorder_dates()
+        return result
+
+    @api.model
+    def _sync_all_workorder_dates(self):
+        """Tiap Upgrade: Work Order tahap yang belum punya jadwal diisi dari tanggal rencana tahap."""
+        stages = self.search([("workorder_id", "!=", False)]).filtered(
+            lambda s: not s.workorder_id.date_start
+        )
+        stages._sync_workorder_dates()
 
     def _sync_workorder(self, action):
         """Samakan status Work Order dengan tahap: start / pending / finish / reset."""
