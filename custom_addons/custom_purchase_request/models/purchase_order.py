@@ -318,7 +318,7 @@ class PurchaseOrder(models.Model):
                     'tax_ids': [(6, 0, line.tax_ids.ids)],
                 })
                 customer_lines.append(customer_vals(
-                    line.product_id, line.product_qty, uom, request.mou_id, request.sale_order_id,
+                    line.product_id, line.product_qty, uom, request.mou_id, line.sale_order_id or request.sale_order_id,
                     description=line.description))
         if request.is_bulk_purchase:
             for line in request.bulk_line_ids:

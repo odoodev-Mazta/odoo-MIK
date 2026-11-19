@@ -125,7 +125,7 @@ class PurchaseRequestLineSync(models.Model):
                     'request_id': line.request_id.id,
                     'mou_id': line.request_id.mou_id.id,
                     'customer_id': line.request_id.mou_id.nama_cust.id or line.request_id.customer_id.id,
-                    'sale_order_id': line.request_id.sale_order_id.id,
+                    'sale_order_id': (line.sale_order_id or line.request_id.sale_order_id).id,
                     'product_id': line.product_id.id,
                     'description': line.description or False,
                     'qty': line.product_qty,
