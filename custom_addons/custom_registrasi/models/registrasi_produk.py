@@ -688,8 +688,6 @@ class RegistrasiProduk(models.Model):
 
                     'official_product_name':
                         False,
-                    'official_product_id':
-                        False,
                 })
 
             rec.write({
