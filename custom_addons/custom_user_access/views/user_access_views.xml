@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_user_access_wizard_form" model="ir.ui.view">
+        <field name="name">user.access.wizard.form</field>
+        <field name="model">user.access.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Peran Modul">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Peran Modul</h1>
+                        <p class="text-muted">
+                            Pilih user, lalu atur akses ke tiap modul. Kosongkan kolom Akses bila user
+                            tidak boleh memakai modul itu. Hanya modul yang diubah yang disimpan.
+                        </p>
+                    </div>
+                    <group>
+                        <field name="user_id" options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                    <field name="line_ids" nolabel="1" invisible="not user_id">
+                        <list editable="bottom" create="0" delete="0" no_open="1"
+                              decoration-muted="not group_ids" decoration-bf="group_ids">
+                            <field name="category_id" width="200px" string="Kategori"/>
+                            <field name="privilege_id" width="260px" string="Modul"/>
+                            <field name="available_group_ids" column_invisible="1"/>
+                            <field name="group_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   domain="[('id', 'in', available_group_ids)]"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button name="action_apply" type="object" string="Simpan Akses"
+                            class="btn-primary" invisible="not user_id"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_user_access_wizard" model="ir.actions.act_window">
+        <field name="name">Peran Modul</field>
+        <field name="res_model">user.access.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="action_user_access_matrix" model="ir.actions.client">
+        <field name="name">Akses User</field>
+        <field name="tag">custom_user_access.matrix</field>
+    </record>
+
+    <menuitem id="menu_user_access" name="Akses User"
+              parent="base.menu_users" action="action_user_access_matrix"
+              sequence="5" groups="base.group_system"/>
+
+    <menuitem id="menu_user_access_roles" name="Peran Modul"
+              parent="base.menu_users" action="action_user_access_wizard"
+              sequence="6" groups="base.group_system"/>
+
+</odoo>
