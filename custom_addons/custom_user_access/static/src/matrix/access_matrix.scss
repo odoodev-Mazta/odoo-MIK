@@ -1,0 +1,139 @@
+.o_uam {
+    padding: 16px 20px;
+    background: #f8f9fc;
+    height: 100%;
+    overflow: auto;
+
+    .o_uam_top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+
+        h2 { margin: 0 0 4px; font-size: 20px; }
+    }
+
+    .o_uam_user {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+
+        select { min-width: 260px; }
+    }
+
+    .o_uam_empty {
+        padding: 40px;
+        text-align: center;
+        color: #8a93a2;
+    }
+
+    .o_uam_body {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 16px;
+        align-items: start;
+    }
+
+    .o_uam_side {
+        background: #fff;
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        max-height: calc(100vh - 220px);
+        overflow-y: auto;
+
+        .o_uam_side_title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: #8a93a2;
+            margin: 2px 8px 8px;
+        }
+
+        .o_uam_app {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13.5px;
+            color: #2b3445;
+
+            &:hover { background: #eef1f8; }
+            &.active {
+                background: var(--primary, #714b67);
+                color: #fff;
+                font-weight: 600;
+            }
+            .o_uam_badge {
+                font-size: 11px;
+                padding: 1px 8px;
+                border-radius: 99px;
+                background: #e9ecef;
+                color: #495057;
+                font-weight: 600;
+            }
+            &.active .o_uam_badge { background: rgba(255, 255, 255, 0.25); color: #fff; }
+        }
+    }
+
+    .o_uam_main {
+        background: #fff;
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+        .o_uam_search { margin-bottom: 12px; }
+    }
+
+    .o_uam_table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+
+        thead th {
+            background: #f1f3f5;
+            color: #495057;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            padding: 10px 6px;
+            letter-spacing: 0.04em;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+
+            &:first-child { border-top-left-radius: 10px; text-align: left; padding-left: 16px; }
+            &:last-child { border-top-right-radius: 10px; }
+            input { margin-top: 4px; }
+        }
+
+        td {
+            padding: 9px 6px;
+            border-bottom: 1px solid #eef0f4;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .o_uam_menu_col { text-align: left; padding-left: 16px; }
+        .o_uam_perm_col { width: 90px; }
+
+        .o_uam_section td {
+            background: #f4f6fb;
+            color: #6b7487;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            text-align: left;
+            padding-left: 16px;
+        }
+
+        .o_uam_dash { color: #c5cad3; }
+    }
+}
