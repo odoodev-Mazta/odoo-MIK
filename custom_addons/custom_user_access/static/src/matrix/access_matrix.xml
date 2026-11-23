@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="custom_user_access.AccessMatrix">
+        <div class="o_uam">
+            <div class="o_uam_top">
+                <div class="o_uam_title">
+                    <h2>Akses User</h2>
+                    <div class="text-muted">
+                        Hilangkan centang untuk mencabut akses. Kotak yang tidak bisa dicentang (—) berarti
+                        user memang tidak punya hak itu dari grup Odoo; berikan lewat menu Peran Modul.
+                        Kolom Setuju belum aktif: level approval (Head, COO, CEO, Finance) diatur lewat Peran Modul.
+                    </div>
+                </div>
+                <div class="o_uam_user">
+                    <label>User</label>
+                    <select class="form-select" t-on-change="onUserChange">
+                        <option value="">— pilih user —</option>
+                        <t t-foreach="state.users" t-as="user" t-key="user.id">
+                            <option t-att-value="user.id" t-att-selected="user.id === state.userId">
+                                <t t-esc="user.name"/> (<t t-esc="user.login"/>)
+                            </option>
+                        </t>
+                    </select>
+                    <button class="btn btn-primary" t-att-disabled="!state.userId or !state.dirty" t-on-click="save">
+                        Simpan Akses
+                    </button>
+                    <button class="btn btn-outline-secondary" t-att-disabled="!state.userId" t-on-click="reset">
+                        Hapus Semua Pembatasan
+                    </button>
+                </div>
+            </div>
+
+            <t t-if="!state.userId">
+                <div class="o_uam_empty">Pilih user di atas untuk mengatur aksesnya.</div>
+            </t>
+            <t t-elif="state.loading">
+                <div class="o_uam_empty">Memuat…</div>
+            </t>
+            <t t-else="">
+                <div class="o_uam_body">
+                    <div class="o_uam_side">
+                        <div class="o_uam_side_title">MODUL</div>
+                        <t t-foreach="state.apps" t-as="app" t-key="app.id">
+                            <div t-attf-class="o_uam_app #{app.id === state.appId ? 'active' : ''}"
+                                 t-on-click="() => this.selectApp(app.id)">
+                                <span class="o_uam_app_name"><t t-esc="app.name"/></span>
+                                <span class="o_uam_badge"><t t-esc="activeCount(app)"/></span>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="o_uam_main">
+                        <input type="text" class="form-control o_uam_search" placeholder="Cari / pilih menu…"
+                               t-model="state.search"/>
+                        <table class="o_uam_table">
+                            <thead>
+                                <tr>
+                                    <th class="o_uam_menu_col">MENU</th>
+                                    <t t-foreach="columns" t-as="col" t-key="col.key">
+                                        <th class="o_uam_perm_col">
+                                            <div><i t-attf-class="fa #{col.icon}"/></div>
+                                            <div><t t-esc="col.label"/></div>
+                                            <input t-if="col.key !== 'approve'" type="checkbox"
+                                                   t-att-checked="columnState(col.key)"
+                                                   t-on-click="() => this.toggleColumn(col.key)"/>
+                                        </th>
+                                    </t>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="visibleSections" t-as="section" t-key="section.name">
+                                    <tr class="o_uam_section">
+                                        <td t-att-colspan="columns.length + 1"><t t-esc="section.name"/></td>
+                                    </tr>
+                                    <t t-foreach="section.menus" t-as="menu" t-key="menu.id">
+                                        <tr>
+                                            <td class="o_uam_menu_col"><t t-esc="menu.name"/></td>
+                                            <t t-foreach="columns" t-as="col" t-key="col.key">
+                                                <td class="o_uam_perm_col">
+                                                    <t t-if="isLocked(menu, col.key)">
+                                                        <span class="o_uam_dash"
+                                                              title="Tidak tersedia / user tidak punya hak ini dari grup Odoo">—</span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <input type="checkbox" t-att-checked="menu.perms[col.key]"
+                                                               t-on-click="() => this.toggle(menu, col.key)"/>
+                                                    </t>
+                                                </td>
+                                            </t>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <tr t-if="!visibleSections.length">
+                                    <td t-att-colspan="columns.length + 1" class="o_uam_empty">Tidak ada menu.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>
