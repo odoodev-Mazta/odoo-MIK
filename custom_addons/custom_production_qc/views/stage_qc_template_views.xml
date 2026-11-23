@@ -93,4 +93,5 @@
     </record>
 
     <function model="mrp.production.stage" name="_move_parameters_to_qc_templates"/>
+    <function model="mrp.production.stage" name="_seed_standard_qc_parameters"/>
 </odoo>
