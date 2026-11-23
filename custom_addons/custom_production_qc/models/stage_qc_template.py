@@ -92,6 +92,60 @@ class ProductionStage(models.Model):
             })
         params.set_param(key, "1")
 
+    # Parameter pemeriksaan standar dari tim QC. Batas min/maks sengaja kosong (0 = tanpa batas):
+    # isi di QC Template sesuai spesifikasi tiap produk.
+    STANDARD_QC_PARAMETERS = {
+        "stage_mixing": [
+            ("Viskositas", "number"),
+            ("pH", "number"),
+            ("Bobot Jenis", "number"),
+        ],
+        "stage_filling": [
+            ("Viskositas", "number"),
+            ("pH", "number"),
+            ("Bobot Jenis", "number"),
+            ("Waktu Koagulasi", "number"),
+            ("Tidak Ada Kebocoran", "boolean"),
+        ],
+        "stage_packing": [
+            ("Kesesuaian Nomor Batch", "boolean"),
+            ("Kesesuaian Hasil / Isi Produk", "boolean"),
+        ],
+    }
+
+    @api.model
+    def _seed_standard_qc_parameters(self):
+        """Sekali saja: tambahkan parameter standar QC ke template umum tiap tahap (dibuat bila belum ada)."""
+        params = self.env["ir.config_parameter"].sudo()
+        key = "custom_production_qc.standard_parameters_seeded"
+        if params.get_param(key):
+            return
+        Template = self.env["production.qc.template"]
+        for xmlid, definitions in self.STANDARD_QC_PARAMETERS.items():
+            stage = self.env.ref(f"custom_production_planning.{xmlid}", raise_if_not_found=False)
+            if not stage:
+                continue
+            template = Template.search([
+                ("stage_id", "=", stage.id), ("product_tmpl_ids", "=", False), ("fill_size", "=", 0),
+            ], limit=1)
+            if not template:
+                template = Template.create({
+                    "name": f"QC {stage.name} (umum)", "qc_type": "process", "stage_id": stage.id,
+                })
+            existing = {name.lower() for name in template.parameter_ids.mapped("name")}
+            sequence = max(template.parameter_ids.mapped("sequence") or [0])
+            lines = []
+            for name, parameter_type in definitions:
+                if name.lower() in existing:
+                    continue
+                sequence += 10
+                lines.append((0, 0, {
+                    "sequence": sequence, "name": name, "parameter_type": parameter_type, "required": True,
+                }))
+            if lines:
+                template.write({"parameter_ids": lines})
+        params.set_param(key, "1")
+
 
 class ProductionPlanStage(models.Model):
     _inherit = "mrp.production.plan.stage"

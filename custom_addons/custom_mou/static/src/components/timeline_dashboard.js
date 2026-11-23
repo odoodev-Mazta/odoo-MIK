@@ -868,21 +868,78 @@ export class TimelineDashboard extends Component {
                 stage.progress = result.progress;
             });
 
+            this._markOverdueAndWarnings(stages);
+
             // Progress keseluruhan
             const progressPercent = Math.round(
                 stages.reduce((t, s) => t + this.getStagePct(s), 0) / stages.length
             );
+            const deadlineOverdueDays = mou.deadline && progressPercent < 100
+                ? this._daysLate(mou.deadline) : 0;
 
             return {
                 id: mou.id,
                 pelanggan: mou.pelanggan,
                 no_mou: mou.no_mou,
                 deadline: mou.deadline ? this.formatDate(mou.deadline) : null,
+                deadline_overdue_days: deadlineOverdueDays,
                 progress: progressPercent,
                 stages,
                 sale_orders: mou.sale_orders || [],
             };
         });
+    }
+
+    // ─── Terlambat & peringatan antar tahap ──────────────────────────────────
+
+    /** Selisih hari antara hari ini dan tanggal 'YYYY-MM-DD' atau 'DD-MM-YYYY'; 0 bila belum lewat. */
+    _daysLate(dateString) {
+        if (!dateString) return 0;
+        const parts = dateString.split('-').map(Number);
+        const [y, m, d] = parts[0] > 31 ? parts : [parts[2], parts[1], parts[0]];
+        const due = new Date(y, m - 1, d);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return Math.max(0, Math.floor((today - due) / 86400000));
+    }
+
+    _markOverdueAndWarnings(stages) {
+        const byCode = (code) => stages.find((s) => s.code === code);
+        stages.forEach((stage) => {
+            stage.overdue_count = 0;
+            stage.warnings = [];
+            const items = [...(stage.details || []), ...((stage.sub_registrasi && stage.sub_registrasi.nie) || [])];
+            items.forEach((detail) => {
+                const match = typeof detail.date === 'string' && detail.date.match(/^Jatuh Tempo: (\S+)/);
+                const days = !detail.is_done && match ? this._daysLate(match[1]) : 0;
+                detail.is_overdue = days > 0;
+                detail.overdue_days = days;
+                if (days > 0) stage.overdue_count++;
+            });
+        });
+
+        // Peringatan (hanya penanda, tidak memblokir): tahap berikutnya jalan padahal syaratnya belum beres.
+        const unpaid = (code) => {
+            const stage = byCode(code);
+            return !!stage && stage.details.length > 0 && !stage.details.every((d) => d.is_done);
+        };
+        const produksi = byCode('produksi');
+        const hasPlan = (produksi.details || []).some((d) => !d.is_mou_total && !d.is_cancelled);
+        if (hasPlan && unpaid('dp')) {
+            produksi.warnings.push('DP belum lunas, tetapi sudah ada Plan Produksi');
+        }
+        const delivery = byCode('delivery');
+        const hasDelivery = ((delivery.sub_delivery && delivery.sub_delivery.picking) || []).some((p) => !p.is_cancelled);
+        if (hasDelivery) {
+            if (unpaid('bp')) {
+                delivery.warnings.push('BP belum lunas, tetapi sudah ada Delivery');
+            }
+            const qc = byCode('qc');
+            const hasQc = qc.details.length > 0 || ((qc.sub_qc && qc.sub_qc.schedules) || []).length > 0;
+            if (hasQc && qc.status !== 'done') {
+                delivery.warnings.push('QC belum selesai, tetapi sudah ada Delivery');
+            }
+        }
     }
 
     // ─── Logika Status Stage ─────────────────────────────────────────────────
