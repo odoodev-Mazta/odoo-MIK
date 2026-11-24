@@ -7,9 +7,9 @@
                 <div class="o_uam_title">
                     <h2>Akses User</h2>
                     <div class="text-muted">
-                        Hilangkan centang untuk mencabut akses. Kotak yang tidak bisa dicentang (—) berarti
-                        user memang tidak punya hak itu dari grup Odoo; berikan lewat menu Peran Modul.
-                        Kolom Setuju belum aktif: level approval (Head, COO, CEO, Finance) diatur lewat Peran Modul.
+                        Centang untuk memberi akses, hilangkan centang untuk mencabutnya. Awalnya tercentang sesuai
+                        grup Odoo user. Kotak "—" tidak berlaku untuk menu itu. Kolom Setuju belum aktif: level
+                        approval (Head, COO, CEO, Finance) diatur lewat Peran Modul.
                     </div>
                 </div>
                 <div class="o_uam_user">
@@ -80,7 +80,7 @@
                                                 <td class="o_uam_perm_col">
                                                     <t t-if="isLocked(menu, col.key)">
                                                         <span class="o_uam_dash"
-                                                              title="Tidak tersedia / user tidak punya hak ini dari grup Odoo">—</span>
+                                                              title="Tidak berlaku untuk menu ini">—</span>
                                                     </t>
                                                     <t t-else="">
                                                         <input type="checkbox" t-att-checked="menu.perms[col.key]"
