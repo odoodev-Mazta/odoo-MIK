@@ -1,10 +1,27 @@
-from odoo import models
-from odoo.exceptions import ValidationError
+from odoo import _, models
+from odoo.exceptions import UserError, ValidationError
 
 class MrpWorkorder(models.Model):
     _inherit = "mrp.workorder"
 
+    def _check_run_from_stage(self):
+        """Work Order milik tahap Proses Produksi hanya boleh dijalankan dari tahapnya."""
+        if self.env.context.get("from_production_stage"):
+            return
+        if self.env["mrp.production.plan.stage"].sudo().search_count(
+            [("workorder_id", "in", self.ids)]
+        ):
+            raise UserError(_(
+                "Work Order ini dijalankan dari tab Proses Produksi (Mulai, Ajukan QC, QC Lulus). "
+                "Tombol di Work Order tidak dipakai supaya statusnya selalu sama dengan tahap."
+            ))
+
+    def button_pending(self, *args, **kwargs):
+        self._check_run_from_stage()
+        return super().button_pending(*args, **kwargs)
+
     def button_start(self, *args, **kwargs):
+        self._check_run_from_stage()
         res = super().button_start(*args, **kwargs)
 
         schedules = self.env[
@@ -21,6 +38,7 @@ class MrpWorkorder(models.Model):
 
     def button_finish(self):
 
+        self._check_run_from_stage()
         res = super().button_finish()
 
         for wo in self:

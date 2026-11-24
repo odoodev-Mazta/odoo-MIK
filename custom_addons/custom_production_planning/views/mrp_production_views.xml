@@ -37,6 +37,9 @@
                         </list>
                     </field>
                 </page>
+            </xpath>
+            <!-- Proses Produksi ditaruh sebelum Work Orders (tombol jalan ada di sini). -->
+            <xpath expr="//page[@name='operations']" position="before">
                 <page string="Proses Produksi" invisible="not stage_ids">
                     <field name="stage_ids">
                         <list editable="bottom" create="0" delete="0">
@@ -44,7 +47,8 @@
                             <field name="stage_id" readonly="1"/>
                             <field name="date_start" readonly="1"/>
                             <field name="date_end" readonly="1"/>
-                            <field name="pic_ids" widget="many2many_tags" readonly="1" string="PIC"/>
+                            <field name="pic_ids" widget="many2many_tags" readonly="state == 'done'" string="PIC"
+                                   options="{'no_create': True}"/>
                             <field name="started_by_id" optional="show"/>
                             <field name="date_start_actual" optional="hide"/>
                             <field name="qc_submit_date" string="Mulai QC" optional="show"/>
@@ -80,7 +84,22 @@
         </field>
     </record>
 
-    <!-- Tab Work Orders ditampilkan lagi (sempat disembunyikan). -->
+    <!-- Kolom Quantity di tab Work Orders = sisa. Tambah kolom "Sudah Dikerjakan" supaya jelas. -->
+    <record id="view_mrp_workorder_list_mo_form_qty" model="ir.ui.view">
+        <field name="name">mrp.workorder.list.mo.form.qty</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp.mrp_production_workorder_tree_editable_view_mo_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='qty_remaining']" position="attributes">
+                <attribute name="string">Sisa Qty</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='qty_remaining']" position="before">
+                <field name="qty_produced" string="Sudah Dikerjakan" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Tab Work Orders (sempat disembunyikan). -->
     <record id="view_mrp_production_form_hide_workorders" model="ir.ui.view">
         <field name="name">mrp.production.form.hide.workorders</field>
         <field name="model">mrp.production</field>
