@@ -57,4 +57,52 @@
               parent="base.menu_users" action="action_user_access_wizard"
               sequence="6" groups="base.group_system"/>
 
+    <record id="view_approval_log_list" model="ir.ui.view">
+        <field name="name">approval.log.list</field>
+        <field name="model">approval.log</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="date desc, id desc">
+                <field name="date"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="action"/>
+                <field name="model_label"/>
+                <field name="record_name"/>
+                <field name="state_before" optional="show"/>
+                <field name="state_after" optional="show"/>
+                <button name="action_open_record" type="object" string="Buka" icon="fa-external-link"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_approval_log_search" model="ir.ui.view">
+        <field name="name">approval.log.search</field>
+        <field name="model">approval.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="record_name"/>
+                <field name="user_id"/>
+                <field name="action"/>
+                <field name="model_label"/>
+                <filter name="today" string="Hari Ini"
+                        domain="[('date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="mine" string="Oleh Saya" domain="[('user_id', '=', uid)]"/>
+                <group>
+                    <filter name="group_user" string="Oleh" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_model" string="Jenis Dokumen" context="{'group_by': 'model_label'}"/>
+                    <filter name="group_day" string="Tanggal" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_approval_log" model="ir.actions.act_window">
+        <field name="name">Riwayat Approval</field>
+        <field name="res_model">approval.log</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <menuitem id="menu_approval_log" name="Riwayat Approval"
+              parent="base.menu_users" action="action_approval_log"
+              sequence="7" groups="base.group_system"/>
+
 </odoo>

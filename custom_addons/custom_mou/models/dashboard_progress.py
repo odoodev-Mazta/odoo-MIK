@@ -399,10 +399,12 @@ class DashboardProgress(models.AbstractModel):
                 'no_mou': no_mou,
                 'pelanggan': pelanggan,
 
-                # Ambil brand dari draft.maklon tidak tersedia
-                # langsung di timeline sekarang.
-                # Nanti kita bisa tambahkan.
-                'brand': timeline.get('brand', '-'),
+                # Brand dari Registrasi Brand milik MOU ini (bisa lebih dari satu).
+                'brand': ', '.join(dict.fromkeys(
+                    name for name in self.env['registrasi.brand'].search(
+                        [('mou_id', '=', mou_id)]
+                    ).mapped('brand_name') if name
+                )) or '-',
 
                 'progress': progress,
 

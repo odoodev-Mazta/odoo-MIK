@@ -2,3 +2,4 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_user_access_wizard,user.access.wizard,model_user_access_wizard,base.group_system,1,1,1,1
 access_user_access_wizard_line,user.access.wizard.line,model_user_access_wizard_line,base.group_system,1,1,1,1
 access_user_menu_access,user.menu.access,model_user_menu_access,base.group_system,1,1,1,1
+access_approval_log,approval.log,model_approval_log,base.group_system,1,0,0,0

@@ -377,12 +377,37 @@ class ProductionPlanStage(models.Model):
         )
         stages._sync_workorder_dates()
 
+    def _start_workorder_timer(self, workorder):
+        """Pastikan timer Work Order jalan. Odoo Enterprise hanya menjalankan timer bila ada
+        karyawan yang bekerja, jadi pakai PIC tahap (atau karyawan user) dan, bila tidak ada,
+        catat waktu tanpa karyawan."""
+        self.ensure_one()
+        if any(not t.date_end for t in workorder.time_ids):
+            return
+        employees = self.pic_ids.filtered(lambda e: e.company_id == workorder.company_id)
+        if not employees:
+            employees = self.env.user.employee_id.filtered(lambda e: e.company_id == workorder.company_id)
+        if employees and hasattr(workorder, "start_employee"):
+            for employee in employees:
+                workorder.start_employee(employee.id)
+        else:
+            self.env["mrp.workcenter.productivity"].create(
+                workorder._prepare_timeline_vals(workorder.duration, fields.Datetime.now())
+            )
+
     def _sync_workorder(self, action):
         """Samakan status Work Order dengan tahap: start / pending / finish / reset."""
         for stage in self:
             workorder = stage.workorder_id
-            if not workorder or workorder.state in ("done", "cancel"):
+            if not workorder or workorder.state == "cancel":
                 continue
+            workorder = workorder.with_context(from_production_stage=True)
+            if workorder.state == "done":
+                # Work Order sudah Done tapi tahapnya baru dimulai (sisa data lama yang
+                # diselesaikan langsung di Work Order): buka lagi supaya timernya jalan.
+                if action != "start":
+                    continue
+                workorder.write({"state": "ready", "date_finished": False})
             if action == "start":
                 workcenter = stage._get_workcenter()
                 if workcenter and workorder.workcenter_id != workcenter and not workorder.leave_id:
@@ -396,6 +421,7 @@ class ProductionPlanStage(models.Model):
                     workorder.button_start(bypass=True)
                 else:
                     workorder.button_start()
+                stage._start_workorder_timer(workorder)
             elif action == "pending":
                 workorder.button_pending()
             elif action == "finish":
@@ -610,6 +636,11 @@ class ProductionPlanStage(models.Model):
                 "qc_state": "pending",
                 "qc_note": False,
             })
+            # PIC belum diisi di Plan: pakai karyawan milik user yang menekan Mulai.
+            if not stage.pic_ids:
+                employee = self.env.user.employee_id.filtered(lambda e: e.company_id == self.env.company)
+                if employee:
+                    stage.pic_ids = [Command.link(employee.id)]
             stage.check_ids.unlink()
             stage.check_ids = [Command.create(vals) for vals in stage._get_qc_parameter_vals()]
             product = stage.product_id

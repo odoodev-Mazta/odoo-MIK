@@ -1789,9 +1789,11 @@ class ProductionPlan(models.Model):
                     available_raw = material.virtual_available - material.incoming_qty
                     available_qty = max(available_raw, 0.0)
 
+                    # Kurang dihitung dari angka "Tersedia" yang ditampilkan (tidak
+                    # negatif), supaya Dibutuhkan - Tersedia = Kurang selalu cocok.
                     shortage_qty = (
                             required_qty
-                            - available_raw
+                            - available_qty
                     )
 
                     if shortage_qty > 0:

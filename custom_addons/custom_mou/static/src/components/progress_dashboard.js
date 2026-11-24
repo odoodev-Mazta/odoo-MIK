@@ -53,9 +53,40 @@ export class ProgressDashboard extends Component {
         }
     }
 
+    /** Daftar pelanggan unik (A-Z) untuk kolom pencarian. */
+    get customers() {
+        return [...new Set(this.state.mou_list.map(m => m.pelanggan).filter(Boolean))]
+            .sort((a, b) => a.localeCompare(b));
+    }
+
+    /** MOU milik pelanggan yang sedang dipilih (untuk dropdown No. MOU dan Brand). */
+    get customerMous() {
+        const current = this.state.selected_mou;
+        if (!current) return [];
+        return this.state.mou_list.filter(m => m.pelanggan === current.pelanggan);
+    }
+
+    onFocusPelanggan(ev) {
+        ev.target.select();
+    }
+
+    // Pelanggan dipilih/diketik -> otomatis ke MOU pertama milik pelanggan itu.
+    onChangePelanggan(ev) {
+        const typed = (ev.target.value || "").trim().toLowerCase();
+        const match = this.state.mou_list.find(m => (m.pelanggan || "").toLowerCase() === typed);
+        if (!match) {
+            ev.target.value = this.state.selected_mou ? this.state.selected_mou.pelanggan : "";
+            return;
+        }
+        this._selectMou(match.id);
+    }
+
     // INTERAKSI 1: Dropdown Kanan diubah -> Tabel Bawah terfilter
     onChangeSelection(ev) {
-        const selectedId = parseInt(ev.target.value);
+        this._selectMou(parseInt(ev.target.value));
+    }
+
+    _selectMou(selectedId) {
         this.state.selected_mou = this.state.mou_list.find(m => m.id === selectedId);
 
         // Filter tabel bawah agar hanya menampilkan baris pelanggan yang dipilih
