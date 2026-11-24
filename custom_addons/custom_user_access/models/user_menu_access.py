@@ -59,7 +59,26 @@ class UserMenuAccess(models.Model):
         if not self._table_ready():
             return frozenset()
         rows = self.sudo().search([("user_id", "=", self.env.uid), ("can_view", "=", False)])
-        return frozenset(rows.menu_id.ids)
+        hidden = set(rows.menu_id.ids)
+        if not hidden:
+            return frozenset()
+        # Menu induk (aplikasi / folder) yang semua isinya tersembunyi ikut disembunyikan.
+        Menu = self.env["ir.ui.menu"]
+        visible = Menu._visible_menu_ids(False)
+        menus = Menu.sudo().with_context(active_test=False).browse(list(visible))
+        children = defaultdict(list)
+        for menu in menus:
+            children[menu.parent_id.id].append(menu)
+
+        def alive(menu):
+            if menu.action:
+                return menu.id not in hidden
+            return any(alive(child) for child in children[menu.id])
+
+        for menu in menus:
+            if not menu.action and not alive(menu):
+                hidden.add(menu.id)
+        return frozenset(hidden)
 
     @api.model
     @tools.ormcache("self.env.uid", "mode")
