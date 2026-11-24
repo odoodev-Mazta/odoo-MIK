@@ -90,7 +90,7 @@ export class AccessMatrix extends Component {
     // ── interaksi ───────────────────────────────────────────────────────
 
     isLocked(menu, perm) {
-        return !menu.native[perm] || (menu.na && menu.na[perm]);
+        return !!(menu.na && menu.na[perm]);
     }
 
     toggle(menu, perm) {

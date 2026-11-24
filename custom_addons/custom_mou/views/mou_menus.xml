@@ -35,6 +35,6 @@
          id="menu_mou_tracking"
          name="Tracking"
          parent="menu_mou_root"
-         action="action_progress_mou_dashboard"
+         action="action_timeline_mou_dashboard"
          sequence="50"/>
 </odoo>
