@@ -129,11 +129,12 @@ class ProductionPoReference(models.Model):
         """({no PO: [nama produk BoM]}, [semua nama produk BoM]). Kode BoM bentuknya 'SO-088', 'SO-0120', 'SO-;011'."""
         cache = self.env.cr.cache
         if "po_ref_bom_index" not in cache:
-            by_po, every, seen = {}, [], set()
+            by_po, every, seen, counts = {}, [], set(), {}
             for bom in self.env["mrp.bom"].search([]):
                 name = bom.product_tmpl_id.name
                 if not name:
                     continue
+                counts[name] = counts.get(name, 0) + 1
                 if name not in seen:
                     seen.add(name)
                     every.append(name)
@@ -142,7 +143,7 @@ class ProductionPoReference(models.Model):
                     pool = by_po.setdefault(po_key(match.group(1)), [])
                     if name not in pool:
                         pool.append(name)
-            cache["po_ref_bom_index"] = (by_po, every)
+            cache["po_ref_bom_index"] = (by_po, every, counts)
         return cache["po_ref_bom_index"]
 
     @api.model
@@ -194,47 +195,70 @@ class ProductionPoReference(models.Model):
                 out.append(word)
         return size, out
 
+    @staticmethod
+    def _word_in(word, words, joined):
+        """Kata cocok bila sama, terkandung (spasi beda: DERMA TEA = DERMATEA), atau salah ketik satu huruf."""
+        if word in words or (len(word) >= 3 and word in joined):
+            return True
+        for other in words:
+            ratio = difflib.SequenceMatcher(None, word, other).ratio()
+            if ratio >= 0.8 or (len(word) == len(other) >= 3 and word[0] == other[0] and ratio >= 0.66):
+                return True
+        return False
+
     @api.model
     def canonical_for_delivery(self, po_number, raw_name):
         """Nama produk jadi (mengikuti BoM / PO MIK) untuk satu baris Surat Jalan.
 
-        Awalan 'Dr.' dan kata umum diabaikan. Brand harus cocok. Dalam PO yang sama: ukuran sama dan unik -> dipakai.
-        Tanpa PO / tidak ketemu di PO: cari di semua BoM, hanya bila brand, ukuran, dan semua kata cocok dan unik."""
+        Yang diabaikan: awalan 'Dr.', kata umum, huruf besar/kecil, spasi, tanda baca, salah ketik satu huruf.
+        Netto di SJ sering kosong, jadi ukuran hanya dipakai bila dicantumkan.
+        Dalam PO yang sama: brand cocok dan kandidat unik -> dipakai. Tanpa PO: cari di semua BoM, harus unik."""
         raw_size, raw_words = self._name_parts(raw_name)
         if not raw_words:
             return False
-        brand = raw_words[0]
-        rest = set(raw_words[1:])
+        brand, rest = raw_words[0], raw_words[1:]
         key = po_key(po_number)
+        by_po, every, counts = self._bom_index()
+        word_in = self._word_in
 
-        def brand_ok(words):
-            return any(w == brand or difflib.SequenceMatcher(None, w, brand).ratio() >= 0.85 for w in words)
-
-        def pick(names, scoped):
+        def rows_for(names):
             rows = []
             for name in names:
                 size, words = self._name_parts(name)
-                if not brand_ok(words):
+                joined = "".join(words)
+                if not word_in(brand, set(words), joined):
                     continue
-                overlap = len(rest & set(words)) / len(rest) if rest else 1.0
-                rows.append((name, size, overlap))
-            if scoped:
-                same = [r for r in rows if r[1] == raw_size]
-                if len(same) == 1:
-                    return same[0][0]
-                if len(same) > 1:
-                    top = max(r[2] for r in same)
-                    best = [r for r in same if r[2] == top]
-                    return best[0][0] if len(best) == 1 and top > 0 else False
-                full = [r for r in rows if r[2] == 1.0]  # ukuran di SJ salah ketik, tapi semua kata cocok
-                return full[0][0] if len(full) == 1 else False
-            full = [r for r in rows if r[1] == raw_size and r[2] == 1.0]
-            return full[0][0] if len(full) == 1 else False
+                hit = sum(1 for w in rest if word_in(w, set(words), joined))
+                overlap = hit / len(rest) if rest else 1.0
+                size_ok = not raw_size or not size or size == raw_size
+                rows.append({"name": name, "overlap": overlap, "extra": len(words) - 1 - hit, "size_ok": size_ok})
+            return rows
+
+        def unique_best(rows):
+            if not rows:
+                return False
+            rows = sorted(rows, key=lambda r: (-r["overlap"], r["extra"]))
+            top = [r for r in rows if (r["overlap"], r["extra"]) == (rows[0]["overlap"], rows[0]["extra"])]
+            if len(top) == 1:
+                return top[0]["name"]
+            # sama persis kecuali ukuran: ambil yang BoM-nya paling banyak (jelas dominan)
+            top.sort(key=lambda r: -counts.get(r["name"], 0))
+            if counts.get(top[0]["name"], 0) >= 2 * max(counts.get(top[1]["name"], 0), 1):
+                return top[0]["name"]
+            return False
 
         if key:
             names = self.search([("po_key", "=", key)]).mapped("product_name")
-            names += [n for n in self._bom_names(key) if n not in names]
-            found = pick(names, True)
+            names += [n for n in by_po.get(key, []) if n not in names]
+            rows = rows_for(names)
+            same = [r for r in rows if r["size_ok"]]
+            if len(same) == 1:
+                return same[0]["name"]
+            found = unique_best([r for r in same if r["overlap"] >= 0.5]) if same else False
             if found:
                 return found
-        return pick(self._bom_index()[1], False) or False
+            found = unique_best([r for r in rows if r["overlap"] == 1.0])
+            if found:
+                return found
+        rows = [r for r in rows_for(every) if r["overlap"] == 1.0 and r["size_ok"]]
+        return unique_best(rows) or False
