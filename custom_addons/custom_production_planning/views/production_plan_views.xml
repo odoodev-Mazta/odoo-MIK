@@ -7,6 +7,8 @@
             <list>
                 <field name="name"/>
                 <field name="sale_order_id"/>
+                <field name="has_no_sale_order" column_invisible="1"/>
+                <field name="is_history" optional="show"/>
                 <field name="mou_id" optional="show"/>
                 <field name="brand_name" optional="show"/>
                 <field name="origin_type"/>
@@ -138,7 +140,9 @@
                     <group>
                         <group>
                             <field name="name" readonly="state != 'draft'" placeholder="Kosongkan untuk nomor otomatis"/>
-                            <field name="sale_order_id"/>
+                            <field name="sale_order_id" required="not is_history"/>
+                            <field name="is_history" invisible="not is_history"/>
+                            <field name="history_mou_id" invisible="not is_history" readonly="1"/>
                             <field name="origin_type" readonly="state != 'draft'"/>
                             <field name="mou_id"/>
                             <field name="brand_name"/>
@@ -437,9 +441,40 @@
         </field>
     </record>
 
+    <record id="view_production_plan_search" model="ir.ui.view">
+        <field name="name">mrp.production.plan.search</field>
+        <field name="model">mrp.production.plan</field>
+        <field name="arch" type="xml">
+            <search string="Production Planning">
+                <field name="name"/>
+                <field name="sale_order_id"/>
+                <field name="mou_id"/>
+                <field name="brand_name"/>
+                <field name="customer_id"/>
+                <filter name="no_sale_order" string="Tanpa Sales Order" domain="[('has_no_sale_order', '=', True)]"/>
+                <filter name="with_sale_order" string="Ada Sales Order" domain="[('has_no_sale_order', '=', False)]"/>
+                <separator/>
+                <filter name="history" string="Plan Riwayat (Excel)" domain="[('is_history', '=', True)]"/>
+                <filter name="not_history" string="Bukan Riwayat" domain="[('is_history', '=', False)]"/>
+                <separator/>
+                <filter name="no_mou" string="Tanpa MOU" domain="[('mou_id', '=', False)]"/>
+                <separator/>
+                <filter name="state_running" string="Running" domain="[('state', '=', 'running')]"/>
+                <filter name="state_done" string="Done" domain="[('state', '=', 'done')]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_brand" string="Brand" context="{'group_by': 'brand_name'}"/>
+                    <filter name="group_mou" string="MOU" context="{'group_by': 'mou_id'}"/>
+                    <filter name="group_no_so" string="Sales Order Ada / Tidak" context="{'group_by': 'has_no_sale_order'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <record id="action_production_plan" model="ir.actions.act_window">
         <field name="name">Production Planning</field>
         <field name="res_model">mrp.production.plan</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_production_plan_search"/>
     </record>
 </odoo>
