@@ -122,8 +122,7 @@ class ProductionReport(models.Model):
             lines = report.line_ids.filtered(lambda l: not l.plan_id)
             usable = lines
             for line in usable.filtered(lambda l: not l.product_tmpl_id):
-                brand = line.brand_id.brand_name or line.brand
-                name = history_product.standard_name(brand, line.product_type, line.packaging)
+                name = line.proposed_product_name
                 if name:
                     line.product_tmpl_id = history_product.find_or_create_product(self.env, name, index)
             groups = {}
@@ -303,12 +302,19 @@ class ProductionReportLine(models.Model):
             else:
                 line.mou_id = line.report_id.sale_order_id.mou_id or line.brand_id.mou_id
 
-    @api.depends("brand_id", "brand", "product_type", "packaging")
+    @api.depends("brand_id", "brand", "product_type", "packaging", "po_number", "qty")
     def _compute_proposed_product_name(self):
         for line in self:
-            line.proposed_product_name = history_product.standard_name(
+            line.proposed_product_name = line._canonical_product_name() or history_product.standard_name(
                 line.brand_id.brand_name or line.brand, line.product_type, line.packaging
             )
+
+    def _canonical_product_name(self):
+        """Nama produk jadi yang benar menurut Excel PO MIK (nomor PO + jenis produk + brand)."""
+        self.ensure_one()
+        return self.env["mrp.production.po.ref"].canonical_for_production(
+            self.po_number, self.product_type, [self.brand, self.brand_id.brand_name], self.qty
+        )
 
     @api.depends("brand_id", "is_internal")
     def _compute_match_state(self):
@@ -376,6 +382,7 @@ class ProductionReportLine(models.Model):
         return candidates if len(candidates) == 1 else False
 
     def action_auto_match(self):
+        index = history_product.product_index(self.env)
         brands_by_norm = {}
         for brand in self.env["registrasi.brand"].search([]):
             brands_by_norm.setdefault(_norm(brand.brand_name), brand)
@@ -391,7 +398,12 @@ class ProductionReportLine(models.Model):
                 elif brand:
                     line.brand_id = brand
             if not line.product_tmpl_id:
-                product = line._paired_product() or line._suggest_product()
+                canonical = line._canonical_product_name()
+                product = (
+                    line._paired_product()
+                    or (history_product.find_product(index, canonical) if canonical else False)
+                    or line._suggest_product()
+                )
                 if product:
                     line.with_context(skip_product_alias=True).product_tmpl_id = product
         return True

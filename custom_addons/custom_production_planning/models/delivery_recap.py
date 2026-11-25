@@ -58,10 +58,15 @@ class DeliveryRecap(models.Model):
     )
     company_id = fields.Many2one("res.company", default=lambda self: self.env.company, index=True)
 
-    @api.depends("product_name")
+    @api.depends("product_name", "po_number")
     def _compute_proposed_product_name(self):
         for rec in self:
-            rec.proposed_product_name = history_product.clean_name(rec.product_name)
+            rec.proposed_product_name = rec._canonical_product_name() or history_product.clean_name(rec.product_name)
+
+    def _canonical_product_name(self):
+        """Nama produk jadi yang benar menurut Excel PO MIK (nomor PO yang sama, nama paling mirip, ukuran sama)."""
+        self.ensure_one()
+        return self.env["mrp.production.po.ref"].canonical_for_delivery(self.po_number, self.product_name)
 
     @api.depends("brand_id.mou_id", "sale_order_id.mou_id", "is_internal")
     def _compute_mou_id(self):
@@ -103,6 +108,7 @@ class DeliveryRecap(models.Model):
         products = {
             _norm(p.name): p for p in self.env["product.template"].search([("sale_ok", "=", True)])
         }
+        product_index = history_product.product_index(self.env)
         for rec in self:
             if not rec.is_internal and not rec.brand_id:
                 brand, internal = False, False
@@ -122,6 +128,12 @@ class DeliveryRecap(models.Model):
                 elif brand:
                     rec.brand_id = brand
             if not rec.product_tmpl_id and rec.product_name:
+                canonical = rec._canonical_product_name()
+                if canonical:
+                    found_canonical = history_product.find_product(product_index, canonical)
+                    if found_canonical:
+                        rec.product_tmpl_id = found_canonical
+                        continue
                 key = _norm(re.sub(r"\(.*?\)", "", rec.product_name))
                 found = products.get(key)
                 if not found and key:
@@ -167,7 +179,7 @@ class DeliveryRecap(models.Model):
         rows = rows.filtered(lambda r: not r.picking_id and r.sj_number and r.product_name)
         for rec in rows.filtered(lambda r: not r.product_tmpl_id):
             rec.product_tmpl_id = history_product.find_or_create_product(
-                self.env, history_product.clean_name(rec.product_name), index
+                self.env, rec.proposed_product_name or history_product.clean_name(rec.product_name), index
             )
         self._learn_product_pairs(index)
         groups = {}
@@ -286,6 +298,12 @@ class StockPickingImportWizard(models.TransientModel):
 
     def action_import(self):
         self.ensure_one()
+        PoRef = self.env["mrp.production.po.ref"]
+        if self.file and PoRef.looks_like_po_ref_file(self.file):
+            PoRef.import_and_refresh(self.file)
+            return self.env["ir.actions.act_window"]._for_xml_id(
+                "custom_production_planning.action_delivery_recap_preview"
+            )
         if self.file and self._is_recap_file():
             recap_wizard = self.env["mrp.delivery.recap.import.wizard"].create(
                 {"file": self.file, "filename": self.filename}

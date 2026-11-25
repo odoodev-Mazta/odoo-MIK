@@ -14,6 +14,7 @@ from . import production_stage
 from . import sale_order
 from . import purchase_deadline
 from . import stock_picking
+from . import po_reference
 from . import production_report
 from . import production_qc_log
 from . import delivery_recap
