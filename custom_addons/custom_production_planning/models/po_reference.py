@@ -125,6 +125,31 @@ class ProductionPoReference(models.Model):
     # Pencarian nama baku
     # ------------------------------------------------------------------
     @api.model
+    def _bom_index(self):
+        """({no PO: [nama produk BoM]}, [semua nama produk BoM]). Kode BoM bentuknya 'SO-088', 'SO-0120', 'SO-;011'."""
+        cache = self.env.cr.cache
+        if "po_ref_bom_index" not in cache:
+            by_po, every, seen = {}, [], set()
+            for bom in self.env["mrp.bom"].search([]):
+                name = bom.product_tmpl_id.name
+                if not name:
+                    continue
+                if name not in seen:
+                    seen.add(name)
+                    every.append(name)
+                match = re.match(r"\s*SO\D*(\d+)", bom.code or "", re.I)
+                if match:
+                    pool = by_po.setdefault(po_key(match.group(1)), [])
+                    if name not in pool:
+                        pool.append(name)
+            cache["po_ref_bom_index"] = (by_po, every)
+        return cache["po_ref_bom_index"]
+
+    @api.model
+    def _bom_names(self, key):
+        return self._bom_index()[0].get(key, [])
+
+    @api.model
     def canonical_for_production(self, po_number, kind, brand_texts, qty=0.0):
         """Nama produk jadi untuk baris Excel produksi: nomor PO + jenis produk, brand harus mirip."""
         key, kind_key = po_key(po_number), history_product.kind_key(kind)
@@ -143,35 +168,73 @@ class ProductionPoReference(models.Model):
         if len(good) > 1 and qty:
             same_qty = good.filtered(lambda r: abs(r.qty - qty) < 0.5)
             good = same_qty or good
-        return good[:1].product_name or False
+        if good:
+            return good[0].product_name
+        # Cadangan: BoM di Odoo dengan kode SO-<no PO>; jenis produk harus ada di namanya.
+        found = [
+            n for n in self._bom_names(key)
+            if kind_key in _norm(n) and (not brands or any(b in _norm(n) for b in brands))
+        ]
+        return found[0] if len(found) == 1 else False
+
+    _GENERIC_WORDS = {"DR", "DRG", "DRA", "SKINCARE", "SKIN", "BY", "THE", "SPF", "PA", "NEW"}
+    _WORD_ALIAS = {"MASKER": "MASK", "DECONGEL": "DECON"}
+
+    @api.model
+    def _name_parts(self, text):
+        """(ukuran, [kata penting berurutan]). 'dr. Farina Decon Gel 15 gr' -> ('15', ['FARINA','DECON','GEL'])."""
+        text = re.sub(r"\(.*?\)", " ", str(text or "")).upper()
+        sizes = re.findall(r"(\d+(?:[.,]\d+)?)\s*(?:GR|GRAM|G|ML)\b", text)
+        size = sizes[-1].replace(",", ".") if sizes else ""
+        text = re.sub(r"\d+(?:[.,]\d+)?\s*(?:GR|GRAM|G|ML)\b", " ", text)
+        out = []
+        for word in re.findall(r"[A-Z]{2,}", text):
+            word = self._WORD_ALIAS.get(word, word)
+            if word not in self._GENERIC_WORDS:
+                out.append(word)
+        return size, out
 
     @api.model
     def canonical_for_delivery(self, po_number, raw_name):
-        """Nama produk jadi untuk Surat Jalan: dari PO yang sama, nama yang paling mirip dan ukurannya sama."""
-        key = po_key(po_number)
-        if not key or not raw_name:
+        """Nama produk jadi (mengikuti BoM / PO MIK) untuk satu baris Surat Jalan.
+
+        Awalan 'Dr.' dan kata umum diabaikan. Brand harus cocok. Dalam PO yang sama: ukuran sama dan unik -> dipakai.
+        Tanpa PO / tidak ketemu di PO: cari di semua BoM, hanya bila brand, ukuran, dan semua kata cocok dan unik."""
+        raw_size, raw_words = self._name_parts(raw_name)
+        if not raw_words:
             return False
-        raw = re.sub(r"\(.*?\)", "", str(raw_name)).upper()
+        brand = raw_words[0]
+        rest = set(raw_words[1:])
+        key = po_key(po_number)
 
-        def size_of(text):
-            found = re.findall(r"(\d+(?:[.,]\d+)?)\s*(?:GR|GRAM|G|ML)\b", text)
-            return found[-1].replace(",", ".") if found else ""
+        def brand_ok(words):
+            return any(w == brand or difflib.SequenceMatcher(None, w, brand).ratio() >= 0.85 for w in words)
 
-        def words(text):
-            text = re.sub(r"\d+(?:[.,]\d+)?\s*(?:GR|GRAM|G|ML)\b", " ", text)
-            return {w for w in re.findall(r"[A-Z]{2,}", text) if w not in ("SPF", "PA")}
+        def pick(names, scoped):
+            rows = []
+            for name in names:
+                size, words = self._name_parts(name)
+                if not brand_ok(words):
+                    continue
+                overlap = len(rest & set(words)) / len(rest) if rest else 1.0
+                rows.append((name, size, overlap))
+            if scoped:
+                same = [r for r in rows if r[1] == raw_size]
+                if len(same) == 1:
+                    return same[0][0]
+                if len(same) > 1:
+                    top = max(r[2] for r in same)
+                    best = [r for r in same if r[2] == top]
+                    return best[0][0] if len(best) == 1 and top > 0 else False
+                full = [r for r in rows if r[2] == 1.0]  # ukuran di SJ salah ketik, tapi semua kata cocok
+                return full[0][0] if len(full) == 1 else False
+            full = [r for r in rows if r[1] == raw_size and r[2] == 1.0]
+            return full[0][0] if len(full) == 1 else False
 
-        raw_size, raw_words = size_of(raw), words(raw)
-        name_key = _norm(raw)
-        best, best_score = False, 0.0
-        for ref in self.search([("po_key", "=", key)]):
-            ref_name = ref.product_name.upper()
-            if size_of(ref_name) != raw_size:
-                continue
-            ref_words = words(ref_name)
-            overlap = len(raw_words & ref_words) / len(raw_words) if raw_words else 0.0
-            ratio = difflib.SequenceMatcher(None, name_key, _norm(ref_name)).ratio()
-            score = max(overlap * 0.9, ratio)
-            if score > best_score:
-                best, best_score = ref.product_name, score
-        return best if best_score >= 0.75 else False
+        if key:
+            names = self.search([("po_key", "=", key)]).mapped("product_name")
+            names += [n for n in self._bom_names(key) if n not in names]
+            found = pick(names, True)
+            if found:
+                return found
+        return pick(self._bom_index()[1], False) or False
