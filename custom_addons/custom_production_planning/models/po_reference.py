@@ -151,14 +151,27 @@ class ProductionPoReference(models.Model):
         key = po_key(po_number)
         if not key or not raw_name:
             return False
-        name_key = _norm(re.sub(r"\(.*?\)", "", str(raw_name)))
-        best, best_ratio = False, 0.0
-        digits = "".join(re.findall(r"\d+", name_key))
+        raw = re.sub(r"\(.*?\)", "", str(raw_name)).upper()
+
+        def size_of(text):
+            found = re.findall(r"(\d+(?:[.,]\d+)?)\s*(?:GR|GRAM|G|ML)\b", text)
+            return found[-1].replace(",", ".") if found else ""
+
+        def words(text):
+            text = re.sub(r"\d+(?:[.,]\d+)?\s*(?:GR|GRAM|G|ML)\b", " ", text)
+            return {w for w in re.findall(r"[A-Z]{2,}", text) if w not in ("SPF", "PA")}
+
+        raw_size, raw_words = size_of(raw), words(raw)
+        name_key = _norm(raw)
+        best, best_score = False, 0.0
         for ref in self.search([("po_key", "=", key)]):
-            ref_key = _norm(ref.product_name)
-            if "".join(re.findall(r"\d+", ref_key)) != digits:
+            ref_name = ref.product_name.upper()
+            if size_of(ref_name) != raw_size:
                 continue
-            ratio = difflib.SequenceMatcher(None, name_key, ref_key).ratio()
-            if ratio > best_ratio:
-                best, best_ratio = ref.product_name, ratio
-        return best if best_ratio >= 0.75 else False
+            ref_words = words(ref_name)
+            overlap = len(raw_words & ref_words) / len(raw_words) if raw_words else 0.0
+            ratio = difflib.SequenceMatcher(None, name_key, _norm(ref_name)).ratio()
+            score = max(overlap * 0.9, ratio)
+            if score > best_score:
+                best, best_score = ref.product_name, score
+        return best if best_score >= 0.75 else False
