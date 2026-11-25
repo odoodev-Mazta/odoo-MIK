@@ -481,6 +481,7 @@ class ProductionReportLine(models.Model):
 class ProductionReportBrandAlias(models.Model):
     """Ingatan pasangan 'tulisan brand di Excel' -> brand terdaftar (atau produksi sendiri)."""
     _name = "mrp.production.report.brand.alias"
+    _inherit = ["history.table.guard"]
     _description = "Pasangan Brand Excel"
     _order = "name"
 
@@ -501,6 +502,7 @@ class ProductionReportProductAlias(models.Model):
     """Ingatan pasangan 'brand + jenis produk di Excel' -> produk jadi di Odoo. Diisi otomatis dari pilihan manual
     dan dari keterangan jenis di Surat Jalan, bisa diubah di Manufacturing > Configuration."""
     _name = "mrp.production.report.product.alias"
+    _inherit = ["history.table.guard"]
     _description = "Pasangan Produk Excel"
     _order = "brand_key, kind_key"
 

@@ -1,3 +1,4 @@
+from . import table_guard
 from . import production_plan
 from . import production_plan_line
 from . import production_machine
