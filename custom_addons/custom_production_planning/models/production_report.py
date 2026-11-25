@@ -277,6 +277,10 @@ class ProductionReportLine(models.Model):
         [("matched", "Terhubung"), ("internal", "Produksi Sendiri"), ("pending", "Perlu Dipasangkan")],
         string="Status Hubungan", compute="_compute_match_state", store=True, index=True,
     )
+    proposed_product_name = fields.Char(
+        string="Nama Produk Baru", compute="_compute_proposed_product_name", store=True, index=True,
+        help="Nama produk yang akan dibuat bila belum ada produk yang cocok.",
+    )
     plan_id = fields.Many2one(
         "mrp.production.plan", string="Plan Produksi", readonly=True, copy=False, index=True, ondelete="set null",
         help="Plan riwayat di Production Planning yang dibuat dari baris ini.",
@@ -298,6 +302,13 @@ class ProductionReportLine(models.Model):
                 line.mou_id = False
             else:
                 line.mou_id = line.report_id.sale_order_id.mou_id or line.brand_id.mou_id
+
+    @api.depends("brand_id", "brand", "product_type", "packaging")
+    def _compute_proposed_product_name(self):
+        for line in self:
+            line.proposed_product_name = history_product.standard_name(
+                line.brand_id.brand_name or line.brand, line.product_type, line.packaging
+            )
 
     @api.depends("brand_id", "is_internal")
     def _compute_match_state(self):

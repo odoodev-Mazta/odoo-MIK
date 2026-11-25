@@ -42,6 +42,10 @@ class DeliveryRecap(models.Model):
         help="Diisi otomatis bila MOU brand ini hanya punya satu Sales Order, atau pilih manual.",
     )
     product_tmpl_id = fields.Many2one("product.template", string="Produk Odoo")
+    proposed_product_name = fields.Char(
+        string="Nama Produk Baru", compute="_compute_proposed_product_name", store=True, index=True,
+        help="Nama produk yang akan dibuat bila belum ada produk yang cocok.",
+    )
     picking_id = fields.Many2one(
         "stock.picking", string="Delivery Order", readonly=True, copy=False, index=True, ondelete="set null",
         help="Delivery Order riwayat (Inventory > Operations > Deliveries) yang dibuat dari baris ini.",
@@ -52,6 +56,11 @@ class DeliveryRecap(models.Model):
         string="Status Hubungan", compute="_compute_match_state", store=True, index=True,
     )
     company_id = fields.Many2one("res.company", default=lambda self: self.env.company, index=True)
+
+    @api.depends("product_name")
+    def _compute_proposed_product_name(self):
+        for rec in self:
+            rec.proposed_product_name = history_product.clean_name(rec.product_name)
 
     @api.depends("brand_id.mou_id", "sale_order_id.mou_id", "is_internal")
     def _compute_mou_id(self):
@@ -281,8 +290,7 @@ class StockPickingImportWizard(models.TransientModel):
                 {"file": self.file, "filename": self.filename}
             )
             recap_wizard.action_import()
-            action = self.env["mrp.delivery.recap"].action_create_history_pickings()
-            action["params"]["title"] = "Import Rekapan Surat Jalan"
-            action["params"]["message"] = f"{recap_wizard.result}. {action['params']['message']}"
-            return action
+            return self.env["ir.actions.act_window"]._for_xml_id(
+                "custom_production_planning.action_delivery_recap_preview"
+            )
         return super().action_import()

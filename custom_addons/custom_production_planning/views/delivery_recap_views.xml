@@ -139,12 +139,17 @@
                 <field name="batch_text"/>
                 <field name="recipient"/>
                 <field name="brand_id"/>
+                <field name="proposed_product_name"/>
+                <filter name="no_product" string="Produk Baru (belum ada)" domain="[('product_tmpl_id', '=', False)]"/>
+                <filter name="has_product" string="Produk Sudah Ada" domain="[('product_tmpl_id', '!=', False)]"/>
+                <separator/>
                 <filter name="pending" string="Perlu Dipasangkan" domain="[('match_state', '=', 'pending')]"/>
                 <filter name="matched" string="Terhubung" domain="[('match_state', '=', 'matched')]"/>
                 <filter name="internal" string="Produksi Sendiri" domain="[('match_state', '=', 'internal')]"/>
                 <separator/>
                 <filter name="delivery_date" string="Tgl Kirim" date="delivery_date"/>
                 <group>
+                    <filter name="group_proposed" string="Nama Produk Baru" context="{'group_by': 'proposed_product_name'}"/>
                     <filter name="group_brand" string="Brand" context="{'group_by': 'brand_id'}"/>
                     <filter name="group_sj" string="No. Surat Jalan" context="{'group_by': 'sj_number'}"/>
                     <filter name="group_month" string="Bulan Kirim" context="{'group_by': 'delivery_date:month'}"/>
@@ -152,6 +157,43 @@
                 </group>
             </search>
         </field>
+    </record>
+
+    <!-- Pratinjau sebelum Delivery dan produk baru dibuat -->
+    <record id="view_delivery_recap_preview_list" model="ir.ui.view">
+        <field name="name">mrp.delivery.recap.preview.list</field>
+        <field name="model">mrp.delivery.recap</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="0" delete="0" decoration-warning="not product_tmpl_id"
+                  decoration-success="product_tmpl_id">
+                <header>
+                    <button name="%(action_delivery_recap_create_pickings)d" type="action"
+                            string="Setujui dan Buat Delivery" class="btn-primary" icon="fa-check" display="always"
+                            confirm="Buat Delivery Order riwayat di Inventory > Deliveries, dan buat produk baru untuk baris yang belum punya produk? Stok tidak berubah."/>
+                </header>
+                <field name="delivery_date" readonly="1"/>
+                <field name="sj_number" readonly="1"/>
+                <field name="po_number" readonly="1"/>
+                <field name="product_name" readonly="1"/>
+                <field name="qty" readonly="1" sum="Total Qty"/>
+                <field name="product_tmpl_id" options="{'no_create': True}"
+                       placeholder="Kosong = produk baru dibuat"/>
+                <field name="proposed_product_name" string="Produk Baru Bernama" invisible="product_tmpl_id"/>
+                <field name="brand_id" readonly="1"/>
+                <field name="mou_id" readonly="1"/>
+                <field name="sale_order_id" readonly="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_delivery_recap_preview" model="ir.actions.act_window">
+        <field name="name">Pratinjau Import Surat Jalan</field>
+        <field name="res_model">mrp.delivery.recap</field>
+        <field name="view_mode">list</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_delivery_recap_preview_list')})]"/>
+        <field name="search_view_id" ref="view_delivery_recap_search"/>
+        <field name="domain">[('picking_id', '=', False)]</field>
+        <field name="context">{'search_default_no_product': 1, 'search_default_group_proposed': 1}</field>
     </record>
 
     <record id="action_delivery_recap" model="ir.actions.act_window">

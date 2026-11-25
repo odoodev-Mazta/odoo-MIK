@@ -197,19 +197,8 @@ class ProductionReportImportWizard(models.TransientModel):
         # Hubungkan ke Sales Order / Brand terdaftar / MOU. Yang belum cocok muncul di "Perlu Dipasangkan".
         touched.line_ids.action_auto_match()
         touched._auto_link_sale_order()
-        plans = touched.action_create_history_plans()
-        self.result = (
-            f"PO: {new_po} baru, {updated_po} diperbarui · Baris dibaca: {len(rows)} · "
-            + plans["params"]["message"]
+        self.result = f"PO: {new_po} baru, {updated_po} diperbarui · Baris dibaca: {len(rows)}"
+        # Pratinjau dulu: produk baru dan Plan baru baru dibuat setelah disetujui.
+        return self.env["ir.actions.act_window"]._for_xml_id(
+            "custom_production_planning.action_production_report_line_preview"
         )
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": "Import Plan Produksi",
-                "message": self.result,
-                "type": "success",
-                "sticky": False,
-                "next": {"type": "ir.actions.client", "tag": "reload"},
-            },
-        }

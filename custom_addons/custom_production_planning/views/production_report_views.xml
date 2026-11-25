@@ -256,14 +256,60 @@
                 <field name="brand"/>
                 <field name="po_number"/>
                 <field name="product_type"/>
+                <field name="proposed_product_name"/>
+                <filter name="no_product" string="Produk Baru (belum ada)" domain="[('product_tmpl_id', '=', False)]"/>
+                <filter name="has_product" string="Produk Sudah Ada" domain="[('product_tmpl_id', '!=', False)]"/>
+                <separator/>
                 <filter name="pending" string="Perlu Dipasangkan" domain="[('match_state', '=', 'pending')]"/>
                 <filter name="matched" string="Terhubung" domain="[('match_state', '=', 'matched')]"/>
                 <filter name="internal" string="Produksi Sendiri" domain="[('match_state', '=', 'internal')]"/>
                 <group>
+                    <filter name="group_proposed" string="Nama Produk Baru" context="{'group_by': 'proposed_product_name'}"/>
                     <filter name="group_brand_text" string="Brand (Excel)" context="{'group_by': 'brand'}"/>
                     <filter name="group_match" string="Status Hubungan" context="{'group_by': 'match_state'}"/>
                 </group>
             </search>
+        </field>
+    </record>
+
+    <!-- Pratinjau sebelum Plan dan produk baru dibuat -->
+    <record id="view_production_report_line_preview_list" model="ir.ui.view">
+        <field name="name">mrp.production.report.line.preview.list</field>
+        <field name="model">mrp.production.report.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="0" delete="0" decoration-warning="not product_tmpl_id"
+                  decoration-success="product_tmpl_id">
+                <header>
+                    <button name="%(action_production_report_create_plans)d" type="action"
+                            string="Setujui dan Buat Plan" class="btn-primary" icon="fa-check" display="always"
+                            confirm="Buat Plan Produksi riwayat, dan buat produk baru untuk baris yang belum punya produk? Tidak ada Perintah Produksi dan stok tidak berubah."/>
+                </header>
+                <field name="po_number"/>
+                <field name="brand" readonly="1"/>
+                <field name="product_type" readonly="1"/>
+                <field name="packaging" readonly="1" optional="hide"/>
+                <field name="qty" readonly="1" sum="Total Qty"/>
+                <field name="product_tmpl_id" options="{'no_create': True}"
+                       placeholder="Kosong = produk baru dibuat"/>
+                <field name="proposed_product_name" string="Produk Baru Bernama"
+                       invisible="product_tmpl_id"/>
+                <field name="mou_id" readonly="1"/>
+                <field name="is_internal" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_production_report_line_preview" model="ir.actions.act_window">
+        <field name="name">Pratinjau Import Plan Produksi</field>
+        <field name="res_model">mrp.production.report.line</field>
+        <field name="view_mode">list</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_production_report_line_preview_list')})]"/>
+        <field name="search_view_id" ref="view_production_report_line_search"/>
+        <field name="domain">[('plan_id', '=', False)]</field>
+        <field name="context">{'search_default_no_product': 1, 'search_default_group_proposed': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Semua baris sudah punya produk.</p>
+            <p>Klik Setujui dan Buat Plan untuk membuat Plan riwayat.</p>
         </field>
     </record>
 
