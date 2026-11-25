@@ -5,6 +5,18 @@ SIZE_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(GRAM|GR|G|KG|ML|L)\b", re.IGNORECASE
 UNITS = {"GRAM": "GR", "GR": "GR", "G": "GR", "KG": "KG", "ML": "ML", "L": "L"}
 
 
+# Bahan kemasan / label / dummy bukan produk jadi: jangan ikut dicocokkan.
+COMPONENT_RE = re.compile(
+    r"^\s*(DUMMY|LABEL|STIKER|STICKER|SACHET|TUBE|JAR|BOTOL|MASTER\s*BOX|INNER|OUTER|BOX|DUS|KARTON|"
+    r"PRINTING|SEAL|PUMP|AIRLESS|AIRPLESS)\b",
+    re.IGNORECASE,
+)
+
+
+def is_component(name):
+    return bool(COMPONENT_RE.match(str(name or "")))
+
+
 def norm(value):
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
 
@@ -36,8 +48,41 @@ def product_index(env):
     templates |= env["mrp.bom"].search([]).product_tmpl_id
     index = {}
     for template in templates:
+        if is_component(template.name):
+            continue
         index.setdefault(norm(template.name), template)
     return index
+
+
+def _norm_brand(value):
+    return norm(value)
+
+
+def kind_key(text):
+    """Jenis produk ternormalisasi: 'MASKER AGING', 'Masker Aging', 'DECONGEL D2' -> 'MASKERAGING', 'DECONGEL'."""
+    return norm(re.sub(r"\bD2\b", " ", str(text or "").upper()))
+
+
+def kind_from_name(raw):
+    """Jenis dari keterangan dalam kurung di Surat Jalan: 'Miuna Aging Care Mask (Masker Aging) 20 gr' -> 'MASKERAGING'."""
+    match = re.search(r"\(([^)]*)\)", str(raw or "").replace("\n", " "))
+    if not match:
+        return ""
+    key = kind_key(match.group(1))
+    known = ("MASKER", "DECONGEL", "SUNCREAM", "MOISTURIZER", "WHITENINGBALM", "NIACARE", "GLYCOCARE", "FACEWASH")
+    return key if key.startswith(known) else ""
+
+
+def find_product(index, name):
+    """Cari produk jadi bernama `name`: persis, atau yang unik mirip. False bila tidak ada."""
+    key = norm(name)
+    if not key:
+        return False
+    found = index.get(key)
+    if found:
+        return found
+    similar = [t for k, t in index.items() if len(k) > 8 and (key in k or k in key)]
+    return similar[0] if len(similar) == 1 else False
 
 
 def find_or_create_product(env, name, index):
@@ -45,10 +90,7 @@ def find_or_create_product(env, name, index):
     key = norm(name)
     if not key:
         return env["product.template"]
-    found = index.get(key)
-    if not found:
-        similar = [t for k, t in index.items() if len(k) > 8 and (key in k or k in key)]
-        found = similar[0] if len(similar) == 1 else False
+    found = find_product(index, name)
     if not found:
         found = env["product.template"].create({
             "name": name,

@@ -150,12 +150,7 @@ class ProductionReport(models.Model):
                     "state": "done" if all_done else "running",
                     "note": f"Riwayat dari Excel. No. PO {po}"
                             + (f", tgl PO {report.po_date}" if report.po_date else "") + ".",
-                    "product_line_ids": [(0, 0, {
-                        "product_id": line.product_tmpl_id.product_variant_id.id,
-                        "product_qty": line.qty or 1.0,
-                        "production_start": line.production_date,
-                        "production_end": line.delivery_date or line.production_date,
-                    }) for line in group],
+                    "product_line_ids": [(0, 0, line._plan_line_vals(order)) for line in group],
                 })
                 stage_vals = []
                 for line, product_line in zip(group, plan.product_line_ids):
@@ -341,7 +336,10 @@ class ProductionReportLine(models.Model):
         synonyms = {
             "MASKER": ("MASK",), "SUNCREAM": ("SUN",), "DECONGEL": ("DECON",), "MOISTURIZER": ("MOIST",),
             "WHITENING": ("BALM", "WHITEN"), "BALM": ("BALM",), "FACEWASH": ("FACEWASH", "FACEWASH"),
-            "WINE": ("WINE", "VINIFERA"), "HYAL": ("HYAL", "HYDRA"), "ACNE": ("ACNE",), "AGING": ("AGING",),
+            "WINE": ("WINE", "VINIFERA", "GRAPE", "POLYPHENOL"),
+            "HYAL": ("HYAL", "HYDRA", "HYDRAC", "SOOTHING"),
+            "ACNE": ("ACNE", "PORE", "PURIF", "CLEAR", "OIL"),
+            "AGING": ("AGING", "FIRMING", "REJUV", "ASTAXANTHIN", "REGENERATING"),
         }
         groups = []
         for token in (self.product_type or "").upper().replace("D2", " ").split():
@@ -352,10 +350,18 @@ class ProductionReportLine(models.Model):
         size = re.search(r"(\d+)\s*GR", (self.packaging or "").upper())
         size_key = f"{size.group(1)}GR" if size else ""
         candidates = self.env["product.template"].search([("sale_ok", "=", True)]).filtered(
-            lambda p: brand_key in _norm(p.name)
+            lambda p: not history_product.is_component(p.name)
+            and brand_key in _norm(p.name)
             and all(any(word in _norm(p.name) for word in group) for group in groups)
             and (not size_key or size_key in _norm(p.name))
         )
+        if len(candidates) > 1:
+            # Beberapa cocok: utamakan yang punya BOM (produk jadi), lalu yang namanya diawali brand.
+            with_bom = candidates & self.env["mrp.bom"].search([]).product_tmpl_id
+            candidates = with_bom or candidates
+        if len(candidates) > 1:
+            starts = candidates.filtered(lambda p: _norm(p.name).startswith(brand_key))
+            candidates = starts or candidates
         return candidates if len(candidates) == 1 else False
 
     def action_auto_match(self):
@@ -374,15 +380,70 @@ class ProductionReportLine(models.Model):
                 elif brand:
                     line.brand_id = brand
             if line.brand_id and not line.product_tmpl_id:
-                product = line._suggest_product()
+                product = line._paired_product() or line._suggest_product()
                 if product:
-                    line.product_tmpl_id = product
+                    line.with_context(skip_product_alias=True).product_tmpl_id = product
         return True
+
+    def _order_product(self, order):
+        """Produk asli di Sales Order (mis. 'Wine Polyphenol Modeling Mask') untuk jenis di Excel, bila tepat satu."""
+        self.ensure_one()
+        words = {
+            "WINE": ("WINE", "VINIFERA", "GRAPE", "POLYPHENOL"), "HYAL": ("HYAL", "HYDRA", "SOOTHING"),
+            "ACNE": ("ACNE", "PORE", "PURIF", "CLEAR"), "AGING": ("AGING", "FIRMING", "REJUV", "ASTAXANTHIN"),
+            "DECONGEL": ("DECON",), "SUNCREAM": ("SUN",), "MOISTURIZER": ("MOIST",),
+            "BALM": ("BALM", "WHITEN"), "WHITENING": ("BALM", "WHITEN"), "NIACARE": ("NIACARE",), "GLYCOCARE": ("GLYCO",),
+        }
+        groups = [
+            words[token] for token in (self.product_type or "").upper().replace("D2", " ").split() if token in words
+        ]
+        if not order or not groups:
+            return self.env["product.product"]
+        found = order.order_line.product_id.filtered(
+            lambda p: all(any(w in _norm(p.name) for w in group) for group in groups)
+        )
+        return found if len(found) == 1 else self.env["product.product"]
+
+    def _plan_line_vals(self, order):
+        """Baris produk Plan: produk asli SO (bila ada) + produk jadi brand."""
+        self.ensure_one()
+        finished = self.product_tmpl_id.product_variant_id
+        original = self._order_product(order)
+        vals = {
+            "product_id": (original or finished).id,
+            "product_qty": self.qty or 1.0,
+            "production_start": self.production_date,
+            "production_end": self.delivery_date or self.production_date,
+        }
+        if original and original != finished:
+            vals["finished_product_id"] = finished.id
+        return vals
+
+    def _brand_key(self):
+        self.ensure_one()
+        return _norm(self.brand_id.brand_name or self.brand)
+
+    def _paired_product(self):
+        """Pasangan tersimpan: brand + jenis produk -> produk jadi."""
+        self.ensure_one()
+        alias = self.env["mrp.production.report.product.alias"].search([
+            ("brand_key", "=", self._brand_key()),
+            ("kind_key", "=", history_product.kind_key(self.product_type)),
+        ], limit=1)
+        return alias.product_tmpl_id
+
+    def _remember_product_pairing(self):
+        """Produk yang dipilih manual diingat untuk brand + jenis yang sama (dan dipakai ke baris lain)."""
+        Alias = self.env["mrp.production.report.product.alias"]
+        for line in self.filtered(lambda l: l.product_tmpl_id and l._brand_key() and l.product_type):
+            Alias.learn(line._brand_key(), history_product.kind_key(line.product_type), line.product_tmpl_id)
 
     def write(self, vals):
         result = super().write(vals)
         if "brand_id" in vals or "is_internal" in vals:
             self._remember_brand_pairing()
+        if "product_tmpl_id" in vals and not self.env.context.get("skip_product_alias"):
+            self._remember_product_pairing()
         return result
 
     def _remember_brand_pairing(self):
@@ -423,3 +484,35 @@ class ProductionReportBrandAlias(models.Model):
     def _compute_name_key(self):
         for alias in self:
             alias.name_key = _norm(alias.name)
+
+
+class ProductionReportProductAlias(models.Model):
+    """Ingatan pasangan 'brand + jenis produk di Excel' -> produk jadi di Odoo. Diisi otomatis dari pilihan manual
+    dan dari keterangan jenis di Surat Jalan, bisa diubah di Manufacturing > Configuration."""
+    _name = "mrp.production.report.product.alias"
+    _description = "Pasangan Produk Excel"
+    _order = "brand_key, kind_key"
+
+    brand_key = fields.Char(string="Brand", required=True, index=True)
+    kind_key = fields.Char(string="Jenis Produk", required=True, index=True)
+    product_tmpl_id = fields.Many2one("product.template", string="Produk Jadi", required=True, ondelete="cascade")
+
+    _brand_kind_unique = models.Constraint(
+        "unique(brand_key, kind_key)", "Brand dan jenis produk ini sudah punya pasangan."
+    )
+
+    @api.model
+    def learn(self, brand_key, kind_key, product):
+        """Simpan pasangan, lalu terapkan ke baris Excel lain yang belum punya produk."""
+        if not (brand_key and kind_key and product):
+            return
+        alias = self.search([("brand_key", "=", brand_key), ("kind_key", "=", kind_key)], limit=1)
+        if alias:
+            alias.product_tmpl_id = product
+        else:
+            self.create({"brand_key": brand_key, "kind_key": kind_key, "product_tmpl_id": product.id})
+        Line = self.env["mrp.production.report.line"].with_context(skip_product_alias=True)
+        pending = Line.search([("product_tmpl_id", "=", False), ("plan_id", "=", False)]).filtered(
+            lambda l: l._brand_key() == brand_key and history_product.kind_key(l.product_type) == kind_key
+        )
+        pending.write({"product_tmpl_id": product.id})

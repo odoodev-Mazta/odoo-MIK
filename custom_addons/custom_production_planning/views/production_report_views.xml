@@ -304,4 +304,30 @@
               parent="menu_production_planning_root" action="action_production_report_pair" sequence="51"/>
     <menuitem id="menu_production_report_alias" active="False" name="Pasangan Brand Excel"
               parent="menu_production_planning_root" action="action_production_report_alias" sequence="52"/>
+
+    <record id="view_production_report_product_alias_list" model="ir.ui.view">
+        <field name="name">mrp.production.report.product.alias.list</field>
+        <field name="model">mrp.production.report.product.alias</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="brand_key" placeholder="Brand, mis. MIUNA"/>
+                <field name="kind_key" placeholder="Jenis, mis. MASKERACNE"/>
+                <field name="product_tmpl_id" options="{'no_create': True}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_production_report_product_alias" model="ir.actions.act_window">
+        <field name="name">Excel Product Pairing</field>
+        <field name="res_model">mrp.production.report.product.alias</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada pasangan produk.</p>
+            <p>Terisi otomatis dari pilihan manual dan dari keterangan jenis di Surat Jalan.
+               Isi sendiri bila perlu: Brand dan Jenis ditulis tanpa spasi, huruf besar.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_production_report_product_alias" name="Excel Product Pairing"
+              parent="mrp.menu_mrp_configuration" action="action_production_report_product_alias" sequence="95"/>
 </odoo>

@@ -4,6 +4,7 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 from . import history_product
+from .production_report import _similar
 
 
 def _norm(value):
@@ -118,6 +119,19 @@ class DeliveryRecap(models.Model):
                     found = similar[0] if len(similar) == 1 else False
                 if found:
                     rec.product_tmpl_id = found
+            if not rec.sale_order_id and rec.po_number and not rec.is_internal:
+                digits = re.sub(r"\D", "", rec.po_number)
+                if digits:
+                    order = self.env["sale.order"].search(
+                        [("name", "in", [f"S{int(digits):05d}", f"S{int(digits):04d}"]), ("state", "=", "sale")], limit=1
+                    )
+                    names = {_norm(rec.brand_id.brand_name), _norm(rec.product_name)} - {""}
+                    order_names = {_norm(order.brand_name), _norm(order.partner_id.name)} - {""}
+                    if order and (
+                        (rec.mou_id and order.mou_id == rec.mou_id)
+                        or any(_similar(n, o) or (o and o in n) for n in names for o in order_names)
+                    ):
+                        rec.sale_order_id = order
             if rec.mou_id and not rec.sale_order_id:
                 orders = self.env["sale.order"].search([("mou_id", "=", rec.mou_id.id), ("state", "=", "sale")], limit=2)
                 if len(orders) == 1:
@@ -145,6 +159,7 @@ class DeliveryRecap(models.Model):
             rec.product_tmpl_id = history_product.find_or_create_product(
                 self.env, history_product.clean_name(rec.product_name), index
             )
+        self._learn_product_pairs(index)
         groups = {}
         for rec in rows.sorted("id"):
             key = (_norm(rec.sj_number), rec.mou_id.id)
@@ -152,6 +167,7 @@ class DeliveryRecap(models.Model):
         created = 0
         for (sj_key, mou_id), recs in groups.items():
             first = recs[0]
+            order = recs.sale_order_id[:1]
             name = first.sj_number.strip()
             same_sj = len({k for k in groups if k[0] == sj_key}) > 1
             if same_sj:
@@ -165,7 +181,11 @@ class DeliveryRecap(models.Model):
                 "partner_id": first.mou_id.nama_cust.id or False,
                 "location_id": ptype.default_location_src_id.id,
                 "location_dest_id": customers.id,
-                "origin": f"PO {first.po_number}" if first.po_number else "Rekapan Surat Jalan",
+                "origin": " / ".join(filter(None, [
+                    order.name,
+                    f"PO {first.po_number}" if first.po_number else False,
+                ])) or "Rekapan Surat Jalan",
+                "sale_id": order.id or False,
                 "scheduled_date": done_date,
                 "mou_id": first.mou_id.id or False,
                 "note": "Riwayat dari Rekapan Surat Jalan (Excel). Stok tidak berubah.",
@@ -202,6 +222,15 @@ class DeliveryRecap(models.Model):
                 "next": {"type": "ir.actions.client", "tag": "reload"},
             },
         }
+
+    def _learn_product_pairs(self, index):
+        """Surat Jalan menulis jenisnya, mis. 'Miuna Aging Care Mask (Masker Aging)': brand + jenis -> produk.
+        Hanya dipelajari bila produknya memang sudah ada di Odoo (bukan yang baru dibuat)."""
+        Alias = self.env["mrp.production.report.product.alias"]
+        for rec in self.filtered(lambda r: r.brand_id and r.product_tmpl_id and r.product_name):
+            kind = history_product.kind_from_name(rec.product_name)
+            if kind and history_product.find_product(index, history_product.clean_name(rec.product_name)):
+                Alias.learn(history_product._norm_brand(rec.brand_id.brand_name), kind, rec.product_tmpl_id)
 
     @api.model
     def action_rematch(self):
