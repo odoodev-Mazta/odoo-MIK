@@ -81,8 +81,35 @@ def find_product(index, name):
     found = index.get(key)
     if found:
         return found
-    similar = [t for k, t in index.items() if len(k) > 8 and (key in k or k in key)]
-    return similar[0] if len(similar) == 1 else False
+    similar = [
+        t for k, t in index.items()
+        if len(k) > 8 and (key in k or k in key) and _digits(k) == _digits(key)
+    ]
+    if len(similar) == 1:
+        return similar[0]
+    return _closest(index, key)
+
+
+def _digits(key):
+    return "".join(re.findall(r"\d+", key))
+
+
+def _closest(index, key):
+    """Nama yang sangat mirip (salah ketik seperti DERCON/DECON). Angka (ukuran) harus sama, dan pemenang harus jelas."""
+    import difflib
+
+    scored = sorted(
+        (
+            (difflib.SequenceMatcher(None, key, k).ratio(), t)
+            for k, t in index.items()
+            if k[:3] == key[:3] and _digits(k) == _digits(key)
+        ),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+    if scored and scored[0][0] >= 0.9 and (len(scored) == 1 or scored[0][0] - scored[1][0] >= 0.03):
+        return scored[0][1]
+    return False
 
 
 def find_or_create_product(env, name, index):

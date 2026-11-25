@@ -328,9 +328,9 @@ class ProductionReportLine(models.Model):
     def _suggest_product(self):
         """Produk Odoo: nama memuat brand + kata jenis + ukuran kemasan, hanya dipakai bila hasilnya tepat satu."""
         self.ensure_one()
-        if not self.brand_id:
+        brand_keys = {_norm(self.brand_id.brand_name), _norm(self.brand)} - {""}
+        if not brand_keys:
             return False
-        brand_key = _norm(self.brand_id.brand_name)
         # Jenis di Excel (mis. "MASKER WINE") dipetakan ke kata yang biasa muncul di nama produk jadi
         # ("... WINE POLYPHENOL MASK 20 GR"). Tiap kelompok kata harus ada, salah satu dari pilihannya.
         synonyms = {
@@ -351,7 +351,7 @@ class ProductionReportLine(models.Model):
         size_key = f"{size.group(1)}GR" if size else ""
         candidates = self.env["product.template"].search([("sale_ok", "=", True)]).filtered(
             lambda p: not history_product.is_component(p.name)
-            and brand_key in _norm(p.name)
+            and any(key in _norm(p.name) for key in brand_keys)
             and all(any(word in _norm(p.name) for word in group) for group in groups)
             and (not size_key or size_key in _norm(p.name))
         )
@@ -360,7 +360,7 @@ class ProductionReportLine(models.Model):
             with_bom = candidates & self.env["mrp.bom"].search([]).product_tmpl_id
             candidates = with_bom or candidates
         if len(candidates) > 1:
-            starts = candidates.filtered(lambda p: _norm(p.name).startswith(brand_key))
+            starts = candidates.filtered(lambda p: any(_norm(p.name).startswith(key) for key in brand_keys))
             candidates = starts or candidates
         return candidates if len(candidates) == 1 else False
 
@@ -379,7 +379,7 @@ class ProductionReportLine(models.Model):
                     line.is_internal = True
                 elif brand:
                     line.brand_id = brand
-            if line.brand_id and not line.product_tmpl_id:
+            if not line.product_tmpl_id:
                 product = line._paired_product() or line._suggest_product()
                 if product:
                     line.with_context(skip_product_alias=True).product_tmpl_id = product
