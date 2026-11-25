@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <!-- Produk cadangan untuk baris Excel yang produknya belum dikenali. Tidak dijual, tidak ada stok. -->
+    <record id="product_history_placeholder" model="product.product">
+        <field name="name">Produk Riwayat (belum dipasangkan)</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="False"/>
+    </record>
+</odoo>

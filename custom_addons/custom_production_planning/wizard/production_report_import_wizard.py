@@ -197,17 +197,16 @@ class ProductionReportImportWizard(models.TransientModel):
         # Hubungkan ke Sales Order / Brand terdaftar / MOU. Yang belum cocok muncul di "Perlu Dipasangkan".
         touched.line_ids.action_auto_match()
         touched._auto_link_sale_order()
-        pending = Line.search_count([("report_id", "in", touched.ids), ("match_state", "=", "pending")])
+        plans = touched.action_create_history_plans()
         self.result = (
-            f"PO baru: {new_po} · PO diperbarui: {updated_po} · "
-            f"Produk baru: {new_lines} · Produk diperbarui: {updated_lines} · Baris dibaca: {len(rows)} · "
-            f"Brand perlu dipasangkan: {pending}"
+            f"PO: {new_po} baru, {updated_po} diperbarui · Baris dibaca: {len(rows)} · "
+            + plans["params"]["message"]
         )
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": "Import Laporan Produksi (Excel)",
+                "title": "Import Plan Produksi",
                 "message": self.result,
                 "type": "success",
                 "sticky": False,

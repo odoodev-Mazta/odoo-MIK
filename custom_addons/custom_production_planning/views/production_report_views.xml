@@ -6,6 +6,12 @@
         <field name="arch" type="xml">
             <form string="Import Laporan Produksi">
                 <p class="text-muted">
+                    Satu klik: file dibaca, brand, Sales Order, dan MOU dicocokkan otomatis, lalu Plan Produksi dibuat
+                    di Planning (tanpa Perintah Produksi, stok tidak berubah). Sales Order dicocokkan lewat nomor PO
+                    (004 = S00004 atau S0004) dengan syarat brand sama. Plan yang belum ketemu SO-nya tetap dibuat dan
+                    bisa disaring lewat filter "Tanpa Sales Order".
+                </p>
+                <p class="text-muted">
                     Pilih file Excel MASTER produksi. Baris judul harus berisi kolom seperti NO.PO, BRAND,
                     JENIS PRODUK, QTY, JENIS KEMASAN, TGL PRODUKSI, PROSES MIXING ... STATUS PO.
                     Baris kosong dilewati. Baris dengan No. PO yang sama digabung jadi satu PO berisi banyak produk.
@@ -29,6 +35,21 @@
         <field name="res_model">mrp.production.report.import.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
+    </record>
+
+    <!-- Satu tombol Import di Planning -->
+    <record id="view_production_plan_list_import" model="ir.ui.view">
+        <field name="name">mrp.production.plan.list.import</field>
+        <field name="model">mrp.production.plan</field>
+        <field name="inherit_id" ref="custom_production_planning.view_production_plan_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="before">
+                <header>
+                    <button name="%(action_production_report_import)d" type="action" string="Import dari Excel"
+                            class="btn-primary" icon="fa-upload" display="always"/>
+                </header>
+            </xpath>
+        </field>
     </record>
 
     <record id="action_production_report_create_plans" model="ir.actions.server">
@@ -277,10 +298,10 @@
         <field name="view_mode">list</field>
     </record>
 
-    <menuitem id="menu_production_report" name="Laporan Produksi (Excel)"
+    <menuitem id="menu_production_report" active="False" name="Laporan Produksi (Excel)"
               parent="menu_production_planning_root" action="action_production_report" sequence="50"/>
-    <menuitem id="menu_production_report_pair" name="Hubungan Brand Excel"
+    <menuitem id="menu_production_report_pair" active="False" name="Hubungan Brand Excel"
               parent="menu_production_planning_root" action="action_production_report_pair" sequence="51"/>
-    <menuitem id="menu_production_report_alias" name="Pasangan Brand Excel"
+    <menuitem id="menu_production_report_alias" active="False" name="Pasangan Brand Excel"
               parent="menu_production_planning_root" action="action_production_report_alias" sequence="52"/>
 </odoo>

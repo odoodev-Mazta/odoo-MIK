@@ -41,6 +41,10 @@ class ProductionPlan(models.Model):
         help="MOU dari brand, dipakai Plan riwayat yang belum punya Sales Order.",
     )
     history_brand = fields.Char(string="Brand (Riwayat)", copy=False)
+    history_po_number = fields.Char(
+        string="No. PO (Excel)", copy=False, index=True,
+        help="Nomor PO di Excel produksi (Plan riwayat). Nomor Plan memakai penomoran biasa.",
+    )
     has_no_sale_order = fields.Boolean(
         string="Tanpa Sales Order", compute="_compute_has_no_sale_order", store=True, index=True,
     )
@@ -1999,7 +2003,7 @@ class DashboardTimeline(models.Model):
                 "sale_order_id": plan.sale_order_id.id or False,
                 "sale_order_name": plan.sale_order_id.display_name or False,
                 "product": plan.product_id.display_name or ", ".join(
-                    plan.product_line_ids.product_id.mapped("display_name")
+                    line.history_label or line.product_id.display_name for line in plan.product_line_ids
                 ),
                 "origin_label": dict(plan._fields["origin_type"].selection).get(plan.origin_type, ""),
                 "state": plan.state,

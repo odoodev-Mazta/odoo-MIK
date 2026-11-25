@@ -24,6 +24,7 @@
         "data/production_workcenter_data.xml",
         "data/production_machine_data.xml",
         "data/production_report_alias_data.xml",
+        "data/production_history_data.xml",
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/production_plan_views.xml",

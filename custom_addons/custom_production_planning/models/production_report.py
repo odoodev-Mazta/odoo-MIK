@@ -1,10 +1,27 @@
+import difflib
 import re
 
 from odoo import api, fields, models
 
+from . import history_product
+
 
 def _norm(value):
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+
+def _similar(a, b):
+    """Nama brand dianggap sama: saling memuat, awalan sama minimal 4 huruf, atau ejaan sangat mirip."""
+    if not a or not b:
+        return False
+    if a in b or b in a:
+        return True
+    prefix = 0
+    for x, y in zip(a, b):
+        if x != y:
+            break
+        prefix += 1
+    return prefix >= 4 or difflib.SequenceMatcher(None, a, b).ratio() >= 0.8
 
 
 PROCESS_STATES = [("done", "Done"), ("progress", "Progress")]
@@ -71,9 +88,16 @@ class ProductionReport(models.Model):
             names = {_norm(line.brand_id.brand_name) for line in report.line_ids if line.brand_id} | {
                 _norm(line.brand) for line in report.line_ids if line.brand
             }
-            order_brand = _norm(order.brand_name)
-            if order and order_brand and any(n and (n in order_brand or order_brand in n) for n in names):
+            order_names = {_norm(order.brand_name), _norm(order.partner_id.name)} - {""}
+            if order and any(_similar(n, o) or (n and n in o) for n in names for o in order_names):
                 report.sale_order_id = order
+                continue
+            # Tidak cocok lewat nomor: bila MOU brand ini hanya punya satu Sales Order, pakai itu.
+            mous = report.line_ids.mou_id
+            if len(mous) == 1:
+                orders = self.env["sale.order"].search([("mou_id", "=", mous.id), ("state", "=", "sale")], limit=2)
+                if len(orders) == 1:
+                    report.sale_order_id = orders
 
     def action_create_history_plans(self):
         """Buat Plan Produksi riwayat di Production Planning, satu per No. PO (dan MOU).
@@ -91,23 +115,23 @@ class ProductionReport(models.Model):
             ("labeling", self.env.ref("custom_production_planning.stage_labeling")),
             ("packing", self.env.ref("custom_production_planning.stage_packing")),
         ]
+        index = history_product.product_index(self.env)
         reports = self or self.search([])
-        created = skipped = 0
+        created = skipped = with_so = 0
         for report in reports.sorted("id"):
             lines = report.line_ids.filtered(lambda l: not l.plan_id)
-            usable = lines.filtered(lambda l: l.product_tmpl_id and (l.mou_id or l.is_internal))
-            skipped += len(lines - usable)
+            usable = lines
+            for line in usable.filtered(lambda l: not l.product_tmpl_id):
+                brand = line.brand_id.brand_name or line.brand
+                name = history_product.standard_name(brand, line.product_type, line.packaging)
+                if name:
+                    line.product_tmpl_id = history_product.find_or_create_product(self.env, name, index)
             groups = {}
             for line in usable:
                 groups.setdefault(line.mou_id.id if not line.is_internal else False, self.env["mrp.production.report.line"])
                 groups[line.mou_id.id if not line.is_internal else False] |= line
             for mou_id, group in groups.items():
                 po = report.po_number or "TANPA-PO"
-                name = f"PO-{po}" if len(groups) == 1 else f"PO-{po}/{group[0].brand_id.brand_name or group[0].brand}"
-                base, counter = name, 1
-                while Plan.search_count([("name", "=", name)]):
-                    counter += 1
-                    name = f"{base}-{counter}"
                 order = report.sale_order_id
                 if order and (order.state != "sale" or (mou_id and order.mou_id.id != mou_id)):
                     order = self.env["sale.order"]
@@ -115,7 +139,7 @@ class ProductionReport(models.Model):
                 ends = [d for d in group.mapped("delivery_date") if d] or starts
                 all_done = all(line.po_status == "selesai" or line.packing_state == "done" for line in group)
                 plan = Plan.create({
-                    "name": name,
+                    "history_po_number": report.po_number or False,
                     "sale_order_id": order.id or False,
                     "is_history": True,
                     "history_mou_id": mou_id or False,
@@ -158,13 +182,14 @@ class ProductionReport(models.Model):
                 Stage.create(stage_vals)
                 group.write({"plan_id": plan.id})
                 created += 1
+                with_so += 1 if plan.sale_order_id else 0
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
                 "title": "Plan Produksi Riwayat",
-                "message": f"{created} Plan dibuat di Production Planning. {skipped} baris dilewati "
-                           "(brand atau Produk Odoo belum dipasangkan).",
+                "message": f"{created} Plan riwayat dibuat. {with_so} sudah punya Sales Order, "
+                           f"{created - with_so} belum (filter: Tanpa Sales Order).",
                 "type": "success",
                 "sticky": True,
                 "next": {"type": "ir.actions.client", "tag": "reload"},

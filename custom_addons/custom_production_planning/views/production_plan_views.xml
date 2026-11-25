@@ -9,6 +9,7 @@
                 <field name="sale_order_id"/>
                 <field name="has_no_sale_order" column_invisible="1"/>
                 <field name="is_history" optional="show"/>
+                <field name="history_po_number" optional="show"/>
                 <field name="mou_id" optional="show"/>
                 <field name="brand_name" optional="show"/>
                 <field name="origin_type"/>
@@ -143,6 +144,7 @@
                             <field name="sale_order_id" required="not is_history"/>
                             <field name="is_history" invisible="not is_history"/>
                             <field name="history_mou_id" invisible="not is_history" readonly="1"/>
+                            <field name="history_po_number" invisible="not is_history" readonly="1"/>
                             <field name="origin_type" readonly="state != 'draft'"/>
                             <field name="mou_id"/>
                             <field name="brand_name"/>
@@ -327,7 +329,7 @@
                             <div class="text-muted">
                                 Satu baris per produk = tahap yang sedang dikerjakan. Selesai QC, baris pindah ke tahap berikutnya dan yang lama masuk Riwayat.
                                 Semua produk dalam plan ini dikerjakan dari sini. Tahap dikerjakan berurutan per produk,
-                                dan setelah Ajukan QC, petugas QC memeriksa dari Antrean QC. QC lulus membuka tahap berikutnya.
+                                dan setelah Ajukan QC, petugas QC memeriksa dari QC Queue. QC lulus membuka tahap berikutnya.
                                 Baris merah = melewati tanggal selesai rencana.
                             </div>
                         </page>
@@ -447,6 +449,7 @@
         <field name="arch" type="xml">
             <search string="Production Planning">
                 <field name="name"/>
+                <field name="history_po_number"/>
                 <field name="sale_order_id"/>
                 <field name="mou_id"/>
                 <field name="brand_name"/>

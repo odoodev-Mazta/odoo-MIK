@@ -3,6 +3,8 @@ import re
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
+from . import history_product
+
 
 def _norm(value):
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
@@ -136,8 +138,13 @@ class DeliveryRecap(models.Model):
         if not ptype:
             raise UserError("Belum ada tipe operasi Delivery Orders untuk perusahaan ini.")
         customers = self.env.ref("stock.stock_location_customers")
-        rows = self.search([("picking_id", "=", False), ("is_internal", "=", False)]) if not self else self
-        rows = rows.filtered(lambda r: not r.picking_id and r.mou_id and r.product_tmpl_id and r.sj_number)
+        index = history_product.product_index(self.env)
+        rows = self.search([("picking_id", "=", False)]) if not self else self
+        rows = rows.filtered(lambda r: not r.picking_id and r.sj_number and r.product_name)
+        for rec in rows.filtered(lambda r: not r.product_tmpl_id):
+            rec.product_tmpl_id = history_product.find_or_create_product(
+                self.env, history_product.clean_name(rec.product_name), index
+            )
         groups = {}
         for rec in rows.sorted("id"):
             key = (_norm(rec.sj_number), rec.mou_id.id)
@@ -160,10 +167,11 @@ class DeliveryRecap(models.Model):
                 "location_dest_id": customers.id,
                 "origin": f"PO {first.po_number}" if first.po_number else "Rekapan Surat Jalan",
                 "scheduled_date": done_date,
-                "mou_id": first.mou_id.id,
+                "mou_id": first.mou_id.id or False,
                 "note": "Riwayat dari Rekapan Surat Jalan (Excel). Stok tidak berubah.",
                 "move_ids": [(0, 0, {
                     "product_id": rec.product_tmpl_id.product_variant_id.id,
+                    "description_picking": rec.product_name or False,
                     "product_uom_qty": rec.qty,
                     "product_uom": rec.product_tmpl_id.uom_id.id,
                     "location_id": ptype.default_location_src_id.id,
@@ -188,7 +196,7 @@ class DeliveryRecap(models.Model):
             "tag": "display_notification",
             "params": {
                 "title": "Delivery Riwayat",
-                "message": f"{created} Delivery Order riwayat dibuat. Baris tanpa MOU atau Produk Odoo dilewati.",
+                "message": f"{created} Delivery Order riwayat dibuat di Inventory > Deliveries.",
                 "type": "success",
                 "sticky": False,
                 "next": {"type": "ir.actions.client", "tag": "reload"},
@@ -212,3 +220,40 @@ class DeliveryRecap(models.Model):
                         {"brand_id": rec.brand_id.id, "is_internal": rec.is_internal}
                     )
         return result
+
+
+class StockPickingImportWizard(models.TransientModel):
+    """Tombol Import di Inventory > Deliveries juga menerima file Rekapan Surat Jalan (Excel)."""
+    _inherit = "stock.picking.import.wizard"
+
+    def _is_recap_file(self):
+        import base64
+        import io
+
+        from openpyxl import load_workbook
+
+        try:
+            workbook = load_workbook(io.BytesIO(base64.b64decode(self.file)), data_only=True, read_only=True)
+        except Exception:
+            return False
+        for sheet in workbook.worksheets:
+            for index, values in enumerate(sheet.iter_rows(values_only=True)):
+                if index > 10:
+                    break
+                keys = {_norm(cell) for cell in values}
+                if "NOMORSJ" in keys and "NAMABARANG" in keys:
+                    return True
+        return False
+
+    def action_import(self):
+        self.ensure_one()
+        if self.file and self._is_recap_file():
+            recap_wizard = self.env["mrp.delivery.recap.import.wizard"].create(
+                {"file": self.file, "filename": self.filename}
+            )
+            recap_wizard.action_import()
+            action = self.env["mrp.delivery.recap"].action_create_history_pickings()
+            action["params"]["title"] = "Import Rekapan Surat Jalan"
+            action["params"]["message"] = f"{recap_wizard.result}. {action['params']['message']}"
+            return action
+        return super().action_import()
