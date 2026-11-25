@@ -54,6 +54,12 @@ class ApprovalLog(models.Model):
     state_before = fields.Char(string="Status Sebelum", readonly=True)
     state_after = fields.Char(string="Status Sesudah", readonly=True)
 
+    def init(self):
+        # Registry bisa dimuat dengan kode baru sebelum modul di-upgrade (mis. saat build). Buat tabelnya bila belum
+        # ada supaya tidak muncul ERROR "Model approval.log has no table" di log.
+        if not table_exists(self.env.cr, self._table):
+            self._auto_init()
+
     def action_open_record(self):
         self.ensure_one()
         return {

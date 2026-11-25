@@ -14,6 +14,7 @@ def _norm(value):
 class DeliveryRecap(models.Model):
     """Rekapan Surat Jalan (Excel): riwayat pengiriman, satu baris per barang. Tidak menggerakkan stok."""
     _name = "mrp.delivery.recap"
+    _inherit = ["history.table.guard"]
     _description = "Rekapan Surat Jalan (Excel)"
     _order = "delivery_date desc, sj_number desc, id"
     _rec_name = "sj_number"

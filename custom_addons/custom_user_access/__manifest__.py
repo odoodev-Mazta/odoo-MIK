@@ -1,7 +1,7 @@
 {
     "name": "Akses User",
     "author": "Staff Dev",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Administration",
     "summary": "Atur akses setiap user per menu (Lihat, Buat, Ubah, Hapus, Setuju) dan peran modul",
     "depends": ["base", "web"],
