@@ -376,4 +376,46 @@
 
     <menuitem id="menu_production_report_product_alias" name="Excel Product Pairing"
               parent="mrp.menu_mrp_configuration" action="action_production_report_product_alias" sequence="95"/>
+
+    <record id="view_production_po_ref_list" model="ir.ui.view">
+        <field name="name">mrp.production.po.ref.list</field>
+        <field name="model">mrp.production.po.ref</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="0">
+                <field name="po_date"/>
+                <field name="po_key"/>
+                <field name="product_name"/>
+                <field name="kind_name"/>
+                <field name="qty"/>
+                <field name="packaging" optional="show"/>
+                <field name="component_count" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_production_po_ref_search" model="ir.ui.view">
+        <field name="name">mrp.production.po.ref.search</field>
+        <field name="model">mrp.production.po.ref</field>
+        <field name="arch" type="xml">
+            <search string="Nama Produk Baku">
+                <field name="product_name"/>
+                <field name="po_key"/>
+                <field name="kind_name"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_production_po_ref" model="ir.actions.act_window">
+        <field name="name">Product Names (PO MIK)</field>
+        <field name="res_model">mrp.production.po.ref</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_production_po_ref_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada nama produk baku.</p>
+            <p>Import file PO MIK (Excel BOM) lewat tombol Import dari Excel di Planning.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_production_po_ref" name="Product Names (PO MIK)"
+              parent="mrp.menu_mrp_configuration" action="action_production_po_ref" sequence="96"/>
 </odoo>
