@@ -142,6 +142,13 @@ class ProductionReportImportWizard(models.TransientModel):
     def action_import(self):
         """Baris Excel dikelompokkan per No. PO: satu PO = satu data, berisi banyak produk."""
         self.ensure_one()
+        PoRef = self.env["mrp.production.po.ref"]
+        if self.file and PoRef.looks_like_po_ref_file(self.file):
+            # File "PO MIK" (BOM): sumber nama produk jadi yang benar, bukan data produksi.
+            PoRef.import_and_refresh(self.file)
+            return self.env["ir.actions.act_window"]._for_xml_id(
+                "custom_production_planning.action_production_report_line_preview"
+            )
         Report = self.env["mrp.production.report"]
         Line = self.env["mrp.production.report.line"]
         company_domain = [("company_id", "in", [False, self.env.company.id])]

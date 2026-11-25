@@ -25,3 +25,4 @@ access_production_report_brand_alias,mrp.production.report.brand.alias,model_mrp
 access_delivery_recap,mrp.delivery.recap,model_mrp_delivery_recap,base.group_user,1,1,1,1
 access_delivery_recap_import_wizard,mrp.delivery.recap.import.wizard,model_mrp_delivery_recap_import_wizard,base.group_user,1,1,1,1
 access_production_report_product_alias,mrp.production.report.product.alias,model_mrp_production_report_product_alias,base.group_user,1,1,1,1
+access_production_po_ref,mrp.production.po.ref,model_mrp_production_po_ref,base.group_user,1,1,1,1
