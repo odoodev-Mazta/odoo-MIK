@@ -31,6 +31,12 @@ class ProductionPlanProductLine(models.Model):
         required=True,
     )
 
+    history_label = fields.Char(
+        string="Produk (Excel)",
+        copy=False,
+        help="Nama produk di Excel untuk Plan riwayat yang produknya belum dipasangkan ke produk Odoo.",
+    )
+
     finished_product_id = fields.Many2one(
         "product.product",
         string="Produk Jadi (brand)",

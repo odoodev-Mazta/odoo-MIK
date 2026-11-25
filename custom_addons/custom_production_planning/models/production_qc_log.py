@@ -2,10 +2,10 @@ from odoo import Command, api, fields, models
 
 
 class ProductionQcLog(models.Model):
-    """Laporan QC: satu baris tiap kali QC menyatakan Lulus / Gagal. Tidak ikut terhapus saat tahap diulang."""
+    """QC Report: satu baris tiap kali QC menyatakan Lulus / Gagal. Tidak ikut terhapus saat tahap diulang."""
 
     _name = "mrp.production.qc.log"
-    _description = "Laporan QC Tahap Produksi"
+    _description = "QC Report Tahap Produksi"
     _order = "qc_date desc, id desc"
 
     plan_stage_id = fields.Many2one("mrp.production.plan.stage", string="Tahap Proses", ondelete="set null", index=True)
@@ -36,7 +36,7 @@ class ProductionQcLog(models.Model):
 
 class ProductionQcLogLine(models.Model):
     _name = "mrp.production.qc.log.line"
-    _description = "Hasil Parameter Laporan QC"
+    _description = "Hasil Parameter QC Report"
     _order = "log_id, sequence, id"
 
     log_id = fields.Many2one("mrp.production.qc.log", required=True, ondelete="cascade")
@@ -82,7 +82,7 @@ class ProductionPlanStageCheck(models.Model):
 class ProductionPlanStage(models.Model):
     _inherit = "mrp.production.plan.stage"
 
-    qc_log_ids = fields.One2many("mrp.production.qc.log", "plan_stage_id", string="Laporan QC")
+    qc_log_ids = fields.One2many("mrp.production.qc.log", "plan_stage_id", string="QC Report")
 
     def _create_qc_log(self, result):
         yesno = {"yes": "Ya", "no": "Tidak"}

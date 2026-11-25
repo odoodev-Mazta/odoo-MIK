@@ -681,6 +681,18 @@ export class TimelineDashboard extends Component {
                 });
             }
 
+            // Riwayat Surat Jalan dari Excel (data lama): hanya ditampilkan, tidak mempengaruhi progres.
+            const sjHistory = mou.delivery_history || [];
+            deliveryStage.sub_history = {
+                rows: sjHistory.map(h => ({
+                    ...h,
+                    key: `sj-${h.id}`,
+                    date_label: h.date ? this.formatDate(h.date) : '-',
+                })),
+                total: sjHistory.length,
+                sj_count: new Set(sjHistory.map(h => h.sj_number)).size,
+            };
+
             deliveryStage.so_delivered = deliverySummary?.by_so || {};
             (mou.delivery_data?.picking || []).forEach(pk => {
                 deliveryStage.sub_delivery.picking.push({
@@ -817,6 +829,27 @@ export class TimelineDashboard extends Component {
                 produksiStage.sub_summary_produksi.total++;
                 if (p.is_done) produksiStage.sub_summary_produksi.done++;
             });
+
+            // Riwayat produksi dari Excel (data lama): hanya ditampilkan, tidak mempengaruhi progres.
+            const history = mou.production_history || [];
+            produksiStage.sub_history = {
+                rows: history.map(h => ({
+                    ...h,
+                    key: `hist-${h.id}`,
+                    po_date_label: h.po_date ? this.formatDate(h.po_date) : '-',
+                    production_date_label: h.production_date ? this.formatDate(h.production_date) : '-',
+                    delivery_date_label: h.delivery_date ? this.formatDate(h.delivery_date) : '-',
+                    steps: [
+                        { label: 'Mixing', done: h.mixing === 'done' },
+                        { label: 'Filling', done: h.filling === 'done' },
+                        { label: 'Label', done: h.labeling === 'done' },
+                        { label: 'Packing', done: h.packing === 'done' },
+                        { label: 'Kirim', done: h.delivery === 'done' },
+                    ],
+                })),
+                total: history.length,
+                done: history.filter(h => h.is_done).length,
+            };
 
             // ── Stage 7: QC ───────────────────────────────────────────────
             const qcStage = stages.find(s => s.code === 'qc');

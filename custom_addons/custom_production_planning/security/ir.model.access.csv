@@ -21,3 +21,7 @@ access_production_qc_log_manager,mrp.production.qc.log.system,model_mrp_producti
 access_production_qc_log_line,mrp.production.qc.log.line,model_mrp_production_qc_log_line,base.group_user,1,0,0,0
 access_production_qc_log_line_manager,mrp.production.qc.log.line.system,model_mrp_production_qc_log_line,base.group_system,1,1,1,1
 access_production_stage_fail_wizard,mrp.production.plan.stage.fail.wizard,model_mrp_production_plan_stage_fail_wizard,base.group_user,1,1,1,1
+access_production_report_brand_alias,mrp.production.report.brand.alias,model_mrp_production_report_brand_alias,base.group_user,1,1,1,1
+access_delivery_recap,mrp.delivery.recap,model_mrp_delivery_recap,base.group_user,1,1,1,1
+access_delivery_recap_import_wizard,mrp.delivery.recap.import.wizard,model_mrp_delivery_recap_import_wizard,base.group_user,1,1,1,1
+access_production_report_product_alias,mrp.production.report.product.alias,model_mrp_production_report_product_alias,base.group_user,1,1,1,1

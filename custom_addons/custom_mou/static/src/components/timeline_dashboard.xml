@@ -1039,6 +1039,55 @@
                                             </t>
                                         </div>
 
+                                        <!-- Accordion: Riwayat Produksi (dari Excel) -->
+                                        <t t-if="stage.sub_history and stage.sub_history.total > 0">
+                                            <div style="border:0.5px solid #dee2e6;border-left:2px solid #64748b;overflow:hidden;margin-bottom:6px;">
+                                                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                    t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'produksi_history')">
+                                                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+                                                        <i class="fa fa-history" style="color:#64748b;font-size:12px;"></i>
+                                                        <span style="font-size:11.5px;font-weight:500;color:#212529;">Riwayat Produksi (Excel)</span>
+                                                        <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;background:#f1f5f9;color:#334155;border:0.5px solid #94a3b8;">
+                                                            <t t-esc="stage.sub_history.done"/>/<t t-esc="stage.sub_history.total"/>
+                                                        </span>
+                                                    </div>
+                                                    <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'produksi_history') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                    style="font-size:10px;color:#adb5bd;"></i>
+                                                </div>
+                                                <t t-if="isAccordionOpen(state.selected_mou.id, 'produksi_history')">
+                                                    <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                        <t t-foreach="stage.sub_history.rows" t-as="h" t-key="h.key">
+                                                            <div style="padding-bottom:8px;margin-bottom:8px;border-bottom:0.5px dashed #e2e8f0;">
+                                                                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                                                                    <span style="font-size:11px;font-weight:500;color:#212529;">
+                                                                        PO <t t-esc="h.po_number"/> — <t t-esc="h.product"/>
+                                                                    </span>
+                                                                    <span t-attf-style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500;background:{{h.is_done ? '#d1e7dd' : '#fff3cd'}};border:0.5px solid #dee2e6;">
+                                                                        <t t-esc="h.po_status or 'Belum ada status'"/>
+                                                                    </span>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#495057;margin-top:2px;">
+                                                                    <t t-if="h.batch_no">Batch <t t-esc="h.batch_no"/> · </t>
+                                                                    <t t-esc="h.qty"/> pcs<t t-if="h.packaging"> · <t t-esc="h.packaging"/></t>
+                                                                    <t t-if="h.sale_order"> · SO: <t t-esc="h.sale_order"/></t>
+                                                                </div>
+                                                                <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;">
+                                                                    <t t-foreach="h.steps" t-as="stp" t-key="stp.label">
+                                                                        <span t-attf-style="font-size:9px;padding:0 5px;border-radius:3px;background:{{stp.done ? '#d1e7dd' : '#f8f9fa'}};border:0.5px solid #dee2e6;color:{{stp.done ? '#0a3622' : '#6c757d'}};">
+                                                                            <i t-attf-class="fa {{stp.done ? 'fa-check' : 'fa-circle-o'}} me-1"></i><t t-esc="stp.label"/>
+                                                                        </span>
+                                                                    </t>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i>PO <t t-esc="h.po_date_label"/> · Produksi <t t-esc="h.production_date_label"/> · Kirim <t t-esc="h.delivery_date_label"/>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+
                                     </t>
 
                                     <!-- ═══ KOLOM QC: Accordion QC Schedule ═══ -->
@@ -1254,6 +1303,46 @@
                                                 </div>
                                             </t>
                                         </div>
+
+                                        <!-- Accordion: Riwayat Surat Jalan (dari Excel) -->
+                                        <t t-if="stage.sub_history and stage.sub_history.total > 0">
+                                            <div style="border:0.5px solid #dee2e6;border-left:2px solid #64748b;overflow:hidden;margin-bottom:6px;">
+                                                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;padding:7px 10px;cursor:pointer;background:#fafafa;"
+                                                    t-on-click="() => this.toggleAccordion(state.selected_mou.id, 'delivery_history')">
+                                                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+                                                        <i class="fa fa-history" style="color:#64748b;font-size:12px;"></i>
+                                                        <span style="font-size:11.5px;font-weight:500;color:#212529;">Riwayat Surat Jalan (Excel)</span>
+                                                        <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:500;background:#f1f5f9;color:#334155;border:0.5px solid #94a3b8;">
+                                                            <t t-esc="stage.sub_history.sj_count"/> SJ
+                                                        </span>
+                                                    </div>
+                                                    <i t-attf-class="fa {{isAccordionOpen(state.selected_mou.id, 'delivery_history') ? 'fa-chevron-up' : 'fa-chevron-down'}}"
+                                                    style="font-size:10px;color:#adb5bd;"></i>
+                                                </div>
+                                                <t t-if="isAccordionOpen(state.selected_mou.id, 'delivery_history')">
+                                                    <div style="padding:8px 10px;border-top:0.5px solid #dee2e6;background:#fff;">
+                                                        <t t-foreach="stage.sub_history.rows" t-as="h" t-key="h.key">
+                                                            <div style="padding-bottom:8px;margin-bottom:8px;border-bottom:0.5px dashed #e2e8f0;">
+                                                                <div style="font-size:11px;font-weight:500;color:#212529;">
+                                                                    <t t-esc="h.sj_number"/> — <t t-esc="h.product"/>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#495057;margin-top:2px;">
+                                                                    <t t-esc="h.qty"/><t t-if="h.unit"> <t t-esc="h.unit"/></t>
+                                                                    <t t-if="h.packing"> · <t t-esc="h.packing"/></t>
+                                                                    <t t-if="h.batch"> · Batch <t t-esc="h.batch"/></t>
+                                                                    <t t-if="h.expedition"> · <t t-esc="h.expedition"/></t>
+                                                                </div>
+                                                                <div style="font-size:10px;color:#adb5bd;margin-top:3px;">
+                                                                    <i class="fa fa-calendar-o me-1"></i><t t-esc="h.date_label"/>
+                                                                    <t t-if="h.po_number"> · PO <t t-esc="h.po_number"/></t>
+                                                                    <t t-if="h.sale_order"> · SO: <t t-esc="h.sale_order"/></t>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
 
                                     </t>
 

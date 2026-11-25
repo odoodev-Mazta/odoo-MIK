@@ -9,7 +9,7 @@
                     <field name="stage_ids" widget="many2many_tags" readonly="1"/>
                     <field name="reason" placeholder="Mis. warna tidak sesuai standar, kemasan penyok, dll."/>
                 </group>
-                <div class="text-muted">Tahap akan diulang dari awal. Alasan ini tercatat di Laporan QC.</div>
+                <div class="text-muted">Tahap akan diulang dari awal. Alasan ini tercatat di QC Report.</div>
                 <footer>
                     <button name="action_confirm" type="object" string="Nyatakan QC Gagal" class="btn-danger"/>
                     <button special="cancel" string="Batal"/>

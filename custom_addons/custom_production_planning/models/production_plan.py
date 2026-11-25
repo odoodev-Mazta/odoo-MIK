@@ -22,11 +22,37 @@ class ProductionPlan(models.Model):
 
     sale_order_id = fields.Many2one(
         "sale.order",
-        required=True,
         tracking=True,
         domain="[('state', '=', 'sale')]",
-        help="Hanya Sales Order yang sudah dikonfirmasi.",
+        help="Hanya Sales Order yang sudah dikonfirmasi. Wajib, kecuali Plan riwayat dari Excel.",
     )
+
+    is_history = fields.Boolean(
+        string="Plan Riwayat",
+        readonly=True,
+        copy=False,
+        index=True,
+        help="Dibuat dari import Excel (data lama). Tidak membuat Perintah Produksi dan tidak mengubah stok.",
+    )
+    history_mou_id = fields.Many2one(
+        "draft.maklon",
+        string="MOU (Riwayat)",
+        copy=False,
+        help="MOU dari brand, dipakai Plan riwayat yang belum punya Sales Order.",
+    )
+    history_brand = fields.Char(string="Brand (Riwayat)", copy=False)
+    history_po_number = fields.Char(
+        string="No. PO (Excel)", copy=False, index=True,
+        help="Nomor PO di Excel produksi (Plan riwayat). Nomor Plan memakai penomoran biasa.",
+    )
+    has_no_sale_order = fields.Boolean(
+        string="Tanpa Sales Order", compute="_compute_has_no_sale_order", store=True, index=True,
+    )
+
+    @api.depends("sale_order_id")
+    def _compute_has_no_sale_order(self):
+        for plan in self:
+            plan.has_no_sale_order = not plan.sale_order_id
 
     origin_type = fields.Selection(
         [
@@ -42,21 +68,35 @@ class ProductionPlan(models.Model):
     )
 
     customer_id = fields.Many2one(
-        related="sale_order_id.partner_id",
+        "res.partner",
+        compute="_compute_customer_mou_brand",
         store=True,
     )
 
     mou_id = fields.Many2one(
-        related="sale_order_id.mou_id",
+        "draft.maklon",
         string="No. MOU",
+        compute="_compute_customer_mou_brand",
         store=True,
     )
 
     brand_name = fields.Char(
-        related="sale_order_id.brand_name",
         string="Nama Brand",
+        compute="_compute_customer_mou_brand",
         store=True,
     )
+
+    @api.depends(
+        "sale_order_id.partner_id", "sale_order_id.mou_id", "sale_order_id.brand_name",
+        "history_mou_id", "history_brand",
+    )
+    def _compute_customer_mou_brand(self):
+        """Dari Sales Order bila ada; Plan riwayat tanpa SO memakai MOU dan brand dari data Excel."""
+        for plan in self:
+            order = plan.sale_order_id
+            plan.customer_id = order.partner_id or plan.history_mou_id.nama_cust
+            plan.mou_id = order.mou_id or plan.history_mou_id
+            plan.brand_name = order.brand_name or plan.history_brand or False
 
     planned_start = fields.Date(
         required=False,
@@ -555,6 +595,12 @@ class ProductionPlan(models.Model):
         if not self and not field_names and "name" in fields_spec and not self.env.context.get("default_name"):
             result.setdefault("value", {})["name"] = False
         return result
+
+    @api.constrains("sale_order_id", "is_history")
+    def _check_sale_order_required(self):
+        for plan in self:
+            if not plan.sale_order_id and not plan.is_history:
+                raise ValidationError("Sales Order wajib diisi.")
 
     @api.constrains("sale_order_id")
     def _check_sale_order_confirmed(self):
@@ -1880,9 +1926,66 @@ class DashboardTimeline(models.Model):
     """
     _inherit = "dashboard.timeline.mou"
 
+    @api.model
+    def get_timeline_data(self):
+        """Tambah riwayat produksi dari Excel (Laporan Produksi) ke tiap MOU, hanya untuk ditampilkan."""
+        data = super().get_timeline_data()
+        lines = self.env["mrp.production.report.line"].search(
+            [("mou_id", "in", [item["id"] for item in data]), ("plan_id", "=", False)],
+            order="po_date desc, id desc",
+        )
+        by_mou = {}
+        for line in lines:
+            by_mou.setdefault(line.mou_id.id, []).append({
+                "id": line.id,
+                "po_number": line.po_number or "-",
+                "po_date": fields.Date.to_string(line.po_date) if line.po_date else None,
+                "sale_order": line.report_id.sale_order_id.display_name or False,
+                "batch_no": line.batch_no or "",
+                "brand": line.brand_id.brand_name or line.brand or "",
+                "product": line.product_tmpl_id.name or line.product_type or "",
+                "packaging": line.packaging or "",
+                "qty": line.qty,
+                "production_date": fields.Date.to_string(line.production_date) if line.production_date else None,
+                "delivery_date": fields.Date.to_string(line.delivery_date) if line.delivery_date else None,
+                "mixing": line.mixing_state or "",
+                "filling": line.filling_state or "",
+                "labeling": line.labeling_state or "",
+                "packing": line.packing_state or "",
+                "delivery": line.delivery_state or "",
+                "po_status": dict(line._fields["po_status"].selection).get(line.po_status, ""),
+                "is_done": line.po_status == "selesai",
+            })
+        for item in data:
+            item["production_history"] = by_mou.get(item["id"], [])
+
+        recaps = self.env["mrp.delivery.recap"].search(
+            [("mou_id", "in", [item["id"] for item in data]), ("picking_id", "=", False)],
+            order="delivery_date desc, sj_number desc, id",
+        )
+        recap_by_mou = {}
+        for rec in recaps:
+            recap_by_mou.setdefault(rec.mou_id.id, []).append({
+                "id": rec.id,
+                "sj_number": rec.sj_number or "-",
+                "po_number": rec.po_number or "",
+                "sale_order": rec.sale_order_id.display_name or False,
+                "product": rec.product_tmpl_id.name or rec.product_name or "",
+                "batch": rec.batch_text or "",
+                "qty": rec.qty,
+                "unit": rec.unit or "",
+                "packing": rec.packing or "",
+                "value": rec.value,
+                "date": fields.Date.to_string(rec.delivery_date) if rec.delivery_date else None,
+                "expedition": rec.expedition or "",
+            })
+        for item in data:
+            item["delivery_history"] = recap_by_mou.get(item["id"], [])
+        return data
+
     def _get_production_data(self, mou_id):
         plans = self.env["mrp.production.plan"].search([
-            ("sale_order_id.mou_id", "=", mou_id),
+            ("mou_id", "=", mou_id),
         ])
 
         # Total kesepakatan MOU (semua produk), pembanding hasil Packing seluruh plan.
@@ -1900,7 +2003,7 @@ class DashboardTimeline(models.Model):
                 "sale_order_id": plan.sale_order_id.id or False,
                 "sale_order_name": plan.sale_order_id.display_name or False,
                 "product": plan.product_id.display_name or ", ".join(
-                    plan.product_line_ids.product_id.mapped("display_name")
+                    line.history_label or line.product_id.display_name for line in plan.product_line_ids
                 ),
                 "origin_label": dict(plan._fields["origin_type"].selection).get(plan.origin_type, ""),
                 "state": plan.state,

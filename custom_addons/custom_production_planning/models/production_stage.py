@@ -538,7 +538,7 @@ class ProductionPlanStage(models.Model):
                 "mail.mail_activity_data_todo",
                 user_id=user.id,
                 summary=self._qc_activity_summary(),
-                note=f"Isi Qty Bagus & Qty Reject saat memeriksa. Buka menu Produksi > Antrean QC untuk memeriksa.",
+                note=f"Isi Qty Bagus & Qty Reject saat memeriksa. Buka menu Quality Control > QC Queue untuk memeriksa.",
                 date_deadline=fields.Date.context_today(self),
             )
 

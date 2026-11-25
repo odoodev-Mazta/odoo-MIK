@@ -32,14 +32,22 @@
         sequence="30"
     />
 
-    <!-- Antrean QC & Laporan QC (dari Production Planning) dipindah ke Quality Control -->
-    <record id="custom_production_planning.menu_production_qc_queue" model="ir.ui.menu">
-        <field name="parent_id" ref="menu_production_quality"/>
-        <field name="sequence">5</field>
-    </record>
-    <record id="custom_production_planning.menu_production_qc_log" model="ir.ui.menu">
-        <field name="parent_id" ref="menu_production_quality"/>
-        <field name="sequence">15</field>
-    </record>
+    <!-- QC Queue & QC Report (action dari Production Planning) -->
+    <menuitem
+        id="menu_qc_queue"
+        name="QC Queue"
+        parent="menu_production_quality"
+        action="custom_production_planning.action_production_qc_queue"
+        sequence="5"
+        groups="custom_production_planning.group_production_qc,base.group_system"
+    />
+
+    <menuitem
+        id="menu_qc_report"
+        name="QC Report"
+        parent="menu_production_quality"
+        action="custom_production_planning.action_production_qc_log"
+        sequence="15"
+    />
 
 </odoo>

@@ -108,7 +108,7 @@
                             <field name="result" widget="badge" decoration-success="result == 'passed'" decoration-danger="result == 'failed'"/>
                         </list>
                     </field>
-                    <separator string="Riwayat QC" invisible="not qc_log_ids"/>
+                    <separator string="QC History" invisible="not qc_log_ids"/>
                     <field name="qc_log_ids" readonly="1" invisible="not qc_log_ids">
                         <list decoration-success="result == 'passed'" decoration-danger="result == 'failed'">
                             <field name="attempt"/>
@@ -149,7 +149,7 @@
     </record>
 
     <record id="action_production_qc_queue" model="ir.actions.act_window">
-        <field name="name">Antrean QC</field>
+        <field name="name">QC Queue</field>
         <field name="res_model">mrp.production.plan.stage</field>
         <field name="view_mode">list,form</field>
         <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_production_plan_stage_qc_list')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_production_plan_stage_form')})]"/>
@@ -248,14 +248,5 @@
         parent="menu_production_planning_root"
         action="action_production_stage"
         sequence="40"
-    />
-
-    <menuitem
-        id="menu_production_qc_queue"
-        name="Antrean QC"
-        parent="menu_production_planning_root"
-        action="action_production_qc_queue"
-        sequence="45"
-        groups="custom_production_planning.group_production_qc,base.group_system"
     />
 </odoo>
