@@ -83,6 +83,7 @@ def _date(value):
 
 class DeliveryRecapImportWizard(models.TransientModel):
     _name = "mrp.delivery.recap.import.wizard"
+    _inherit = ["history.table.guard"]
     _description = "Import Rekapan Surat Jalan"
 
     file = fields.Binary(string="File Excel (.xlsx)", required=True)

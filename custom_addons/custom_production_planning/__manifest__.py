@@ -1,6 +1,6 @@
 {
     "name": "Custom Production Planning",
-    "version": "19.0.1.0.7",
+    "version": "19.0.1.0.8",
     "category": "Manufacturing",
     "author": "William Purba",
 
