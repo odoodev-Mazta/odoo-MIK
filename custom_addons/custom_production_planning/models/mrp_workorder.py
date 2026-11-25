@@ -6,10 +6,11 @@ class MrpWorkorder(models.Model):
 
     def _check_run_from_stage(self):
         """Work Order milik tahap Proses Produksi hanya boleh dijalankan dari tahapnya."""
-        if self.env.context.get("from_production_stage"):
+        # stage_flow_done: Perintah Produksi ditutup otomatis oleh alur tahap (Packing selesai).
+        if self.env.context.get("from_production_stage") or self.env.context.get("stage_flow_done"):
             return
         if self.env["mrp.production.plan.stage"].sudo().search_count(
-            [("workorder_id", "in", self.ids)]
+            [("workorder_id", "in", self.ids), ("state", "!=", "done")]
         ):
             raise UserError(_(
                 "Work Order ini dijalankan dari tab Proses Produksi (Mulai, Ajukan QC, QC Lulus). "

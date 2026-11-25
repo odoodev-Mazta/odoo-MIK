@@ -6,6 +6,12 @@
         <field name="arch" type="xml">
             <form string="Import Laporan Produksi">
                 <p class="text-muted">
+                    Satu klik: file dibaca, brand, Sales Order, dan MOU dicocokkan otomatis, lalu Plan Produksi dibuat
+                    di Planning (tanpa Perintah Produksi, stok tidak berubah). Sales Order dicocokkan lewat nomor PO
+                    (004 = S00004 atau S0004) dengan syarat brand sama. Plan yang belum ketemu SO-nya tetap dibuat dan
+                    bisa disaring lewat filter "Tanpa Sales Order".
+                </p>
+                <p class="text-muted">
                     Pilih file Excel MASTER produksi. Baris judul harus berisi kolom seperti NO.PO, BRAND,
                     JENIS PRODUK, QTY, JENIS KEMASAN, TGL PRODUKSI, PROSES MIXING ... STATUS PO.
                     Baris kosong dilewati. Baris dengan No. PO yang sama digabung jadi satu PO berisi banyak produk.
@@ -31,6 +37,28 @@
         <field name="target">new</field>
     </record>
 
+    <!-- Satu tombol Import di Planning -->
+    <record id="view_production_plan_list_import" model="ir.ui.view">
+        <field name="name">mrp.production.plan.list.import</field>
+        <field name="model">mrp.production.plan</field>
+        <field name="inherit_id" ref="custom_production_planning.view_production_plan_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="before">
+                <header>
+                    <button name="%(action_production_report_import)d" type="action" string="Import dari Excel"
+                            class="btn-primary" icon="fa-upload" display="always"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_production_report_create_plans" model="ir.actions.server">
+        <field name="name">Buat Plan Riwayat</field>
+        <field name="model_id" ref="model_mrp_production_report"/>
+        <field name="state">code</field>
+        <field name="code">action = env["mrp.production.report"].action_create_history_plans()</field>
+    </record>
+
     <record id="view_production_report_list" model="ir.ui.view">
         <field name="name">mrp.production.report.list</field>
         <field name="model">mrp.production.report</field>
@@ -40,10 +68,14 @@
                 <header>
                     <button name="%(action_production_report_import)d" type="action" string="Import dari Excel"
                             class="btn-primary" icon="fa-upload" display="always"/>
+                    <button name="%(action_production_report_create_plans)d" type="action"
+                            string="Buat Plan Riwayat" icon="fa-calendar-check-o" display="always"
+                            confirm="Buat Plan Produksi riwayat di Production Planning dari data yang sudah terhubung? Tidak ada Perintah Produksi dan stok tidak berubah."/>
                 </header>
                 <field name="po_date"/>
                 <field name="po_number"/>
                 <field name="brand"/>
+                <field name="sale_order_id" optional="hide"/>
                 <field name="product_count" string="Produk"/>
                 <field name="qty_total" sum="Total Qty"/>
                 <field name="material_total" sum="Total Bahan" optional="hide"/>
@@ -73,6 +105,7 @@
                             <field name="po_number"/>
                             <field name="po_date"/>
                             <field name="brand"/>
+                            <field name="sale_order_id" options="{'no_create': True}"/>
                         </group>
                         <group>
                             <field name="product_count"/>
@@ -92,7 +125,11 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="batch_no"/>
                                     <field name="brand" optional="hide"/>
+                                    <field name="brand_id" options="{'no_create': True}"/>
+                                    <field name="is_internal" optional="hide"/>
+                                    <field name="mou_id" optional="show"/>
                                     <field name="product_type"/>
+                                    <field name="product_tmpl_id" optional="hide" options="{'no_create': True}"/>
                                     <field name="qty" sum="Total Qty"/>
                                     <field name="packaging"/>
                                     <field name="unit_weight" optional="show"/>
@@ -178,6 +215,165 @@
         </field>
     </record>
 
-    <menuitem id="menu_production_report" name="Laporan Produksi (Excel)"
+    <record id="action_production_report_rematch" model="ir.actions.server">
+        <field name="name">Cocokkan Ulang Brand</field>
+        <field name="model_id" ref="model_mrp_production_report"/>
+        <field name="state">code</field>
+        <field name="code">action = env["mrp.production.report"].action_rematch()</field>
+    </record>
+
+    <!-- Baris Excel yang brand-nya belum terhubung ke Registrasi Brand -->
+    <record id="view_production_report_line_pair_list" model="ir.ui.view">
+        <field name="name">mrp.production.report.line.pair.list</field>
+        <field name="model">mrp.production.report.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="0" delete="0" decoration-muted="match_state == 'internal'">
+                <header>
+                    <button name="%(action_production_report_rematch)d" type="action" string="Cocokkan Ulang"
+                            class="btn-primary" icon="fa-refresh" display="always"/>
+                </header>
+                <field name="po_date"/>
+                <field name="po_number"/>
+                <field name="brand" readonly="1"/>
+                <field name="brand_id" options="{'no_create': True}"
+                       placeholder="Pilih brand terdaftar (pasangan diingat)"/>
+                <field name="is_internal"/>
+                <field name="mou_id"/>
+                <field name="product_type" readonly="1"/>
+                <field name="packaging" readonly="1" optional="hide"/>
+                <field name="product_tmpl_id" optional="show" options="{'no_create': True}"/>
+                <field name="match_state" widget="badge" decoration-success="match_state == 'matched'"
+                       decoration-info="match_state == 'internal'" decoration-warning="match_state == 'pending'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_production_report_line_search" model="ir.ui.view">
+        <field name="name">mrp.production.report.line.search</field>
+        <field name="model">mrp.production.report.line</field>
+        <field name="arch" type="xml">
+            <search string="Hubungan Brand">
+                <field name="brand"/>
+                <field name="po_number"/>
+                <field name="product_type"/>
+                <field name="proposed_product_name"/>
+                <filter name="no_product" string="Produk Baru (belum ada)" domain="[('product_tmpl_id', '=', False)]"/>
+                <filter name="has_product" string="Produk Sudah Ada" domain="[('product_tmpl_id', '!=', False)]"/>
+                <separator/>
+                <filter name="pending" string="Perlu Dipasangkan" domain="[('match_state', '=', 'pending')]"/>
+                <filter name="matched" string="Terhubung" domain="[('match_state', '=', 'matched')]"/>
+                <filter name="internal" string="Produksi Sendiri" domain="[('match_state', '=', 'internal')]"/>
+                <group>
+                    <filter name="group_proposed" string="Nama Produk Baru" context="{'group_by': 'proposed_product_name'}"/>
+                    <filter name="group_brand_text" string="Brand (Excel)" context="{'group_by': 'brand'}"/>
+                    <filter name="group_match" string="Status Hubungan" context="{'group_by': 'match_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Pratinjau sebelum Plan dan produk baru dibuat -->
+    <record id="view_production_report_line_preview_list" model="ir.ui.view">
+        <field name="name">mrp.production.report.line.preview.list</field>
+        <field name="model">mrp.production.report.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="0" delete="0" decoration-warning="not product_tmpl_id"
+                  decoration-success="product_tmpl_id">
+                <header>
+                    <button name="%(action_production_report_create_plans)d" type="action"
+                            string="Setujui dan Buat Plan" class="btn-primary" icon="fa-check" display="always"
+                            confirm="Buat Plan Produksi riwayat, dan buat produk baru untuk baris yang belum punya produk? Tidak ada Perintah Produksi dan stok tidak berubah."/>
+                </header>
+                <field name="po_number"/>
+                <field name="brand" readonly="1"/>
+                <field name="product_type" readonly="1"/>
+                <field name="packaging" readonly="1" optional="hide"/>
+                <field name="qty" readonly="1" sum="Total Qty"/>
+                <field name="product_tmpl_id" options="{'no_create': True}"
+                       placeholder="Kosong = produk baru dibuat"/>
+                <field name="proposed_product_name" string="Produk Baru Bernama"
+                       invisible="product_tmpl_id"/>
+                <field name="mou_id" readonly="1"/>
+                <field name="is_internal" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_production_report_line_preview" model="ir.actions.act_window">
+        <field name="name">Pratinjau Import Plan Produksi</field>
+        <field name="res_model">mrp.production.report.line</field>
+        <field name="view_mode">list</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_production_report_line_preview_list')})]"/>
+        <field name="search_view_id" ref="view_production_report_line_search"/>
+        <field name="domain">[('plan_id', '=', False)]</field>
+        <field name="context">{'search_default_no_product': 1, 'search_default_group_proposed': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Semua baris sudah punya produk.</p>
+            <p>Klik Setujui dan Buat Plan untuk membuat Plan riwayat.</p>
+        </field>
+    </record>
+
+    <record id="action_production_report_pair" model="ir.actions.act_window">
+        <field name="name">Hubungan Brand Excel</field>
+        <field name="res_model">mrp.production.report.line</field>
+        <field name="view_mode">list</field>
+        <field name="view_ids" eval="[(5, 0, 0), (0, 0, {'view_mode': 'list', 'view_id': ref('view_production_report_line_pair_list')})]"/>
+        <field name="search_view_id" ref="view_production_report_line_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Semua brand sudah terhubung.</p>
+            <p>Pilih Brand Terdaftar untuk tiap baris. Pasangan diingat, jadi baris lain dengan tulisan brand yang sama ikut terhubung.</p>
+        </field>
+    </record>
+
+    <record id="view_production_report_alias_list" model="ir.ui.view">
+        <field name="name">mrp.production.report.brand.alias.list</field>
+        <field name="model">mrp.production.report.brand.alias</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="brand_id" options="{'no_create': True}" readonly="is_internal"/>
+                <field name="is_internal"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_production_report_alias" model="ir.actions.act_window">
+        <field name="name">Pasangan Brand Excel</field>
+        <field name="res_model">mrp.production.report.brand.alias</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <menuitem id="menu_production_report" active="False" name="Laporan Produksi (Excel)"
               parent="menu_production_planning_root" action="action_production_report" sequence="50"/>
+    <menuitem id="menu_production_report_pair" active="False" name="Hubungan Brand Excel"
+              parent="menu_production_planning_root" action="action_production_report_pair" sequence="51"/>
+    <menuitem id="menu_production_report_alias" active="False" name="Pasangan Brand Excel"
+              parent="menu_production_planning_root" action="action_production_report_alias" sequence="52"/>
+
+    <record id="view_production_report_product_alias_list" model="ir.ui.view">
+        <field name="name">mrp.production.report.product.alias.list</field>
+        <field name="model">mrp.production.report.product.alias</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="brand_key" placeholder="Brand, mis. MIUNA"/>
+                <field name="kind_key" placeholder="Jenis, mis. MASKERACNE"/>
+                <field name="product_tmpl_id" options="{'no_create': True}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_production_report_product_alias" model="ir.actions.act_window">
+        <field name="name">Excel Product Pairing</field>
+        <field name="res_model">mrp.production.report.product.alias</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada pasangan produk.</p>
+            <p>Terisi otomatis dari pilihan manual dan dari keterangan jenis di Surat Jalan.
+               Isi sendiri bila perlu: Brand dan Jenis ditulis tanpa spasi, huruf besar.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_production_report_product_alias" name="Excel Product Pairing"
+              parent="mrp.menu_mrp_configuration" action="action_production_report_product_alias" sequence="95"/>
 </odoo>

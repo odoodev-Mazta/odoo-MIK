@@ -164,6 +164,7 @@ class ProductionReportImportWizard(models.TransientModel):
             for r in Report.search(company_domain, order="id")
         }
         new_po = updated_po = new_lines = updated_lines = 0
+        touched = Report
         for key, group in groups.items():
             report = reports.get(key)
             if report:
@@ -171,6 +172,7 @@ class ProductionReportImportWizard(models.TransientModel):
             else:
                 report = Report.create({"po_number": group["po_number"], "po_date": group["po_date"]})
                 new_po += 1
+            touched |= report
             # Produk dicocokkan per (Brand, Jenis Produk, Kemasan, Batch); yang kembar dicocokkan berurutan.
             existing = {}
             for line in report.line_ids.sorted("id"):
@@ -192,18 +194,11 @@ class ProductionReportImportWizard(models.TransientModel):
                 Line.create(to_create)
                 new_lines += len(to_create)
 
-        self.result = (
-            f"PO baru: {new_po} · PO diperbarui: {updated_po} · "
-            f"Produk baru: {new_lines} · Produk diperbarui: {updated_lines} · Baris dibaca: {len(rows)}"
+        # Hubungkan ke Sales Order / Brand terdaftar / MOU. Yang belum cocok muncul di "Perlu Dipasangkan".
+        touched.line_ids.action_auto_match()
+        touched._auto_link_sale_order()
+        self.result = f"PO: {new_po} baru, {updated_po} diperbarui · Baris dibaca: {len(rows)}"
+        # Pratinjau dulu: produk baru dan Plan baru baru dibuat setelah disetujui.
+        return self.env["ir.actions.act_window"]._for_xml_id(
+            "custom_production_planning.action_production_report_line_preview"
         )
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": "Import Laporan Produksi (Excel)",
-                "message": self.result,
-                "type": "success",
-                "sticky": False,
-                "next": {"type": "ir.actions.client", "tag": "reload"},
-            },
-        }

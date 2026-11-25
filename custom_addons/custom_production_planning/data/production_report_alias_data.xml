@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <!-- Brand produksi sendiri (tanpa MOU): tidak perlu dipasangkan ke Registrasi Brand. -->
+    <record id="report_alias_mazderm" model="mrp.production.report.brand.alias">
+        <field name="name">MAZDERM</field>
+        <field name="is_internal" eval="True"/>
+    </record>
+    <record id="report_alias_buffer_stock" model="mrp.production.report.brand.alias">
+        <field name="name">BUFFER STOCK</field>
+        <field name="is_internal" eval="True"/>
+    </record>
+</odoo>

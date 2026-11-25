@@ -15,3 +15,4 @@ from . import purchase_deadline
 from . import stock_picking
 from . import production_report
 from . import production_qc_log
+from . import delivery_recap
