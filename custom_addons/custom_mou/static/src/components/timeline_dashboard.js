@@ -225,7 +225,7 @@ export class TimelineDashboard extends Component {
     _attachDocs(stage, docs) {
         const first = stage.details[0];
         if (!first || !docs || !docs.length) return;
-        first.docs = docs.map(doc => this._popup(doc.model, doc.id, doc.name));
+        first.docs = docs.map(doc => ({ ...this._popup(doc.model, doc.id, doc.name), sale_order_id: doc.sale_order_id || false }));
         if (docs.length === 1) first.popup = first.docs[0];
     }
 
@@ -1181,10 +1181,24 @@ export class TimelineDashboard extends Component {
 
     filterStageBySo(stage, so) {
         const soId = so.id;
-        // Data tanpa SO (data lama / pembelian bulk) tetap ditampilkan.
-        const keep = item => !item.sale_order_id || item.sale_order_id === soId;
+        // Tahap yang isinya milik satu SO: hanya tampilkan yang SO-nya sama dengan SO terpilih.
+        // Tahap tingkat MOU (MOU, Biaya Registrasi, DP, Registrasi, BP) tidak dibuang; dokumen pembayarannya saja yang disaring.
+        // MOU dengan satu SO aktif saja: dokumen tanpa SO pasti miliknya, jadi ikut tampil.
+        const onlySo = ((this.state.selected_mou && this.state.selected_mou.sale_orders) || []).length === 1;
+        const keep = item => item.sale_order_id === soId || (onlySo && !item.sale_order_id);
+        const soStage = ['pengadaan', 'produksi', 'qc', 'delivery'].includes(stage.code);
+        const filterDocs = detail => {
+            if (!detail.docs || !detail.docs.length) return detail;
+            const docs = detail.docs.filter(d => !d.sale_order_id || d.sale_order_id === soId);
+            return { ...detail, docs, popup: docs.length === 1 ? docs[0] : null };
+        };
         // Baris total MOU diganti total per SO yang dipilih.
-        const result = { ...stage, details: (stage.details || []).filter(d => !d.is_mou_total && keep(d)) };
+        const result = {
+            ...stage,
+            details: (stage.details || [])
+                .filter(d => !d.is_mou_total && (!soStage || keep(d)))
+                .map(d => (soStage ? d : filterDocs(d))),
+        };
         if (stage.code === 'delivery' && stage.so_delivered) {
             result.details.unshift(this._soTotalLine('Total terkirim', so, stage.so_delivered[String(soId)] || 0));
         }
@@ -1202,7 +1216,7 @@ export class TimelineDashboard extends Component {
                     sub[key] = (stage.sub_pengadaan[key] || [])
                         .filter(i => (i.so_ids && i.so_ids.length) ? i.so_ids.includes(soId) : keep(i))
                         .map(i => (i.lines && i.lines.length)
-                            ? { ...i, lines: i.lines.filter(l => !l.sale_order_id || l.sale_order_id === soId) }
+                            ? { ...i, lines: i.lines.filter(l => keep(l)) }
                             : i);
                 } else {
                     sub[key] = (stage.sub_pengadaan[key] || []).filter(keep);
