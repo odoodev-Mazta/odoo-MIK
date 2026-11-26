@@ -37,18 +37,4 @@ class DraftMaklon(models.Model):
             raise UserError(_("Project hanya bisa dibuat untuk MOU yang sudah dikonfirmasi."))
         project = self._ensure_project()
         project._sync_from_mou()
-        orders = self.env['sale.order'].search(
-            [('mou_id', '=', self.id), ('state', 'not in', ('draft', 'cancel'))], order='id desc', limit=1)
-        context = {
-            'default_project_id': project.id, 'active_id': project.id, 'show_project_update': True,
-            'mou_so_mou_id': self.id,
-        }
-        if orders:
-            context['search_default_mou_so_scope'] = orders.id
-        action = self.env['ir.actions.actions']._for_xml_id('project.act_project_project_2_project_task_all')
-        action.update({
-            'name': project.name,
-            'domain': [('project_id', '=', project.id)],
-            'context': context,
-        })
-        return action
+        return project.action_view_tasks()

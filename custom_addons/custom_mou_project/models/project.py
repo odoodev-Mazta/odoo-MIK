@@ -37,6 +37,22 @@ class ProjectProject(models.Model):
     mou_id = fields.Many2one('draft.maklon', string="MOU", index=True, copy=False)
 
     # ------------------------------------------------------------------ tombol
+    def action_view_tasks(self):
+        """Semua jalur membuka task Project (kartu Project, tombol Tasks, tombol di form MOU) lewat sini.
+        Untuk Project MOU: tanpa filter 'Open' supaya task selesai ikut terlihat, dan terbuka langsung di SO terbaru
+        (chip 'Per SO'). Ganti SO dengan mengetik / memilih di kolom pencarian."""
+        action = super().action_view_tasks()
+        if self.mou_id:
+            context = dict(action['context'])
+            context.pop('search_default_open_tasks', None)
+            context['mou_so_mou_id'] = self.mou_id.id
+            order = self.env['sale.order'].search(
+                [('mou_id', '=', self.mou_id.id), ('state', 'not in', ('draft', 'cancel'))], order='id desc', limit=1)
+            if order:
+                context['search_default_mou_so_scope'] = order.id
+            action['context'] = context
+        return action
+
     def action_sync_from_mou(self):
         for project in self.filtered('mou_id'):
             project._sync_from_mou()
