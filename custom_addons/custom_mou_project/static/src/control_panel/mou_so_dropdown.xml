@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="custom_mou_project.ProjectTaskControlPanel" t-inherit="project.ProjectTaskControlPanel" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_control_panel_main')]" position="before">
+            <div t-if="mouSo.options.length" class="o_mou_so_bar d-flex align-items-center gap-2">
+                <label class="fw-bold mb-0" for="o_mou_so_select">Sales Order</label>
+                <select id="o_mou_so_select" class="form-select w-auto" t-on-change="onChangeMouSo">
+                    <option value="0" t-att-selected="!mouSo.selected">Semua SO</option>
+                    <t t-foreach="mouSo.options" t-as="option" t-key="option.id">
+                        <option t-att-value="option.id" t-att-selected="option.id === mouSo.selected">
+                            <t t-esc="option.label"/>
+                        </option>
+                    </t>
+                </select>
+                <span class="text-muted small">Pilih SO untuk melihat seluruh alurnya (tahap MOU + dokumen SO itu).</span>
+            </div>
+        </xpath>
+    </t>
+</templates>

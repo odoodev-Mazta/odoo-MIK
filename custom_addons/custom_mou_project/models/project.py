@@ -2,19 +2,21 @@ from datetime import timedelta
 
 from odoo import _, api, fields, models
 from odoo.fields import Domain
+from odoo.tools.misc import formatLang
 from odoo.exceptions import AccessError
 
-# Sama dengan 9 tahapan di Tracking MOU.
+# Tahapan seperti Tracking MOU, ditambah kartu Sales Order sebelum Pengadaan.
 STAGES = [
     ('mou', '1. MOU'),
     ('regfee', '2. Biaya Registrasi'),
     ('dp', '3. DP'),
     ('regis', '4. Registrasi'),
-    ('buy', '5. Pengadaan'),
-    ('prod', '6. Produksi'),
-    ('qc', '7. QC'),
-    ('bp', '8. BP'),
-    ('ship', '9. Delivery'),
+    ('so', '5. Sales Order'),
+    ('buy', '6. Pengadaan'),
+    ('prod', '7. Produksi'),
+    ('qc', '8. QC'),
+    ('bp', '9. BP'),
+    ('ship', '10. Delivery'),
 ]
 # Tagihan MOU (mou.setup) -> tahap, dan awalan nama field tanggalnya.
 SETUP_STAGE = {
@@ -37,21 +39,45 @@ class ProjectProject(models.Model):
     mou_id = fields.Many2one('draft.maklon', string="MOU", index=True, copy=False)
 
     # ------------------------------------------------------------------ tombol
+    def _mou_orders(self):
+        self.ensure_one()
+        return self.env['sale.order'].sudo().search(
+            [('mou_id', '=', self.mou_id.id), ('state', 'not in', ('draft', 'cancel'))], order='id desc')
+
+    def _mou_tasks_action(self, order):
+        """Aksi task Project MOU. Tanpa filter 'Open' (task selesai ikut tampil), terbuka di SO yang dipilih (chip
+        'Per SO'); order kosong = semua SO."""
+        action = super().action_view_tasks()
+        context = dict(action['context'])
+        context.pop('search_default_open_tasks', None)
+        context['mou_so_mou_id'] = self.mou_id.id
+        context.pop('search_default_mou_so_scope', None)
+        if order:
+            context['search_default_mou_so_scope'] = order.id
+        action['context'] = context
+        return action
+
     def action_view_tasks(self):
         """Semua jalur membuka task Project (kartu Project, tombol Tasks, tombol di form MOU) lewat sini.
-        Untuk Project MOU: tanpa filter 'Open' supaya task selesai ikut terlihat, dan terbuka langsung di SO terbaru
-        (chip 'Per SO'). Ganti SO dengan mengetik / memilih di kolom pencarian."""
-        action = super().action_view_tasks()
-        if self.mou_id:
-            context = dict(action['context'])
-            context.pop('search_default_open_tasks', None)
-            context['mou_so_mou_id'] = self.mou_id.id
-            order = self.env['sale.order'].search(
-                [('mou_id', '=', self.mou_id.id), ('state', 'not in', ('draft', 'cancel'))], order='id desc', limit=1)
-            if order:
-                context['search_default_mou_so_scope'] = order.id
-            action['context'] = context
-        return action
+        Project MOU terbuka langsung di SO terbaru."""
+        if not self.mou_id:
+            return super().action_view_tasks()
+        return self._mou_tasks_action(self._mou_orders()[:1])
+
+    def action_view_tasks_for_so(self, order_id):
+        """Dipanggil dropdown SO di atas Project: buka ulang task untuk SO yang dipilih (0 = semua SO)."""
+        self.ensure_one()
+        if not self.mou_id:
+            return super().action_view_tasks()
+        return self._mou_tasks_action(self._mou_orders().filtered(lambda o: o.id == order_id)[:1])
+
+    def get_mou_so_options(self):
+        """Daftar SO MOU untuk dropdown di atas Project."""
+        self.ensure_one()
+        return [{
+            'id': o.id,
+            'label': '%s - %s' % (o.name, formatLang(self.env, o.amount_total, currency_obj=o.currency_id)),
+        } for o in self._mou_orders().sorted('id')]
 
     def action_sync_from_mou(self):
         for project in self.filtered('mou_id'):
@@ -185,7 +211,14 @@ class ProjectProject(models.Model):
             put('design:%s' % design.id, _("Desain: %s") % design.display_name, 'regis', begin,
                 design.date_done or _dt(begin) + 14 * day, done=design.state == 'done', level=True)
 
-        # 5. Pengadaan: PR, PO (per baris barang), Usulan Dana.
+        # 5. Sales Order: satu kartu per SO (tanggal order sampai tanggal komitmen).
+        for order in active_orders:
+            amount = formatLang(env, order.amount_total, currency_obj=order.currency_id)
+            put('so:%s' % order.id, _("%s - %s") % (order.name, amount), 'so', order.date_order,
+                order.commitment_date or _dt(order.date_order) + day, done=order.state in ('sale', 'done'),
+                sos=order)
+
+        # 6. Pengadaan: PR, PO (per baris barang), Usulan Dana.
         prs = env['purchase.request'].search(['|', ('mou_id', '=', mou.id), ('bulk_line_ids.mou_id', '=', mou.id)])
 
         def pr_sos(pr):
@@ -227,13 +260,13 @@ class ProjectProject(models.Model):
                     _dt(ud.tgl_usulan) + 7 * day if ud.tgl_usulan else None,
                     done=ud.status_payment == 'paid', sos=sos)
 
-        # 6. Produksi: Plan Produksi.
+        # 7. Produksi: Plan Produksi.
         for plan in env['mrp.production.plan'].search(
                 [('mou_id', '=', mou.id), ('state', '!=', 'cancel')], order='planned_start, id'):
             put('plan:%s' % plan.id, _("Produksi: %s") % plan.name, 'prod', plan.planned_start,
                 plan.planned_end, done=plan.state == 'done', sos=plan.sale_order_id)
 
-        # 7. QC.
+        # 8. QC.
         if 'production.qc.schedule' in env:
             for sched in env['production.qc.schedule'].search(
                     [('production_id.production_plan_id.sale_order_id.mou_id', '=', mou.id)]):
@@ -241,7 +274,7 @@ class ProjectProject(models.Model):
                 put('qc:%s' % sched.id, _("QC: %s") % sched.name, 'qc', begin, _dt(begin) + day,
                     done=sched.state == 'done', sos=sched.production_id.production_plan_id.sale_order_id)
 
-        # 9. Delivery.
+        # 10. Delivery.
         orders = env['sale.order'].search([('mou_id', '=', mou.id), ('state', 'not in', ('draft', 'cancel'))])
         for pick in env['stock.picking'].search([
                 ('sale_id', 'in', orders.ids), ('picking_type_code', '=', 'outgoing'),

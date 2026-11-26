@@ -28,6 +28,12 @@ Tombol Project di form MOU membuat atau memperbarui Project.
     'data': [
         'views/project_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'custom_mou_project/static/src/control_panel/mou_so_dropdown.js',
+            'custom_mou_project/static/src/control_panel/mou_so_dropdown.xml',
+        ],
+    },
     'installable': True,
     'application': False,
     'license': 'LGPL-3',
