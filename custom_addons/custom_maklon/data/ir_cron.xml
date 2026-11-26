@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Coba ulang kabar MOU ke Mazta Finance yang gagal terkirim. -->
+    <record id="cron_kirim_ulang_mazta" model="ir.cron">
+        <field name="name">Maklon: kirim ulang kabar MOU ke Mazta Finance</field>
+        <field name="model_id" ref="custom_ecatalogue.model_draft_maklon"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_kirim_ulang_mazta()</field>
+        <field name="interval_number">10</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
