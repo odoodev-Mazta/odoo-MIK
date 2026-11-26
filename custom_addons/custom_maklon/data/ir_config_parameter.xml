@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Parameter integrasi Mazta Finance. Dibuat KOSONG (noupdate) supaya tampil di
+         Pengaturan > Teknis > System Parameters; isi nilainya lewat UI, bukan di kode.
+         Kosong = integrasi mati (aman di staging). -->
+    <data noupdate="1">
+        <!-- Alamat Mazta Finance (untuk kabar MOU) -->
+        <record id="param_mazta_base_url" model="ir.config_parameter">
+            <field name="key">mazta.base_url</field>
+            <field name="value"></field>
+        </record>
+        <!-- SATU pasang token + secret, dipakai di kedua arah (sama dengan MAKLON_TOKEN / MAKLON_SECRET di .env Mazta Finance) -->
+        <record id="param_mazta_token" model="ir.config_parameter">
+            <field name="key">mazta.token</field>
+            <field name="value"></field>
+        </record>
+        <record id="param_mazta_secret" model="ir.config_parameter">
+            <field name="key">mazta.secret</field>
+            <field name="value"></field>
+        </record>
+    </data>
+</odoo>

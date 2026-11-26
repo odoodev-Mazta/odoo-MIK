@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Tampilkan data Request Maklon dari Mazta Finance di form Draft MOU. -->
+    <record id="view_draft_maklon_form_mazta" model="ir.ui.view">
+        <field name="name">view.draft.maklon.form.mazta</field>
+        <field name="model">draft.maklon</field>
+        <field name="inherit_id" ref="custom_ecatalogue.view_draft_mou_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_kirim_ulang_mazta" string="Tarik Ulang ke Mazta Finance" type="object"
+                        class="btn-secondary"
+                        confirm="Kirim ulang nomor MOU dan data brand/customer ke Mazta Finance?"
+                        invisible="state != 'mou' or not finance_request_id"/>
+            </xpath>
+            <xpath expr="//sheet/group" position="before">
+                <group string="Request dari Mazta Finance" invisible="not finance_request_id">
+                    <group>
+                        <field name="finance_request_id"/>
+                        <field name="finance_customer_name"/>
+                        <field name="finance_sales_name"/>
+                    </group>
+                    <group>
+                        <field name="mazta_callback_state"/>
+                        <field name="mazta_callback_at"/>
+                        <field name="mazta_callback_error" invisible="mazta_callback_state != 'failed'"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Daftar request dari Mazta Finance, dengan tombol Tarik Ulang per baris. -->
+    <record id="view_draft_maklon_list_mazta" model="ir.ui.view">
+        <field name="name">view.draft.maklon.list.mazta</field>
+        <field name="model">draft.maklon</field>
+        <field name="arch" type="xml">
+            <list string="Request Mazta Finance" create="0" default_order="id desc">
+                <field name="finance_request_id"/>
+                <field name="finance_customer_name"/>
+                <field name="finance_sales_name"/>
+                <field name="nama_cust" optional="show"/>
+                <field name="brand" optional="show"/>
+                <field name="draft_name" string="Kode MOU"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'mou'"/>
+                <field name="mazta_callback_state" widget="badge"
+                       decoration-warning="mazta_callback_state == 'pending'"
+                       decoration-success="mazta_callback_state == 'sent'"
+                       decoration-danger="mazta_callback_state == 'failed'"/>
+                <field name="mazta_callback_at" optional="show"/>
+                <field name="mazta_callback_error" optional="hide"/>
+                <button name="action_kirim_ulang_mazta" type="object" string="Tarik Ulang" icon="fa-refresh"
+                        invisible="state != 'mou'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_maklon_mazta_request" model="ir.actions.act_window">
+        <field name="name">Request Mazta Finance</field>
+        <field name="res_model">draft.maklon</field>
+        <field name="domain">[('finance_request_id', '!=', False)]</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_draft_maklon_list_mazta')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('custom_ecatalogue.view_draft_mou_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada request dari Mazta Finance</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_maklon_mazta_request" name="Request Mazta Finance"
+              parent="custom_ecatalogue.menu_draft_mou_ecatalogue"
+              action="action_maklon_mazta_request" sequence="3"/>
+</odoo>
