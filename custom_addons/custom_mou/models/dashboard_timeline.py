@@ -367,6 +367,7 @@ class DashboardTimeline(models.Model):
                 'model': 'account.payment',
                 'id': payment.id,
                 'name': payment.display_name,
+                'sale_order_id': payment.sale_order_id.id or False,
             })
         invoices = self.env['account.move'].search([
             ('mou_id', '=', mou.id),
@@ -379,6 +380,7 @@ class DashboardTimeline(models.Model):
                 'model': 'account.move',
                 'id': invoice.id,
                 'name': invoice.display_name,
+                'sale_order_id': invoice.invoice_line_ids.sale_line_ids.order_id[:1].id or False,
             })
         return docs
 
