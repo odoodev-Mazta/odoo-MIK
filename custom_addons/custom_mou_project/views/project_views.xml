@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Form MOU: tombol Project -->
+    <record id="view_draft_maklon_form_project" model="ir.ui.view">
+        <field name="name">view.draft.maklon.form.project</field>
+        <field name="model">draft.maklon</field>
+        <field name="inherit_id" ref="custom_ecatalogue.view_draft_mou_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_project" string="Project" type="object" class="btn-secondary"
+                        icon="fa-tasks" invisible="state != 'mou'"
+                        help="Buka (atau buat) Project MOU ini. Pilih Per SO untuk melihat seluruh alur satu Sales Order."/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Form Project: MOU dan tombol sinkron -->
+    <record id="view_project_form_mou" model="ir.ui.view">
+        <field name="name">project.project.form.mou</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_sync_from_mou" string="Perbarui dari Dokumen" type="object"
+                        class="btn-secondary" invisible="not mou_id"/>
+                <button name="action_delete_project" string="Hapus Project" type="object"
+                        class="btn-danger" icon="fa-trash" groups="base.group_system"
+                        invisible="not id"
+                        confirm="Hapus Project ini beserta semua task-nya? SO, PR, PO, Plan Produksi, dan Delivery tidak ikut terhapus."/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="mou_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Pencarian Task: dropdown Per SO (task milik SO itu + task tingkat MOU) dan kelompok per SO -->
+    <record id="view_task_search_so" model="ir.ui.view">
+        <field name="name">project.task.search.so</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form_base"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="mou_so_scope" string="Per SO"
+                       domain="[('mou_id', '=', context.get('mou_so_mou_id'))]"/>
+            </xpath>
+            <filter name="stage" position="after">
+                <filter string="Sales Order" name="group_mou_so" context="{'group_by': 'mou_sale_order_id'}"/>
+            </filter>
+        </field>
+    </record>
+
+    <!-- Form Task: Sales Order sumber -->
+    <record id="view_task_form_so" model="ir.ui.view">
+        <field name="name">project.task.form.so</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="mou_sale_order_id" readonly="1" invisible="not mou_sale_order_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -46,6 +46,33 @@ class DraftMaklon(models.Model):
                     cron.sudo()._trigger()
         return res
 
+    def unlink(self):
+        """Draft dihapus di Odoo -> kabari Mazta Finance (status 'Dihapus dari Odoo').
+        Dikirim setelah transaksi commit; kegagalan jaringan tidak menggagalkan penghapusan
+        (Mazta Finance masih bisa menyinkronkan lewat tombol 'Tarik ulang')."""
+        kabar = [rid for rid in self.mapped('finance_request_id') if rid]
+        base, token, secret = self._mazta_konfigurasi()
+        res = super().unlink()
+        if kabar and base and token and secret:
+            def _kirim():
+                for rid in kabar:
+                    self._mazta_kirim_status_dihapus(base, token, secret, rid)
+            self.env.cr.postcommit.add(_kirim)
+        return res
+
+    @api.model
+    def _mazta_kirim_status_dihapus(self, base, token, secret, request_id):
+        body = json.dumps({'request_id': request_id, 'status': 'deleted'}, ensure_ascii=False).encode('utf-8')
+        ts = str(int(time.time()))
+        sig = hmac.new(secret.encode('utf-8'), ts.encode('utf-8') + b'.' + body, hashlib.sha256).hexdigest()
+        try:
+            requests.post('%s/api/integrasi/v1/maklon/%s/mou' % (base, request_id), data=body, timeout=10, headers={
+                'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token,
+                'X-Timestamp': ts, 'X-Signature': sig,
+            })
+        except Exception as e:  # noqa: BLE001
+            _logger.info("Maklon %s dihapus: kabar ke Mazta Finance gagal (%s).", request_id, e)
+
     # ------------------------------------------------------------------ callback
     def _mazta_konfigurasi(self):
         icp = self.env['ir.config_parameter'].sudo()
