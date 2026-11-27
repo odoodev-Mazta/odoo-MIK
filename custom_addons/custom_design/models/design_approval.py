@@ -163,15 +163,9 @@ class DesignApproval(models.Model):
         return self.usulan_id.action_preview_design()
 
     def action_preview_form(self):
-        """Buka Form Design Final di tab baru untuk dilihat dulu."""
+        """Lihat Form Design Final di popup dulu; unduh lewat tombol Download."""
         self.ensure_one()
-        if not self.attachment_form:
-            raise UserError('Belum ada file yang diunggah.')
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f'/web/content/design.approval/{self.id}/attachment_form?download=false',
-            'target': 'new',
-        }
+        return self.env['design.file.preview'].open_for(self, 'attachment_form', self.attachment_form_fname)
 
     def action_approve_marketing(self):
         for rec in self:

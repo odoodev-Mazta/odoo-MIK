@@ -157,6 +157,7 @@ class DashboardTimeline(models.Model):
                     ),
                     'has_attachment': bool(
                         rec.doc_pnbp
+                        or getattr(rec, 'halal_cert_ids', False)
                         or rec.halal_cert_attachment
                     ),
                     'category': rec.category or '-',

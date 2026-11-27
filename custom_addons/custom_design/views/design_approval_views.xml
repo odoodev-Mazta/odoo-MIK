@@ -182,7 +182,7 @@
                                        widget="binary"
                                        filename="attachment_form_fname"
                                        invisible="state != 'upload_form'"/>
-                                <div invisible="state == 'upload_form' or not attachment_form">
+                                <div invisible="not attachment_form">
                                     <button name="action_preview_form" type="object" string="Preview Form Design Final"
                                             icon="fa-eye" class="btn btn-primary"/>
                                     <span class="text-muted ms-2">Unduh lewat tombol download di halaman preview.</span>

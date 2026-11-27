@@ -417,7 +417,7 @@ class PurchaseRequest(models.Model):
                 rec.product_summary = f"{products[0]} (+{len(products) - 1} lainnya)"
 
     @api.depends('request_line_ids.price_subtotal',
-                 'request_line_ids.product_qty')
+                 'request_line_ids.product_qty', 'request_line_ids.item_qty')
     def _compute_total_amount(self):
         for rec in self:
             rec.total_amount = sum(rec.request_line_ids.mapped('price_subtotal'))
@@ -560,7 +560,7 @@ class PurchaseRequest(models.Model):
                     'line_type': 'setup',
                     'setup_item_id': line.setup_item_id.id,
                     'quantity': line.item_qty,
-                    'price_unit': 0.0,
+                    'price_unit': line.price_unit,
                     'mou_id': self.mou_id.id,
                     'sale_order_id': (line.sale_order_id or self.sale_order_id).id,
                 }))
@@ -645,19 +645,13 @@ class PurchaseRequestLine(models.Model):
         ('setup', 'Setup Item'),
     ], required=True, default='product')
 
-    @api.depends('product_qty', 'price_unit', 'currency_id')
+    @api.depends('line_type', 'product_qty', 'item_qty', 'price_unit', 'currency_id')
     def _compute_amount(self):
         for line in self:
             currency = line.currency_id or line.request_id.currency_id
-
-            if currency:
-                line.price_subtotal = currency.round(
-                    line.product_qty * line.price_unit
-                )
-            else:
-                line.price_subtotal = (
-                        line.product_qty * line.price_unit
-                )
+            # Item Setup memakai Item Qty, baris produk memakai Quantity.
+            amount = (line.item_qty if line.line_type == 'setup' else line.product_qty) * line.price_unit
+            line.price_subtotal = currency.round(amount) if currency else amount
 
 class PurchaseRequestBulkMOULine(models.Model):
     _name = 'purchase.request.bulk.mou.line'

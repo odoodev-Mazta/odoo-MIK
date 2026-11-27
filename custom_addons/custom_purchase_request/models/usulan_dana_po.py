@@ -48,6 +48,19 @@ class UsulanUsulanDana(models.Model):
 
     po_line_ids = fields.One2many('usulan.dana.po.line', 'usulan_id', string='Keterangan PO')
 
+    def _prepare_item_lines(self, order):
+        """Item Details dari satu PO: barang PO, ditambah Item Setup PO beserta harganya.
+        Dipakai oleh pilihan PO di Usulan Dana, tombol dari PO, dan 'Ambil dari PO'."""
+        return super()._prepare_item_lines(order) + [{
+            'line_type': 'setup',
+            'purchase_order_id': order.id,
+            'setup_item_id': setup.setup_item_id.id,
+            'keterangan': setup.description or setup.setup_item_id.name,
+            'quantity': setup.item_qty,
+            'price_unit': setup.price_unit,
+            'currency_id': order.currency_id.id,
+        } for setup in order.setup_line_ids]
+
     def _prepare_po_lines(self, order):
         """Baris Keterangan PO dari satu PO: dibagi per customer bila PO punya Keterangan PR."""
         customer_lines = order.customer_line_ids.filtered(lambda l: not l.is_remainder)

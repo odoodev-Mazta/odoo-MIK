@@ -15,6 +15,7 @@
         'views/usulan_dana_inherit_views.xml',
         'views/detail_export_views.xml',
         'views/product_from_description_views.xml',
+        'report/purchase_reports.xml',
     ],
     'assets': {
         'web.assets_backend': [

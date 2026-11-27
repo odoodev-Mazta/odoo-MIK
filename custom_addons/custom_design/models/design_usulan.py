@@ -146,15 +146,9 @@ class DesignUsulan(models.Model):
     #  STATE MACHINE
     # ─────────────────────────────────────────────
     def action_preview_design(self):
-        """Buka file di tab baru untuk dilihat dulu (unduh lewat tombol di viewer browser)."""
+        """Lihat File Design di popup dulu; unduh lewat tombol Download."""
         self.ensure_one()
-        if not self.attachment_design:
-            raise UserError('Belum ada file yang diunggah.')
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f'/web/content/design.usulan/{self.id}/attachment_design?download=false',
-            'target': 'new',
-        }
+        return self.env['design.file.preview'].open_for(self, 'attachment_design', self.attachment_design_fname)
 
     def action_submit_form_design(self):
         """Draft → On Progress"""

@@ -56,6 +56,9 @@
                             invisible="state != 'approve'" class="btn-primary"/>
                     <button name="action_create_plan_payment" string="Buat Plan Payment" type="object"
                             invisible="state != 'plan_payment' or plan_payment_id" class="btn-primary"/>
+                    <button name="action_buat_jurnal" string="Buat Jurnal" type="object" class="btn-primary"
+                            invisible="state not in ('approve', 'plan_payment', 'rilis')"
+                            groups="custom_usulandana.group_finance"/>
                     <button name="action_reject" string="Reject" type="object" class="btn-danger"
                             invisible="state not in ('waiting_head', 'waiting_coo', 'waiting_ceo', 'waiting_finance')"/>
                     <button name="action_reject_tax" string="Reject Tax"
