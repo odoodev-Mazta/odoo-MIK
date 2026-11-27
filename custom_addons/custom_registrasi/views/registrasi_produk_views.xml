@@ -159,6 +159,8 @@
                         <group>
                             <field name="brand_registration_id"
                                    readonly="state not in ('draft',)"/>
+                            <field name="brand_name"
+                                   invisible="not brand_registration_id"/>
                             <field name="client_id"
                                    readonly="1"/>
                             <field name="category"
@@ -196,12 +198,22 @@
                             <field name="halal_type"/>
                         </group>
                         <group>
-                            <field name="halal_cert_attachment"
-                                   widget="binary"
-                                   filename="halal_cert_fname"/>
-                            <field name="halal_cert_fname" invisible="1"/>
+                            <label for="halal_cert_ids"/>
+                            <div>
+                                <button name="action_open_halal_cert_wizard" type="object"
+                                        string="Upload Sertifikat" icon="fa-upload" class="btn-secondary"/>
+                            </div>
                         </group>
                     </group>
+                    <field name="halal_cert_ids" nolabel="1" invisible="not halal_cert_ids">
+                        <list create="0" no_open="1">
+                            <field name="name" string="File Sertifikat"/>
+                            <field name="create_date" string="Diupload"/>
+                            <field name="create_uid" string="Oleh"/>
+                            <button name="action_preview_halal_cert" type="object" string="Lihat"
+                                    icon="fa-eye" class="btn-link"/>
+                        </list>
+                    </field>
 
                     <!-- ── Design ─────────────────────────────────────── -->
                     <group string="Design &amp; Artwork">
@@ -330,11 +342,14 @@
                                     <field name="product_template_id"/>
 <!--                                    <field name="product_name"/>-->
                                     <field name="official_product_name"/>
+                                    <field name="primary_packaging"/>
+                                    <field name="netto"/>
                                     <field name="product_name_revision_count"/>
                                     <field name="confirmation_counter"/>
                                     <field name="nie_number"/>
                                     <field name="nie_issued_date"/>
                                     <field name="nie_expired_date"/>
+                                    <field name="nie_product_id"/>
                                 </list>
                             </field>
                         </page>
@@ -517,4 +532,57 @@
         </field>
     </record>
 
+    <!-- Popup upload sertifikat halal (bisa banyak file sekaligus) -->
+    <record id="view_halal_cert_wizard_form" model="ir.ui.view">
+        <field name="name">registrasi.halal.cert.wizard.form</field>
+        <field name="model">registrasi.halal.cert.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Upload Sertifikat Halal">
+                <field name="produk_id" invisible="1"/>
+                <p class="text-muted">Pilih satu atau beberapa file (PDF / gambar).</p>
+                <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                <footer>
+                    <button name="action_upload" type="object" string="Simpan" class="btn-primary"/>
+                    <button string="Batal" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Popup preview sertifikat halal -->
+    <record id="view_halal_cert_preview_form" model="ir.ui.view">
+        <field name="name">registrasi.halal.cert.preview.form</field>
+        <field name="model">registrasi.halal.cert.preview</field>
+        <field name="arch" type="xml">
+            <form string="Preview Sertifikat Halal" create="0" edit="0">
+                <field name="kind" invisible="1"/>
+                <field name="file" widget="pdf_viewer" nolabel="1" invisible="kind != 'pdf'"/>
+                <field name="image" widget="image" nolabel="1" class="d-block text-center"
+                       invisible="kind != 'image'"/>
+                <div class="alert alert-info" role="alert" invisible="kind != 'other'">
+                    File jenis ini tidak bisa ditampilkan. Gunakan tombol Download.
+                </div>
+                <footer>
+                    <button name="action_download" type="object" string="Download" class="btn-primary"
+                            icon="fa-download"/>
+                    <button string="Tutup" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Pindahkan sertifikat tunggal lama ke daftar -->
+    <function model="registrasi.produk" name="_migrate_halal_cert_attachment"/>
+
+    <!-- No. NIE di Data Produk -->
+    <record id="view_product_template_form_nie" model="ir.ui.view">
+        <field name="name">product.template.form.registrasi.nie</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="registrasi_nie_number" readonly="1" invisible="not registrasi_nie_number"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

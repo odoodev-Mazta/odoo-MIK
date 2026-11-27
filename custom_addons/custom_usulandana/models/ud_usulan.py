@@ -714,6 +714,39 @@ class UsulanUsulanDana(models.Model):
 
             record.state = 'waiting_head'
 
+    def action_buat_jurnal(self):
+        """Arahkan ke form Journal Entry yang sudah terhubung ke Usulan Dana ini.
+        Kalau masih ada jurnal draft untuk usulan ini, itu yang dibuka (tidak membuat dobel)."""
+        self.ensure_one()
+        draft = self.env['account.move'].search([
+            ('usulan_dana_id', '=', self.id),
+            ('move_type', '=', 'entry'),
+            ('state', '=', 'draft'),
+        ], limit=1)
+        context = {
+            'default_move_type': 'entry',
+            'default_usulan_dana_id': self.id,
+            'default_ref': f"Jurnal {self.name}",
+        }
+        journal = self.env['account.journal'].search([
+            ('type', '=', 'general'),
+            ('company_id', '=', self.company_id.id),
+        ], limit=1)
+        if journal:
+            context['default_journal_id'] = journal.id
+        action = {
+            'name': 'Journal Entry',
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'view_mode': 'form',
+            'views': [(self.env.ref('account.view_move_form').id, 'form')],
+            'context': context,
+            'target': 'current',
+        }
+        if draft:
+            action['res_id'] = draft.id
+        return action
+
     def action_rilis(self):
         for record in self:
             record.state = 'rilis'

@@ -32,12 +32,6 @@ class DesignUsulanLine(models.Model):
     attachment_fname = fields.Char(string='Nama File')
 
     def action_preview_attachment(self):
-        """Buka file di tab baru untuk dilihat dulu (unduh lewat tombol di viewer browser)."""
+        """Lihat attachment produk di popup dulu; unduh lewat tombol Download."""
         self.ensure_one()
-        if not self.attachment:
-            raise UserError('Belum ada file yang diunggah.')
-        return {
-            'type': 'ir.actions.act_url',
-            'url': f'/web/content/design.usulan.line/{self.id}/attachment?download=false',
-            'target': 'new',
-        }
+        return self.env['design.file.preview'].open_for(self, 'attachment', self.attachment_fname)

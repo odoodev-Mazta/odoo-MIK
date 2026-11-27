@@ -14,6 +14,7 @@ export class PdfPreviewDialog extends Component {
         title: String,
         fileUrl: String,
         onDownload: Function,
+        isImage: { type: Boolean, optional: true },
     };
 
     get viewerUrl() {
@@ -37,7 +38,9 @@ patch(BinaryField.prototype, {
 
     async onFileDownload() {
         const { record, name } = this.props;
-        if (!record.resId || !this.fileName.toLowerCase().endsWith(".pdf")) {
+        const lowerName = (this.fileName || "").toLowerCase();
+        const isImage = /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(lowerName);
+        if (!record.resId || !(isImage || lowerName.endsWith(".pdf"))) {
             return super.onFileDownload();
         }
         const fileUrl = url("/web/content", {
@@ -56,6 +59,7 @@ patch(BinaryField.prototype, {
         this.dialogService.add(PdfPreviewDialog, {
             title: this.fileName,
             fileUrl,
+            isImage,
             onDownload: () => super.onFileDownload(),
         });
     },

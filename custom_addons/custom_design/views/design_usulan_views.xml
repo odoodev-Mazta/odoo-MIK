@@ -131,7 +131,7 @@
                                     <field name="attachment_fname" optional="hide"/>
                                     <button name="action_preview_attachment" type="object" string="Preview"
                                             icon="fa-eye" class="btn btn-link"
-                                            invisible="not attachment or parent.state in ('draft','progress')"/>
+                                            invisible="not attachment"/>
                                 </list>
                             </field>
                         </page>
@@ -142,7 +142,7 @@
                                        widget="binary"
                                        filename="attachment_design_fname"
                                        invisible="state != 'progress'"/>
-                                <div invisible="state == 'progress' or not attachment_design">
+                                <div invisible="not attachment_design">
                                     <button name="action_preview_design" type="object" string="Preview File Design"
                                             icon="fa-eye" class="btn btn-primary"/>
                                     <span class="text-muted ms-2">Unduh lewat tombol download di halaman preview.</span>

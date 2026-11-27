@@ -20,6 +20,7 @@
     'data': [
         'security/ir.model.access.csv',
         'data/sequences.xml',
+        'views/file_preview_views.xml',
         'views/dashboard_design_views.xml',
         'views/design_usulan_views.xml',
         'views/design_approval_views.xml',

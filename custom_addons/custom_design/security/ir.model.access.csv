@@ -7,3 +7,4 @@ access_design_reject_wizard,design.reject.wizard all,model_design_reject_wizard,
 access_design_revisi_line_user,design.revisi.line user,model_design_revisi_line,base.group_user,1,1,1,1
 access_design_revisi_line_manager,design.revisi.line manager,model_design_revisi_line,base.group_system,1,1,1,1
 access_design_approval_user,design.approval user,model_design_approval,base.group_user,1,1,1,1
+access_design_file_preview,design.file.preview all,model_design_file_preview,base.group_user,1,1,1,1
