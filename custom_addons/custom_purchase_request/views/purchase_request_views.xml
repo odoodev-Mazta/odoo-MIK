@@ -141,6 +141,9 @@
                                     <field name="setup_item_id"/>
                                     <field name="description"/>
                                     <field name="item_qty"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="price_unit" string="Harga"/>
+                                    <field name="price_subtotal" string="Jumlah" sum="Total Item Setup"/>
                                 </list>
                             </field>
                         </page>

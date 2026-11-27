@@ -4,3 +4,5 @@ access_registrasi_produk_line,registrasi.produk.line,model_registrasi_produk_lin
 access_registrasi_brand,registrasi.brand,model_registrasi_brand,base.group_user,1,1,1,1
 access_halal_registrasi,halal.registrasi,model_halal_registrasi,base.group_user,1,1,1,1
 access_halal_registrasi_line,halal.registrasi.line,model_halal_registrasi_line,base.group_user,1,1,1,1
+access_registrasi_halal_cert_wizard,registrasi.halal.cert.wizard,model_registrasi_halal_cert_wizard,base.group_user,1,1,1,1
+access_registrasi_halal_cert_preview,registrasi.halal.cert.preview,model_registrasi_halal_cert_preview,base.group_user,1,1,1,1

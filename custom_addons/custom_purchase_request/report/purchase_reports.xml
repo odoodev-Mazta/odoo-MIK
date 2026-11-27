@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Tabel Item Setup untuk cetakan Purchase Order dan Request for Quotation -->
+    <template id="report_po_setup_items">
+        <div t-if="o.setup_line_ids" class="mt-4" name="setup_items">
+            <strong>Item Setup</strong>
+            <table class="table table-sm table-borderless mt-1">
+                <thead>
+                    <tr class="border-bottom">
+                        <th class="text-start">Item</th>
+                        <th class="text-start">Deskripsi</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Harga</th>
+                        <th class="text-end">Jumlah</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr t-foreach="o.setup_line_ids" t-as="setup">
+                        <td><span t-field="setup.setup_item_id.name"/></td>
+                        <td><span t-field="setup.description"/></td>
+                        <td class="text-end"><span t-field="setup.item_qty"/></td>
+                        <td class="text-end">
+                            <span t-field="setup.price_unit"
+                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                        </td>
+                        <td class="text-end"><span t-field="setup.price_subtotal"/></td>
+                    </tr>
+                    <tr class="border-top">
+                        <td colspan="4" class="text-end"><strong>Total Item Setup</strong></td>
+                        <td class="text-end"><strong><span t-field="o.setup_total"/></strong></td>
+                    </tr>
+                    <tr t-if="o.amount_total and o.setup_total">
+                        <td colspan="4" class="text-end"><strong>Total Barang + Item Setup</strong></td>
+                        <td class="text-end">
+                            <strong t-out="o.amount_total + o.setup_total"
+                                    t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="report_purchaseorder_document_setup" inherit_id="purchase.report_purchaseorder_document">
+        <xpath expr="//div[@id='total']" position="after">
+            <t t-call="custom_purchase_request.report_po_setup_items"/>
+        </xpath>
+    </template>
+
+    <template id="report_purchasequotation_document_setup" inherit_id="purchase.report_purchasequotation_document">
+        <xpath expr="//p[@t-field='o.note']" position="before">
+            <t t-call="custom_purchase_request.report_po_setup_items"/>
+        </xpath>
+    </template>
+
+    <!-- Cetak Purchase Request -->
+    <template id="report_purchase_request_document">
+        <t t-call="web.external_layout">
+            <div class="page">
+                <h3>Purchase Request <span t-field="o.name"/></h3>
+                <div class="row mt-3 mb-3">
+                    <div class="col-6">
+                        <div><strong>Tgl Usulan:</strong> <span t-field="o.date_usulan"/></div>
+                        <div t-if="o.department_id"><strong>Department:</strong> <span t-field="o.department_id"/></div>
+                        <div t-if="o.pic_dept"><strong>PIC:</strong> <span t-field="o.pic_dept.name"/></div>
+                        <div t-if="o.estimated_date"><strong>Estimasi Datang:</strong> <span t-field="o.estimated_date"/></div>
+                    </div>
+                    <div class="col-6">
+                        <div><strong>Kebutuhan:</strong> <span t-field="o.purchase_purpose"/></div>
+                        <div t-if="o.customer_id"><strong>Customer:</strong> <span t-field="o.customer_id.name"/></div>
+                        <div t-if="o.mou_id"><strong>No. MOU:</strong> <span t-field="o.mou_id.draft_name"/></div>
+                        <div t-if="o.sale_order_id"><strong>Sales Order:</strong> <span t-field="o.sale_order_id.name"/></div>
+                    </div>
+                </div>
+
+                <t t-set="product_lines" t-value="o.request_line_ids.filtered(lambda l: l.line_type == 'product' and (l.display_type or l.product_id))"/>
+                <t t-set="setup_lines" t-value="o.request_line_ids.filtered(lambda l: l.line_type == 'setup' and l.setup_item_id)"/>
+
+                <t t-if="product_lines">
+                    <strong>Produk</strong>
+                    <table class="table table-sm table-borderless mt-1">
+                        <thead>
+                            <tr class="border-bottom">
+                                <th class="text-start">Produk</th>
+                                <th class="text-start">Deskripsi</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-start">Satuan</th>
+                                <th class="text-end">Harga</th>
+                                <th class="text-end">Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="product_lines.sorted('sequence')" t-as="line">
+                                <tr t-if="line.display_type">
+                                    <td colspan="6"><strong t-field="line.description"/></td>
+                                </tr>
+                                <tr t-else="">
+                                    <td><span t-field="line.product_id"/></td>
+                                    <td><span t-field="line.description"/></td>
+                                    <td class="text-end"><span t-field="line.product_qty"/></td>
+                                    <td><span t-field="line.product_uom"/></td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_unit"
+                                              t-options="{'widget': 'monetary', 'display_currency': line.currency_id or o.currency_id}"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-out="line.price_subtotal"
+                                              t-options="{'widget': 'monetary', 'display_currency': line.currency_id or o.currency_id}"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+
+                <t t-if="setup_lines">
+                    <strong>Item Setup</strong>
+                    <table class="table table-sm table-borderless mt-1">
+                        <thead>
+                            <tr class="border-bottom">
+                                <th class="text-start">Item</th>
+                                <th class="text-start">Deskripsi</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Harga</th>
+                                <th class="text-end">Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="setup_lines.sorted('sequence')" t-as="line">
+                                <td><span t-field="line.setup_item_id.name"/></td>
+                                <td><span t-field="line.description"/></td>
+                                <td class="text-end"><span t-field="line.item_qty"/></td>
+                                <td class="text-end">
+                                    <span t-field="line.price_unit"
+                                          t-options="{'widget': 'monetary', 'display_currency': line.currency_id or o.currency_id}"/>
+                                </td>
+                                <td class="text-end">
+                                    <span t-out="line.price_subtotal"
+                                          t-options="{'widget': 'monetary', 'display_currency': line.currency_id or o.currency_id}"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+
+                <t t-if="o.is_bulk_purchase and o.bulk_line_ids">
+                    <strong>Alokasi Bulk</strong>
+                    <table class="table table-sm table-borderless mt-1">
+                        <thead>
+                            <tr class="border-bottom">
+                                <th class="text-start">No. MOU</th>
+                                <th class="text-start">Produk</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Harga</th>
+                                <th class="text-end">Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="o.bulk_line_ids" t-as="bulk">
+                                <td><span t-field="bulk.mou_id.draft_name"/></td>
+                                <td><span t-field="bulk.product_id"/></td>
+                                <td class="text-end"><span t-field="bulk.qty"/></td>
+                                <td class="text-end"><span t-field="bulk.price_unit"/></td>
+                                <td class="text-end"><span t-field="bulk.price_subtotal"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+
+                <div class="text-end mt-3">
+                    <strong>Total: </strong>
+                    <strong t-field="o.total_amount"/>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_purchase_request">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="custom_purchase_request.report_purchase_request_document"/>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_purchase_request" model="ir.actions.report">
+        <field name="name">Purchase Request</field>
+        <field name="model">purchase.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">custom_purchase_request.report_purchase_request</field>
+        <field name="report_file">custom_purchase_request.report_purchase_request</field>
+        <field name="print_report_name">'PR - %s' % object.name</field>
+        <field name="binding_model_id" ref="model_purchase_request"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

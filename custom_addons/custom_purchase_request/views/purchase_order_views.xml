@@ -125,8 +125,14 @@
                             <field name="setup_item_id"/>
                             <field name="description"/>
                             <field name="item_qty"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="price_unit"/>
+                            <field name="price_subtotal"/>
                         </list>
                     </field>
+                    <group class="oe_subtotal_footer">
+                        <field name="setup_total"/>
+                    </group>
                 </page>
             </xpath>
         </field>

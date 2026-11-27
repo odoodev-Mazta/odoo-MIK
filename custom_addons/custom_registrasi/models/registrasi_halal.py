@@ -497,10 +497,11 @@ class HalalRegistrasi(models.Model):
 
             # Sinkronisasi ke registrasi.produk jika tertaut
             if rec.produk_id:
-                rec.produk_id.write({
-                    'halal_cert_attachment': rec.doc_sertifikat_halal,
-                    'halal_type': rec.halal_type,
-                })
+                rec.produk_id._add_halal_cert(
+                    rec.with_context(bin_size=False).doc_sertifikat_halal,
+                    rec.doc_sertifikat_halal_fname or _('Sertifikat Halal %s') % (rec.nomor_sertifikat or rec.name))
+                if rec.produk_id.halal_type != 'import_lokal':
+                    rec.produk_id.halal_type = rec.halal_type
 
             rec.message_post(
                 body=_(

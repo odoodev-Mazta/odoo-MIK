@@ -1,3 +1,5 @@
+import re
+
 from markupsafe import Markup
 
 from odoo import fields, models
@@ -94,6 +96,13 @@ class RegistrasiProdukLine(models.Model):
         string='Product',
         copy=False,
     )
+    nie_product_id = fields.Many2one(
+        comodel_name='product.template',
+        string='Data Produk NIE',
+        copy=False,
+        readonly=True,
+        help='Data Produk yang dibuat saat NIE Issued.',
+    )
 
     # Perubahan field ini dicatat di chatter Registrasi Produk (induknya), karena baris
     # produk tidak punya chatter sendiri.
@@ -105,6 +114,7 @@ class RegistrasiProdukLine(models.Model):
         'nie_issued_date',
         'nie_expired_date',
         'product_template_id',
+        'nie_product_id',
     )
 
     def write(self, vals):
@@ -127,6 +137,37 @@ class RegistrasiProdukLine(models.Model):
                     subtype_xmlid='mail.mt_note',
                 )
         return result
+
+    def _nie_product_name(self):
+        """Brand Official Product Name Primary Packaging Netto (tanpa tanda strip)."""
+        self.ensure_one()
+        packaging = dict(self._fields['primary_packaging'].selection).get(self.primary_packaging)
+        parts = [self.produk_id.brand_name, self.official_product_name, packaging, '%s g/ml' % self.netto]
+        return ' '.join(' '.join(str(part).split()) for part in parts if part)
+
+    def _create_nie_product(self):
+        """Buat Data Produk untuk baris ini. Bila produk bernama persis sama sudah ada, dipakai (tidak dobel)."""
+        self.ensure_one()
+        if self.nie_product_id:
+            return self.nie_product_id
+        name = self._nie_product_name()
+        Product = self.env['product.template'].sudo()
+        # '=ilike' memakai pola SQL: karakter khusus di nama harus di-escape agar cocok persis.
+        escaped = re.sub(r'([\\%_])', r'\\\1', name)
+        product = Product.search([('name', '=ilike', escaped)], limit=1)
+        if not product:
+            vals = {'name': name, 'type': 'consu', 'sale_ok': True, 'purchase_ok': False,
+                    'registrasi_nie_number': self.nie_number}
+            if 'is_storable' in Product._fields:
+                vals['is_storable'] = True
+            product = Product.create(vals)
+        elif not product.registrasi_nie_number:
+            product.registrasi_nie_number = self.nie_number
+        values = {'nie_product_id': product.id}
+        if not self.product_template_id:
+            values['product_template_id'] = product.id
+        self.write(values)
+        return product
 
     def _format_tracked_value(self, value):
         if isinstance(value, models.BaseModel):

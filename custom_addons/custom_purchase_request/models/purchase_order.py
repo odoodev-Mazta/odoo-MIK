@@ -62,6 +62,14 @@ class PurchaseOrder(models.Model):
         string='Item Setup'
     )
 
+    setup_total = fields.Monetary(
+        string='Total Item Setup', compute='_compute_setup_total', currency_field='currency_id')
+
+    @api.depends('setup_line_ids.price_subtotal')
+    def _compute_setup_total(self):
+        for order in self:
+            order.setup_total = sum(order.setup_line_ids.mapped('price_subtotal'))
+
     customer_line_ids = fields.One2many(
         'purchase.order.customer.line',
         'order_id',
@@ -305,6 +313,7 @@ class PurchaseOrder(models.Model):
                     'setup_item_id': line.setup_item_id.id,
                     'description': line.description,
                     'item_qty': line.item_qty,
+                    'price_unit': line.price_unit,
                 })
             elif line.product_id:
                 uom = line.product_uom or line.product_id.uom_id
@@ -503,6 +512,7 @@ class PurchaseOrder(models.Model):
                 'setup_item_id': s.setup_item_id.id,
                 'description': s.description,
                 'item_qty': s.item_qty,
+                'price_unit': s.price_unit,
             }) for s in group.setup_line_ids],
         })
         new._sync_header_from_customer_lines()
@@ -685,3 +695,13 @@ class PurchaseOrderSetupLine(models.Model):
         string='Qty',
         default=1.0
     )
+
+    price_unit = fields.Float(string='Harga')
+    currency_id = fields.Many2one(related='order_id.currency_id', string='Currency')
+    price_subtotal = fields.Monetary(
+        string='Jumlah', compute='_compute_price_subtotal', store=True, currency_field='currency_id')
+
+    @api.depends('item_qty', 'price_unit')
+    def _compute_price_subtotal(self):
+        for line in self:
+            line.price_subtotal = line.item_qty * line.price_unit

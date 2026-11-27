@@ -29,6 +29,11 @@ class RegistrasiProduk(models.Model):
         index=True,
         domain=lambda self: self._get_available_brand_domain(),
     )
+    brand_name = fields.Char(
+        string='Nama Brand',
+        related='brand_registration_id.brand_name',
+        readonly=True,
+    )
     client_id = fields.Many2one(
         comodel_name='res.partner',
         string='Client',
@@ -146,16 +151,22 @@ class RegistrasiProduk(models.Model):
         selection=[
             ('lokal', 'Lokal'),
             ('import', 'Import'),
+            ('import_lokal', 'Import + Lokal'),
         ],
         string='Halal Type',
         tracking=True,
     )
     halal_cert_attachment = fields.Binary(
-        string='Halal Certificate',
+        string='Halal Certificate (lama)',
         attachment=True,
     )
     halal_cert_fname = fields.Char(
         string='Halal Certificate Filename',
+    )
+    # Sertifikat halal bisa lebih dari satu. Field tunggal di atas hanya sisa data lama (dipindahkan saat upgrade).
+    halal_cert_ids = fields.Many2many(
+        'ir.attachment', 'registrasi_produk_halal_cert_rel', 'produk_id', 'attachment_id',
+        string='Halal Certificate', copy=False,
     )
 
     # ─── PNBP & Payment Documents ───────────────────────────────────────────
@@ -695,26 +706,70 @@ class RegistrasiProduk(models.Model):
             })
         return True
 
+    def action_open_halal_cert_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Upload Sertifikat Halal'),
+            'res_model': 'registrasi.halal.cert.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_produk_id': self.id},
+        }
+
+    def _add_halal_cert(self, datas, filename):
+        """Tambahkan satu file ke daftar sertifikat halal; file yang isinya sama tidak ditambahkan dua kali."""
+        self.ensure_one()
+        if not datas:
+            return
+        attachment = self.env['ir.attachment'].sudo().create({
+            'name': filename or _('Sertifikat Halal'), 'datas': datas,
+            'res_model': self._name, 'res_id': self.id,
+        })
+        if self.sudo().halal_cert_ids.filtered(lambda a: a.checksum == attachment.checksum):
+            attachment.unlink()
+        else:
+            self.sudo().write({'halal_cert_ids': [(4, attachment.id)]})
+
+    @api.model
+    def _migrate_halal_cert_attachment(self):
+        """Dipanggil saat upgrade: pindahkan sertifikat tunggal lama ke daftar sertifikat."""
+        records = self.sudo().with_context(bin_size=False).search([('halal_cert_attachment', '!=', False)])
+        for rec in records:
+            rec._add_halal_cert(rec.halal_cert_attachment, rec.halal_cert_fname)
+            rec.write({'halal_cert_attachment': False, 'halal_cert_fname': False})
+
     def action_issue_nie(self):
-        """BPOM Review → NIE Issued. Creates / links product.template."""
+        """BPOM Review → NIE Issued. Tiap baris menjadi Data Produk baru:
+        'Brand Official Product Name Primary Packaging Netto'."""
         for rec in self:
+            rec._check_issue_nie()
             for line in rec.product_line_ids:
-
-                if not line.product_template_id:
-                    raise UserError(
-                        _("Please select Product first.")
-                    )
-
-                if not line.nie_number:
-                    raise UserError(
-                        _("Please enter NIE Number for %s")
-                        % line.product_template_id.display_name
-                    )
-
+                line._create_nie_product()
             rec.write({
                 'state': 'nie_issued'
             })
         return True
+
+    def _check_issue_nie(self):
+        """Semua data pembentuk nama produk harus lengkap sebelum ada produk yang dibuat."""
+        self.ensure_one()
+        if not self.product_line_ids:
+            raise UserError(_("Belum ada baris produk. Isi dulu produknya sebelum Issue NIE."))
+        if not self.brand_name:
+            raise UserError(_("Nama Brand kosong. Pilih Brand Registration dulu."))
+        problems = []
+        for number, line in enumerate(self.product_line_ids, 1):
+            missing = [label for label, value in (
+                ('Official Product Name', line.official_product_name),
+                ('Primary Packaging', line.primary_packaging),
+                ('Netto', line.netto > 0),
+                ('NIE Number', line.nie_number),
+            ) if not value]
+            if missing:
+                problems.append(_("Baris %(number)s: %(fields)s", number=number, fields=', '.join(missing)))
+        if problems:
+            raise UserError(_("Lengkapi dulu sebelum Issue NIE:\n%s") % '\n'.join(problems))
 
     # def _create_or_link_product_template(self):
     #

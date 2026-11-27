@@ -6,3 +6,5 @@ from . import registrasi_halal
 from . import registrasi_halal_line
 from . import dashboard
 from . import design_usulan
+from . import product_template
+from . import halal_cert
